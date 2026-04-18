@@ -1,0 +1,1 @@
+-- Seed data placeholder for the finance platform.

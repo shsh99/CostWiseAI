@@ -1,0 +1,1 @@
+-- Initial schema placeholder for the finance platform.

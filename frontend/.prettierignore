@@ -1,0 +1,6 @@
+node_modules
+dist
+build
+.codex
+docs/superpowers/plans
+docs/superpowers/specs
