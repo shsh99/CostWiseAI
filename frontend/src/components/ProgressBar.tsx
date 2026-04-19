@@ -18,10 +18,14 @@ export function ProgressBar({
   max,
   tone = 'violet'
 }: ProgressBarProps) {
-  const percentage = Math.min(100, Math.round((value / max) * 100));
+  const percentage =
+    max > 0 ? Math.min(100, Math.round((value / max) * 100)) : 0;
 
   return (
-    <div className="progress-row">
+    <div
+      className="progress-row"
+      aria-label={`${label} ${value.toLocaleString('ko-KR')}만원 (${percentage}%)`}
+    >
       <div className="progress-row__meta">
         <span>{label}</span>
         <strong>{value.toLocaleString('ko-KR')}만원</strong>
