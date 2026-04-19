@@ -18,6 +18,7 @@ This is the canonical entry point for the repository. Start here, then follow th
 - `docs/project/current-state.md` for the current working picture
 - `docs/ai-collaboration.md` for subagent and reviewer rules
 - `docs/worktree-strategy.md` for branch and worktree policy
+- `docs/ops/README.md` for operational workflow docs
 - `docs/git/branch-naming.md` for naming rules
 - `.gitmessage` for commit message format
 - `docs/git/issue-labels.md` for triage labels
