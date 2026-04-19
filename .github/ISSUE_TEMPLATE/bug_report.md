@@ -1,40 +1,40 @@
 ---
-name: Bug report
-about: Report a defect in the platform, backend, frontend, or deployment flow
-title: "[Bug]: "
+name: 버그 신고
+about: 플랫폼, 백엔드, 프론트엔드, 배포 흐름의 문제를 신고합니다
+title: "[버그]: "
 labels: bug
 assignees: ""
 ---
 
-## What happened
+## 발생한 내용
 
-Describe the observed behavior.
+실제로 관찰된 동작을 적어주세요.
 
-## What did you expect
+## 기대한 동작
 
-Describe the expected behavior.
+원래 기대한 동작을 적어주세요.
 
-## Where it happened
+## 발생 위치
 
-- Area: frontend / backend / database / deployment / docs
-- Page, endpoint, or job:
+- 영역: frontend / backend / database / deployment / docs
+- 페이지, 엔드포인트, 작업:
 
-## Steps to reproduce
+## 재현 절차
 
 1. 
 2. 
 3. 
 
-## Environment
+## 환경
 
-- Browser or runtime:
-- OS:
-- Branch or commit:
+- 브라우저 또는 런타임:
+- 운영체제:
+- 브랜치 또는 커밋:
 
-## Evidence
+## 증거
 
-Add screenshots, request payloads, console logs, or server logs if available.
+가능하면 스크린샷, 요청 페이로드, 콘솔 로그, 서버 로그를 첨부하세요.
 
-## Impact
+## 영향 범위
 
-Explain how this affects users or the business workflow.
+사용자나 업무 흐름에 어떤 영향을 주는지 적어주세요.

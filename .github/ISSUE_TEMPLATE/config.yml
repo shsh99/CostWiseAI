@@ -1,5 +1,5 @@
 blank_issues_enabled: false
 contact_links:
-  - name: Project discussion
+  - name: 프로젝트 논의
     url: https://github.com/revfactory/harness
-    about: Use the repository discussions or the owner link for broader questions.
+    about: 더 넓은 질문은 저장소 토론 또는 소유자 링크를 사용하세요.

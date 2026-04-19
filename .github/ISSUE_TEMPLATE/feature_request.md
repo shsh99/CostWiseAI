@@ -1,34 +1,34 @@
 ---
-name: Feature request
-about: Propose a new feature or workflow improvement
-title: "[Feature]: "
+name: 기능 요청
+about: 새 기능이나 워크플로우 개선을 제안합니다
+title: "[기능]: "
 labels: enhancement
 assignees: ""
 ---
 
-## Problem
+## 문제
 
-What user problem or workflow gap does this solve?
+어떤 사용자 문제나 업무 공백을 해결하는지 적어주세요.
 
-## Proposed solution
+## 제안하는 해결책
 
-Describe the behavior you want to add.
+추가하고 싶은 동작을 설명하세요.
 
-## Scope
+## 범위
 
-- In scope:
-- Out of scope:
+- 포함:
+- 제외:
 
-## Acceptance criteria
+## 수락 기준
 
 - [ ] 
 - [ ] 
 - [ ] 
 
-## Dependencies
+## 의존성
 
-List data, API, UI, or operational dependencies.
+데이터, API, UI, 운영상 의존성이 있으면 적어주세요.
 
-## Notes
+## 참고
 
-Add links, screenshots, or examples that help clarify the request.
+요청을 이해하는 데 도움이 되는 링크, 스크린샷, 예시를 첨부하세요.
