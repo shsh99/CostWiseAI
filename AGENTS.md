@@ -1,41 +1,68 @@
 # AGENTS.md
 
-## Harness
+This is the canonical entry point for the repository. Start here, then follow the linked docs only when you need more detail.
 
-Use the `harness` skill when you need to design or update agent teams, orchestrators, or project-specific skills in this repository.
+## Project Snapshot
 
-## Project-local layout
+- Product: insurance/financial services new business decision support platform
+- Core flow: ABC cost allocation plus DCF investment evaluation
+- Primary users: planner, finance reviewer, executive
+- Frontend: React 18, TypeScript, Vite, Tailwind CSS
+- Backend: Java 21, Spring Boot 3.x
+- Database and auth: Supabase PostgreSQL and Supabase Auth
+- Deployment: Cloudflare Pages for frontend and a separate Spring runtime for backend
 
-- Generated agents live under `.codex/agents/`
-- Generated skills live under `.codex/skills/`
-- Codex packaging metadata lives under `.codex-plugin/`
+## Read Next
 
-## Working rules
+- `docs/index.md` for the doc map
+- `docs/project/current-state.md` for the current working picture
+- `docs/ai-collaboration.md` for subagent and reviewer rules
+- `docs/worktree-strategy.md` for branch and worktree policy
+- `docs/ops/README.md` for operational workflow docs
+- `docs/git/branch-naming.md` for naming rules
+- `.gitmessage` for commit message format
+- `docs/git/issue-labels.md` for triage labels
+- `docs/dev-logs/README.md` for comparison notes and PR prerequisites
+- `docs/superpowers/specs/2026-04-19-financial-decision-support-platform-design.md` for product scope
+- `docs/superpowers/plans/2026-04-19-financial-decision-support-platform-development.md` for implementation details
+- `docs/superpowers/plans/2026-04-19-financial-decision-support-platform-implementation.md` for task order
 
-- Prefer Codex CLI for terminal-driven edits and validation.
-- Prefer Codex Desktop for visual review or side-by-side inspection.
-- Keep the harness pointers short. Do not duplicate the full skill content here.
+## Working Rules
 
-## Frontend Work
+- Keep changes small and task-focused.
+- Prefer `apply_patch` for edits.
+- Do not broaden scope unless the task demands it.
+- Keep `main` release-only, `dev` integration-only, and `feat/*` for focused work.
+- Use one worktree per non-trivial `feat/*` branch.
+- Before opening a PR for any non-trivial change, write a dev log entry that explains the worktree comparison and why the chosen option won.
 
-- Use the `frontend-design` skill when creating or changing frontend pages, components, layouts, or other user-facing UI.
-- Do not use `frontend-design` for linting, formatting, hook setup, package wiring, or other tooling-only changes.
-- If the work includes accessibility-sensitive UI decisions, pair `frontend-design` with `accessible-ui-guidelines`.
+## Common Commands
 
-## Backend Work
+- Frontend build and lint:
+  - `cd frontend`
+  - `npm run build`
+  - `npm run lint`
+- Frontend format check:
+  - `cd frontend`
+  - `npm run format:check`
+- Backend build checks:
+  - `cd backend`
+  - `./gradlew check`
+- Backend compile check:
+  - `cd backend`
+  - `./gradlew classes`
 
-- Use backend-specific guidance when changing Spring services, APIs, persistence, or other server-side behavior.
-- Keep `frontend-design` out of backend-only work.
-- Use the harness only for agent, skill, and workflow orchestration.
-- The backend uses the checked-in Gradle wrapper, so backend changes should validate with `./backend/gradlew check`.
+## Do Not
 
-## Change log
+- Do not edit `harness_tmp/`.
+- Do not change unrelated files.
+- Do not commit unverified changes.
+- Do not expose secrets or service keys to the browser.
+- Do not open a PR without the required dev log for a non-trivial change.
 
-| Date | Change | Reason |
-|------|--------|--------|
-| 2026-04-19 | Initial harness pointer added | Install project-local Codex harness |
-| 2026-04-19 | GitHub workflow templates added | Standardize PR, issue, commit, and branch workflows |
-| 2026-04-19 | Issue label set added | Standardize triage, ownership, and priority labels |
-| 2026-04-19 | Frontend tooling workflow added | Standardize lint, format, and pre-commit checks for frontend work |
-| 2026-04-19 | Backend tooling workflow added | Standardize Java formatting, style checks, and backend pre-commit coverage |
-| 2026-04-19 | Gradle wrapper added | Make backend checks reproducible through the checked-in wrapper |
+## AI Collaboration
+
+- Use one focused subagent per independent slice.
+- Use a spec reviewer after implementation to check scope and consistency.
+- Use a quality reviewer after implementation to check buildability and risk.
+- Keep subagent prompts narrow: one repo slice, one output, one acceptance bar.

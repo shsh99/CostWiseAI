@@ -1,28 +1,34 @@
-## Summary
+## 요약
 
-Describe the change in one or two sentences.
+변경 내용을 한두 문장으로 요약하세요.
 
-## What Changed
+## 변경 내용
 
 - 
 - 
 
-## Why
+## 이유
 
-Explain the reason for the change and the problem it solves.
+이 변경이 필요한 이유와 해결하는 문제를 적어주세요.
 
-## Validation
+## 검증
 
-- [ ] Ran the relevant tests
-- [ ] Verified the affected screens or APIs manually
-- [ ] Checked for regressions in nearby flows
+- [ ] 관련 테스트를 실행했습니다.
+- [ ] 영향을 받은 화면 또는 API를 수동으로 확인했습니다.
+- [ ] 인접한 흐름에서 회귀가 없는지 확인했습니다.
 
-## Screenshots or Logs
+## 스크린샷 또는 로그
 
-Add screenshots, sample payloads, or logs if they help review.
+검토에 도움이 되면 스크린샷, 샘플 페이로드, 로그를 첨부하세요.
 
-## Checklist
+## 체크리스트
 
-- [ ] The scope is limited to this PR
-- [ ] Documentation was updated if behavior changed
-- [ ] Follow-up work is listed as a separate issue if needed
+- [ ] 범위가 이 PR 안에만 한정되어 있습니다.
+- [ ] 동작이 바뀌었다면 문서를 함께 수정했습니다.
+- [ ] 후속 작업이 필요하면 별도 이슈로 분리했습니다.
+
+## 브랜치
+
+- [ ] 작업은 집중된 `feat/*`, `fix/*`, `docs/*`, 또는 `chore/*` 브랜치에서 진행했습니다.
+- [ ] 릴리스 또는 핫픽스가 아니라면 대상 브랜치는 `dev`입니다.
+- [ ] `docs/dev-logs/`에 워킹트리 비교와 브랜치 선택 이유를 기록했습니다.
