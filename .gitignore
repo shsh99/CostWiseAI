@@ -4,6 +4,7 @@ frontend/build/
 frontend/*.tsbuildinfo
 backend/build/
 backend/.gradle/
+backend/.gradle-user/
 backend/wrapper-build/
 .gradle/
 .worktrees/
