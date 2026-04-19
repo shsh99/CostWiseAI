@@ -14,11 +14,12 @@ This is the canonical entry point for the repository. Start here, then follow th
 
 ## Read Next
 
-- `docs/README.md` for the doc map
+- `docs/index.md` for the doc map
 - `docs/project/current-state.md` for the current working picture
 - `docs/ai-collaboration.md` for subagent and reviewer rules
 - `docs/worktree-strategy.md` for branch and worktree policy
 - `docs/git/branch-naming.md` for naming rules
+- `.gitmessage` for commit message format
 - `docs/git/issue-labels.md` for triage labels
 - `docs/dev-logs/README.md` for comparison notes and PR prerequisites
 - `docs/superpowers/specs/2026-04-19-financial-decision-support-platform-design.md` for product scope

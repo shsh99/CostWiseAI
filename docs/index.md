@@ -1,6 +1,6 @@
 # Documentation Index
 
-This is a secondary map for the documentation tree. `AGENTS.md` is the canonical entry point.
+This is the canonical documentation map after `AGENTS.md`.
 
 ## Key Areas
 
