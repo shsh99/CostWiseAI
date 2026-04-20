@@ -66,3 +66,4 @@ This is the canonical entry point for the repository. Start here, then follow th
 - Use a spec reviewer after implementation to check scope and consistency.
 - Use a quality reviewer after implementation to check buildability and risk.
 - Keep subagent prompts narrow: one repo slice, one output, one acceptance bar.
+- For any frontend slice, apply the `frontend-design` skill before implementation and keep the UI direction intentional, distinctive, and production-grade.

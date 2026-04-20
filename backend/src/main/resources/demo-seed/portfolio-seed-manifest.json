@@ -1,0 +1,26 @@
+{
+  "version": "2026-04-20",
+  "scope": "portfolio-first",
+  "headquarters": 5,
+  "projects": 20,
+  "scenariosPerProject": 3,
+  "baselineScenario": "기준 시나리오",
+  "costPoolsPerProject": 4,
+  "seedFiles": [
+    "supabase/seed.sql",
+    "supabase/reset_seed.sql"
+  ],
+  "departments": [
+    "언더라이팅본부",
+    "상품개발본부",
+    "영업본부",
+    "IT본부",
+    "경영지원본부"
+  ],
+  "coverage": {
+    "portfolioDashboard": true,
+    "costAccounting": true,
+    "valuation": true,
+    "approvalAudit": true
+  }
+}
