@@ -16,7 +16,7 @@ class ApprovalWorkflowServiceTest {
     @Test
     void submitTransitionsDraftToReviewAndWritesAuditEvent() {
         ApprovalWorkflowResponse response =
-                service.transition("13", "PLANNER", "SUBMIT", "기획 담당자", "검토 요청");
+                service.transition("3", "PLANNER", "SUBMIT", "기획 담당자", "검토 요청");
 
         assertThat(response.status()).isEqualTo("REVIEW");
         assertThat(response.lastAction()).isEqualTo("SUBMIT");
@@ -32,10 +32,10 @@ class ApprovalWorkflowServiceTest {
 
     @Test
     void commentKeepsCurrentStatusAndStillWritesAuditEvent() {
-        service.transition("13", "PLANNER", "SUBMIT", "기획 담당자", "검토 요청");
+        service.transition("3", "PLANNER", "SUBMIT", "기획 담당자", "검토 요청");
 
         ApprovalWorkflowResponse response =
-                service.transition("13", "DIVISION_HEAD", "COMMENT", "본부장", "원가 기준 재검토");
+                service.transition("3", "DIVISION_HEAD", "COMMENT", "본부장", "원가 기준 재검토");
 
         assertThat(response.status()).isEqualTo("REVIEW");
         assertThat(response.lastAction()).isEqualTo("COMMENT");
@@ -51,12 +51,12 @@ class ApprovalWorkflowServiceTest {
 
     @Test
     void plannerCannotApproveProject() {
-        service.transition("13", "PLANNER", "SUBMIT", "기획 담당자", "검토 요청");
+        service.transition("3", "PLANNER", "SUBMIT", "기획 담당자", "검토 요청");
 
         assertThatThrownBy(
                         () ->
                                 service.transition(
-                                        "13", "PLANNER", "APPROVE", "기획 담당자", "승인 시도"))
+                                        "3", "PLANNER", "APPROVE", "기획 담당자", "승인 시도"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("cannot perform action");
     }
@@ -66,12 +66,33 @@ class ApprovalWorkflowServiceTest {
         assertThatThrownBy(
                         () ->
                                 service.transition(
-                                        "13",
+                                        "3",
                                         "FINANCE_REVIEWER",
                                         "APPROVE",
                                         "재무검토자",
                                         "검토 없이 승인"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Only review projects");
+    }
+
+    @Test
+    void loadWorkflowDoesNotMutateStateAcrossRepeatedReads() {
+        ApprovalWorkflowResponse first = service.loadWorkflow("3");
+        ApprovalWorkflowResponse second = service.loadWorkflow("3");
+
+        assertThat(second).isEqualTo(first);
+    }
+
+    @Test
+    void duplicateSubmitIsRejectedAfterTheFirstTransition() {
+        ApprovalWorkflowResponse first = service.transition("3", "PLANNER", "SUBMIT", "기획 담당자", "검토 요청");
+
+        assertThat(first.status()).isEqualTo("REVIEW");
+        assertThatThrownBy(
+                        () ->
+                                service.transition(
+                                        "3", "PLANNER", "SUBMIT", "기획 담당자", "검토 요청"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Only draft projects");
     }
 }

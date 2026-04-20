@@ -52,4 +52,12 @@ class CostAccountingServiceTest {
                 .extracting(CostAccountingSummaryResponse.FactorAnalysis::factor)
                 .contains("인력 원가", "프로젝트 직접비", "내부대체가액", "표준원가 배분", "원가/성과 요인");
     }
+
+    @Test
+    void loadSummaryIsDeterministicAcrossRepeatedCalls() {
+        CostAccountingSummaryResponse first = service.loadSummary();
+        CostAccountingSummaryResponse second = service.loadSummary();
+
+        assertThat(second).isEqualTo(first);
+    }
 }
