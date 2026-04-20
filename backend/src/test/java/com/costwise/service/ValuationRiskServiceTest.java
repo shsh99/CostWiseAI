@@ -11,7 +11,9 @@ import org.junit.jupiter.api.Test;
 class ValuationRiskServiceTest {
 
     private final DcfValuationService dcfValuationService = new DcfValuationService();
-    private final ValuationRiskService service = new ValuationRiskService(dcfValuationService);
+    private final PortfolioSummaryService portfolioSummaryService = new PortfolioSummaryService();
+    private final ValuationRiskService service =
+            new ValuationRiskService(dcfValuationService, portfolioSummaryService);
 
     @Test
     void valuesStableDividendStock() {
@@ -93,5 +95,6 @@ class ValuationRiskServiceTest {
         assertNotNull(result.riskMetrics());
         assertNotNull(result.creditRisk());
         assertTrue(result.projectValuation().npv().compareTo(BigDecimal.ZERO) > 0);
+        assertEquals(5, result.riskMetrics().scenarioValues().size());
     }
 }

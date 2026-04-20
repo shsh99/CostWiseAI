@@ -4,6 +4,8 @@ import com.costwise.api.dto.ApprovalWorkflowResponse;
 import com.costwise.service.ApprovalWorkflowService;
 import com.costwise.service.AuditLogService;
 import java.util.List;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -31,15 +33,23 @@ public class WorkflowController {
 
     @PostMapping("/projects/{projectId}/review")
     public ApprovalWorkflowResponse review(
-            @PathVariable String projectId, @RequestBody ReviewCommand command) {
+            @PathVariable String projectId,
+            Authentication authentication,
+            @RequestBody ReviewCommand command) {
+        String role = authentication == null ? null : authentication.getAuthorities().stream()
+                .findFirst()
+                .map(authority -> authority.getAuthority().replaceFirst("^ROLE_", ""))
+                .orElse(null);
+        String actor = authentication == null ? null : authentication.getName();
         return approvalWorkflowService.transition(
-                projectId, command.role(), command.action(), command.actor(), command.comment());
+                projectId, role, command.action(), actor, command.comment());
     }
 
     @GetMapping("/audit-logs")
+    @PreAuthorize("hasRole('EXECUTIVE')")
     public List<ApprovalWorkflowResponse.AuditEvent> auditLogs() {
         return auditLogService.recentEvents();
     }
 
-    public record ReviewCommand(String actor, String role, String action, String comment) {}
+    public record ReviewCommand(String action, String comment) {}
 }

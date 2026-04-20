@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
+  buildDecisionSignals,
   buildProjectDetail,
   defaultPortfolioSummary,
   detailTabs,
@@ -75,6 +76,7 @@ export function App() {
     : null;
   const selectedInsight = roleInsights[selectedRole];
   const latestAudit = portfolio.auditEvents.at(-1);
+  const decisionSignals = buildDecisionSignals(portfolio);
   const maxHeadquarterInvestment = useMemo(
     () =>
       Math.max(
@@ -82,6 +84,13 @@ export function App() {
       ),
     [portfolio.headquarters]
   );
+  const selectedRank =
+    portfolio.projects.find((project) => project.code === selectedProjectCode)?.rank ?? '-';
+  const selectedTabLabel =
+    detailTabs.find((tab) => tab.key === activeTab)?.label ?? detailTabs[0].label;
+  const maxScenarioNpv = selectedDetail
+    ? Math.max(...selectedDetail.scenarioReturns.map((item) => Math.abs(item.npvKrw)))
+    : 1;
 
   return (
     <div className="app-shell">
@@ -139,6 +148,24 @@ export function App() {
             </button>
           ))}
         </section>
+
+        <section className="sidebar__summary" aria-label="운영 요약">
+          <div className="sidebar__summary-card">
+            <span>승인 완료</span>
+            <strong>{portfolio.overview.approvedCount}건</strong>
+            <small>현재 포트폴리오 승인된 프로젝트</small>
+          </div>
+          <div className="sidebar__summary-card">
+            <span>조건부 진행</span>
+            <strong>{portfolio.overview.conditionalCount}건</strong>
+            <small>추가 검토가 필요한 안건</small>
+          </div>
+          <div className="sidebar__summary-card">
+            <span>예상 수익</span>
+            <strong>{formatKrwCompact(portfolio.overview.totalExpectedRevenueKrw)}</strong>
+            <small>전사 포트폴리오 기준 기대 수익</small>
+          </div>
+        </section>
       </aside>
 
       <div className="workspace">
@@ -158,24 +185,46 @@ export function App() {
 
         <main id="main-content" className="content">
           <section className="hero-strip" aria-label="포트폴리오 현재 상태">
-            <div>
+            <div className="hero-strip__content">
               <a className="hero-strip__back" href="#portfolio-overview">
                 포트폴리오 개요로 돌아가기
               </a>
+              <p className="hero-strip__eyebrow">Selected control view</p>
               <h2>{selectedProject?.name ?? portfolio.portfolioName}</h2>
               <p>
                 {selectedProject
                   ? `${selectedProject.headquarter} · ${selectedDetail?.manager} · ${selectedDetail?.lifecycle} · 착수 ${selectedDetail?.startDate}`
                   : '5개 본부와 20개 프로젝트를 함께 모니터링하는 전사 포트폴리오 화면'}
               </p>
+              <div className="hero-strip__chips">
+                {decisionSignals.map((signal) => (
+                  <div key={signal.label} className="hero-chip">
+                    <span>{signal.label}</span>
+                    <strong>{signal.value}</strong>
+                  </div>
+                ))}
+              </div>
             </div>
             <div className="hero-strip__status">
-              <span className={`status-pill status-pill--${selectedProject ? riskToneMap[selectedProject.risk] : 'active'}`}>
-                {selectedProject ? selectedProject.status : portfolio.status}
-              </span>
-              <span className="risk-badge">
-                {selectedProject ? `${selectedProject.risk.toUpperCase?.() ?? selectedProject.risk} Risk` : `${portfolio.risk} 리스크`}
-              </span>
+              <div className="hero-strip__status-stack">
+                <span
+                  className={`status-pill status-pill--${
+                    selectedProject ? riskToneMap[selectedProject.risk] : 'active'
+                  }`}
+                >
+                  {selectedProject ? selectedProject.status : portfolio.status}
+                </span>
+                <span className="risk-badge">
+                  {selectedProject
+                    ? `${selectedProject.risk.toUpperCase?.() ?? selectedProject.risk} Risk`
+                    : `${portfolio.risk} 리스크`}
+                </span>
+              </div>
+              <div className="hero-strip__note">
+                <span>현재 포커스</span>
+                <strong>{selectedTabLabel}</strong>
+                <small>{selectedInsight.decisionFocus}</small>
+              </div>
             </div>
           </section>
 
@@ -370,6 +419,24 @@ export function App() {
               >
                 {selectedProject && selectedDetail ? (
                   <div className="detail-shell">
+                    <section className="project-spotlight" aria-label="선택 프로젝트 요약">
+                      <div className="project-spotlight__header">
+                        <div>
+                          <span className="project-spotlight__code">{selectedProject.code}</span>
+                          <strong>{selectedProject.name}</strong>
+                        </div>
+                        <span className={`status-pill status-pill--${riskToneMap[selectedProject.risk]}`}>
+                          {selectedProject.risk}
+                        </span>
+                      </div>
+                      <div className="project-spotlight__band">
+                        <InfoTile label="우선순위" value={`${selectedRank}위`} />
+                        <InfoTile label="자산군" value={selectedDetail.assetCategory} />
+                        <InfoTile label="책임 PM" value={selectedDetail.manager} />
+                        <InfoTile label="현재 단계" value={selectedDetail.workflow.currentStage} />
+                      </div>
+                    </section>
+
                     <div className="detail-tabs" role="tablist" aria-label="상세 탭">
                       {detailTabs.map((tab) => (
                         <button
@@ -442,6 +509,29 @@ export function App() {
                           <InfoTile label="신용등급" value={selectedDetail.valuation.creditGrade} />
                           <InfoTile label="Duration" value={`${selectedDetail.valuation.duration}년`} />
                           <InfoTile label="Convexity" value={selectedDetail.valuation.convexity.toFixed(2)} />
+                        </div>
+                        <div className="distribution-card">
+                          <div className="distribution-card__header">
+                            <strong>NPV 시나리오 분포</strong>
+                            <span>낙관/기준/비관 기준 확률 가중</span>
+                          </div>
+                          <div className="distribution-chart">
+                            {selectedDetail.scenarioReturns.map((scenario) => (
+                              <div key={scenario.label} className="distribution-chart__item">
+                                <div
+                                  className="distribution-chart__bar"
+                                  style={{
+                                    height: `${Math.max(
+                                      18,
+                                      Math.round((Math.abs(scenario.npvKrw) / maxScenarioNpv) * 180)
+                                    )}px`
+                                  }}
+                                />
+                                <strong>{scenario.label}</strong>
+                                <span>{formatKrwCompact(scenario.npvKrw)}</span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                         <div className="risk-method">
                           <strong>신용평가 리스크 점수</strong>

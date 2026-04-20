@@ -63,3 +63,27 @@ Chose **B**.
 - The reference visual direction is a business dashboard, not a route-heavy product UI.
 - Inline drill-down keeps the portfolio and project contexts visible at the same time.
 - It reduces navigation complexity while still covering cost accounting, valuation, risk, and workflow in one coherent surface.
+
+## Polish Comparison
+
+### A. Balanced two-column dashboard
+
+- Keep the portfolio and detail areas visually even.
+- Make both columns feel like peer panels.
+- Easier to implement, but weaker as an executive control-room layout.
+
+### B. Asymmetric control-room with a stronger insight rail
+
+- Keep the central portfolio area dominant.
+- Turn the right column into a denser decision rail with project spotlight, tabs, and risk/workflow context.
+- Match the reference style more closely and make the selected project feel more intentional.
+
+## Polish Decision
+
+Chose **B**.
+
+## Polish Why
+
+- The reference has a clear “portfolio on the left, decision rail on the right” hierarchy.
+- The first screen still proves 5 headquarters and 20 projects, while the chosen project gets a stronger focus.
+- This improves visual quality without adding routes, drawers, or a second screen.

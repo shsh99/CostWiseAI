@@ -22,6 +22,12 @@ class CostAccountingServiceTest {
         assertThat(summary.headquarters()).hasSize(5);
         assertThat(summary.projects()).hasSize(20);
         assertThat(summary.factorAnalysis()).hasSizeGreaterThanOrEqualTo(4);
+        assertThat(summary.headquarters()).allSatisfy(headquarter -> {
+            assertThat(headquarter.personnelCostKrw()).isPositive();
+            assertThat(headquarter.projectDirectCostKrw()).isPositive();
+            assertThat(headquarter.enterpriseCostKrw()).isPositive();
+            assertThat(headquarter.standardAllocatedCostKrw()).isPositive();
+        });
     }
 
     @Test
@@ -35,6 +41,9 @@ class CostAccountingServiceTest {
         assertThat(project.standardCostKrw()).isPositive();
         assertThat(project.actualCostKrw()).isPositive();
         assertThat(project.costVarianceKrw()).isNotZero();
-        assertThat(project.internalTransferNetKrw()).isNotNull();
+        assertThat(project.internalTransferNetKrw()).isPositive();
+        assertThat(summary.factorAnalysis())
+                .extracting(CostAccountingSummaryResponse.FactorAnalysis::factor)
+                .contains("인력 원가", "프로젝트 직접비", "내부대체가액", "표준원가 배분", "원가/성과 요인");
     }
 }
