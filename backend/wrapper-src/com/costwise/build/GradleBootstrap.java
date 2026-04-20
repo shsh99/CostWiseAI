@@ -127,7 +127,11 @@ public final class GradleBootstrap {
 
     private static Path getInstallRoot(String distributionUrl) {
         String normalized = distributionUrl.substring(distributionUrl.lastIndexOf('/') + 1).replace(".zip", "");
-        return Path.of(System.getProperty("user.home"), ".gradle", "costwise", normalized);
+        String gradleUserHome = System.getenv("GRADLE_USER_HOME");
+        Path baseHome = gradleUserHome == null || gradleUserHome.isBlank()
+                ? Path.of(System.getProperty("user.home"), ".gradle")
+                : Path.of(gradleUserHome);
+        return baseHome.resolve("costwise").resolve(normalized);
     }
 
     private static boolean isWindows() {
