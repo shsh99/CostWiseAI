@@ -36,6 +36,7 @@ public record PortfolioSummaryResponse(
             String priorityProject) {}
 
     public record ProjectSummary(
+            String projectId,
             int rank,
             String code,
             String name,

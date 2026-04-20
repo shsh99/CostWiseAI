@@ -53,6 +53,24 @@ class ValuationRiskServiceTest {
     }
 
     @Test
+    void valuesEuropeanPutOption() {
+        ValuationRiskService.DerivativeValuationResult result = service.valueDerivative(
+                new ValuationRiskService.DerivativeInput(
+                        "K200-PUT",
+                        "PUT",
+                        new BigDecimal("95"),
+                        new BigDecimal("100"),
+                        1.25,
+                        0.035,
+                        0.24));
+
+        assertEquals("PUT", result.type());
+        assertEquals(new BigDecimal("10.54"), result.fairValue());
+        assertEquals(new BigDecimal("5.00"), result.intrinsicValue());
+        assertEquals(new BigDecimal("5.54"), result.timeValue());
+    }
+
+    @Test
     void calculatesScenarioRiskMetricsFromProjectNpvDistribution() {
         ValuationRiskService.RiskMetricsResult result = service.calculateRiskMetrics(
                 List.of(

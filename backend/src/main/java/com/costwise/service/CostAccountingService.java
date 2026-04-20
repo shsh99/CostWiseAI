@@ -44,7 +44,7 @@ public class CostAccountingService {
             long enterpriseAllocatedCost = allocatePool(enterpriseSupportPool, driverVolume, totalDriverVolume);
             long standardAllocatedCost = allocatePool(standardCostPool, driverVolume, totalDriverVolume);
             long standardCost = personnelCost + projectDirectCost + standardAllocatedCost;
-            long actualCost = personnelCost + projectDirectCost + enterpriseAllocatedCost;
+            long actualCost = personnelCost + projectDirectCost + enterpriseAllocatedCost + round(project.investmentKrw() * plan.transferShare());
             long transferNet = round(project.investmentKrw() * plan.transferShare());
             long variance = actualCost - standardCost;
 
@@ -56,6 +56,7 @@ public class CostAccountingService {
                             project.headquarter(),
                             personnelCost,
                             projectDirectCost,
+                            standardAllocatedCost,
                             enterpriseAllocatedCost,
                             standardCost,
                             actualCost,
@@ -74,7 +75,7 @@ public class CostAccountingService {
 
         long enterpriseTotalCost = projectCostViews.stream().mapToLong(ProjectCostView::actualCostKrw).sum();
         long internalTransferTotal = projectCostViews.stream().mapToLong(ProjectCostView::internalTransferNetKrw).sum();
-        long standardAllocatedTotal = projectCostViews.stream().mapToLong(ProjectCostView::standardCostKrw).sum();
+        long standardAllocatedTotal = projectCostViews.stream().mapToLong(ProjectCostView::standardAllocatedCostKrw).sum();
 
         List<CostAccountingSummaryResponse.FactorAnalysis> factorAnalysis = List.of(
                 new CostAccountingSummaryResponse.FactorAnalysis(
@@ -91,7 +92,7 @@ public class CostAccountingService {
                         "공통 플랫폼과 지원 기능의 내부대체가액을 프로젝트에 반영합니다."),
                 new CostAccountingSummaryResponse.FactorAnalysis(
                         "표준원가 배분",
-                        projectCostViews.stream().mapToLong(ProjectCostView::enterpriseAllocatedCostKrw).sum(),
+                        projectCostViews.stream().mapToLong(ProjectCostView::standardAllocatedCostKrw).sum(),
                         "전사 공통 원가 풀을 표준 드라이버로 배분합니다."),
                 new CostAccountingSummaryResponse.FactorAnalysis(
                         "원가/성과 요인",
@@ -120,7 +121,7 @@ public class CostAccountingService {
         long projectDirectCost = projects.stream().mapToLong(ProjectCostView::projectDirectCostKrw).sum();
         long enterpriseCost = projects.stream().mapToLong(ProjectCostView::actualCostKrw).sum();
         long internalTransferTotal = projects.stream().mapToLong(ProjectCostView::internalTransferNetKrw).sum();
-        long standardAllocatedCost = projects.stream().mapToLong(ProjectCostView::standardCostKrw).sum();
+        long standardAllocatedCost = projects.stream().mapToLong(ProjectCostView::standardAllocatedCostKrw).sum();
         String dominantFactor =
                 projects.isEmpty()
                         ? "인력 원가"
@@ -145,6 +146,7 @@ public class CostAccountingService {
                 project.headquarter(),
                 project.personnelCostKrw(),
                 project.projectDirectCostKrw(),
+                project.standardAllocatedCostKrw(),
                 project.standardCostKrw(),
                 project.actualCostKrw(),
                 project.costVarianceKrw(),
@@ -190,6 +192,7 @@ public class CostAccountingService {
             String headquarter,
             long personnelCostKrw,
             long projectDirectCostKrw,
+            long standardAllocatedCostKrw,
             long enterpriseAllocatedCostKrw,
             long standardCostKrw,
             long actualCostKrw,

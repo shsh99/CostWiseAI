@@ -323,6 +323,12 @@ textarea {
   font-weight: 700;
 }
 
+.hero-strip__back:focus-visible {
+  outline: 3px solid rgba(79, 103, 246, 0.22);
+  outline-offset: 3px;
+  border-radius: 999px;
+}
+
 .hero-strip h2 {
   margin: 0;
   font-size: 2.5rem;
@@ -709,6 +715,12 @@ textarea {
 
 .data-table tbody tr:hover {
   background: #f8faff;
+}
+
+.data-table tbody tr:focus-visible {
+  outline: 3px solid rgba(79, 103, 246, 0.22);
+  outline-offset: -3px;
+  background: #f2f5ff;
 }
 
 .data-table__row--selected {

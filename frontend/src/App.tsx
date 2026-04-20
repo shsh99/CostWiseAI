@@ -189,11 +189,11 @@ export function App() {
               <a className="hero-strip__back" href="#portfolio-overview">
                 포트폴리오 개요로 돌아가기
               </a>
-              <p className="hero-strip__eyebrow">Selected control view</p>
-              <h2>{selectedProject?.name ?? portfolio.portfolioName}</h2>
+              <p className="hero-strip__eyebrow">Portfolio Control Room</p>
+              <h2>5개 본부 · 20개 프로젝트 포트폴리오</h2>
               <p>
                 {selectedProject
-                  ? `${selectedProject.headquarter} · ${selectedDetail?.manager} · ${selectedDetail?.lifecycle} · 착수 ${selectedDetail?.startDate}`
+                  ? `${selectedProject.name} · ${selectedProject.headquarter} · ${selectedDetail?.manager} · 착수 ${selectedDetail?.startDate}`
                   : '5개 본부와 20개 프로젝트를 함께 모니터링하는 전사 포트폴리오 화면'}
               </p>
               <div className="hero-strip__chips">
@@ -263,7 +263,7 @@ export function App() {
               label="VaR(95%)"
               value={formatKrwCompact(selectedDetail?.valuation.var95Krw ?? 0)}
               detail="선택 프로젝트 기준 리스크 한계"
-              tone="success"
+              tone="warning"
             />
           </section>
 
@@ -288,6 +288,7 @@ export function App() {
           <section className="main-grid">
             <div className="main-grid__primary">
               <Panel
+                id="portfolio-overview"
                 title="포트폴리오 개요"
                 subtitle="5개 본부와 20개 프로젝트를 포트폴리오 우선순위 관점에서 정리합니다."
               >
@@ -383,6 +384,16 @@ export function App() {
                             key={project.code}
                             className={project.code === selectedProjectCode ? 'data-table__row--selected' : ''}
                             onClick={() => setSelectedProjectCode(project.code)}
+                            role="button"
+                            tabIndex={0}
+                            aria-pressed={project.code === selectedProjectCode}
+                            aria-label={`${project.name} 상세 보기`}
+                            onKeyDown={(event) => {
+                              if (event.key === 'Enter' || event.key === ' ') {
+                                event.preventDefault();
+                                setSelectedProjectCode(project.code);
+                              }
+                            }}
                           >
                             <td>{project.rank}</td>
                             <td>

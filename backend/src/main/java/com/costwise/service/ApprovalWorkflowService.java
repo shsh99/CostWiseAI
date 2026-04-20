@@ -24,20 +24,22 @@ public class ApprovalWorkflowService {
     }
 
     public ApprovalWorkflowResponse loadWorkflow(String projectId) {
-        WorkflowState state = getState(projectId);
-        PortfolioSummaryResponse.ProjectSummary project = projectFor(projectId);
+        String canonicalProjectId = canonicalProjectId(projectId);
+        WorkflowState state = getState(canonicalProjectId);
+        PortfolioSummaryResponse.ProjectSummary project = projectFor(canonicalProjectId);
         return new ApprovalWorkflowResponse(
-                projectId,
+                canonicalProjectId,
                 project.name(),
                 state.status,
                 state.lastAction,
                 state.updatedAt,
-                auditLogService.eventsForProject(projectId));
+                auditLogService.eventsForProject(canonicalProjectId));
     }
 
     public ApprovalWorkflowResponse transition(
             String projectId, String role, String action, String actor, String comment) {
-        WorkflowState state = getState(projectId);
+        String canonicalProjectId = canonicalProjectId(projectId);
+        WorkflowState state = getState(canonicalProjectId);
         WorkflowAction workflowAction = WorkflowAction.valueOf(action.toUpperCase(Locale.ROOT));
         WorkflowRole workflowRole = WorkflowRole.valueOf(role.toUpperCase(Locale.ROOT));
 
@@ -46,7 +48,7 @@ public class ApprovalWorkflowService {
         }
 
         if (state.status.equals("APPROVED") || state.status.equals("REJECTED")) {
-            throw new IllegalArgumentException("Workflow already completed for project " + projectId);
+            throw new IllegalArgumentException("Workflow already completed for project " + canonicalProjectId);
         }
 
         if (workflowAction == WorkflowAction.SUBMIT && !"DRAFT".equals(state.status)) {
@@ -55,7 +57,7 @@ public class ApprovalWorkflowService {
 
         if ((workflowAction == WorkflowAction.APPROVE || workflowAction == WorkflowAction.REJECT)
                 && !"REVIEW".equals(state.status)) {
-            throw new IllegalArgumentException("Only review projects can be approved or rejected");
+                throw new IllegalArgumentException("Only review projects can be approved or rejected");
         }
 
         String nextStatus = workflowAction == WorkflowAction.COMMENT ? state.status : workflowAction.nextStatus;
@@ -64,18 +66,18 @@ public class ApprovalWorkflowService {
         state.updatedAt = LocalDateTime.now();
 
         auditLogService.record(
-                projectId,
+                canonicalProjectId,
                 actor,
                 workflowRole.name(),
                 workflowAction.name(),
                 comment == null || comment.isBlank() ? workflowAction.auditLabel : comment);
 
-        return loadWorkflow(projectId);
+        return loadWorkflow(canonicalProjectId);
     }
 
     private void initializeStates() {
         for (PortfolioSummaryResponse.ProjectSummary project : portfolioSummaryService.loadPortfolioSummary().projects()) {
-            states.putIfAbsent(project.code(), new WorkflowState(project.status().equals("승인") ? "APPROVED" : "DRAFT"));
+            states.putIfAbsent(project.projectId(), new WorkflowState(project.status().equals("승인") ? "APPROVED" : "DRAFT"));
         }
     }
 
@@ -85,9 +87,13 @@ public class ApprovalWorkflowService {
 
     private PortfolioSummaryResponse.ProjectSummary projectFor(String projectId) {
         return portfolioSummaryService.loadPortfolioSummary().projects().stream()
-                .filter(project -> project.code().equals(projectId) || String.valueOf(project.rank()).equals(projectId))
+                .filter(project -> project.projectId().equals(projectId) || project.code().equals(projectId))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Unknown project id: " + projectId));
+    }
+
+    private String canonicalProjectId(String projectId) {
+        return projectFor(projectId).projectId();
     }
 
     private static final class WorkflowState {

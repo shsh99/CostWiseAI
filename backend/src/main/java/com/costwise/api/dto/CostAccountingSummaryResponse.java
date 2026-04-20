@@ -33,6 +33,7 @@ public record CostAccountingSummaryResponse(
             String headquarter,
             long personnelCostKrw,
             long projectDirectCostKrw,
+            long standardAllocatedCostKrw,
             long standardCostKrw,
             long actualCostKrw,
             long costVarianceKrw,
