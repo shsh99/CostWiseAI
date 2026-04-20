@@ -22,7 +22,17 @@ public class SecurityConfig {
         http.requestCache(AbstractHttpConfigurer::disable);
         http.authorizeHttpRequests(
                 auth -> auth
-                        .requestMatchers("/api/health", "/api/dashboard", "/api/compute", "/actuator/health", "/actuator/info")
+                        .requestMatchers(
+                                "/api/health",
+                                "/api/dashboard",
+                                "/api/compute",
+                                "/actuator/health",
+                                "/actuator/info",
+                                "/v3/api-docs",
+                                "/v3/api-docs/**",
+                                "/v3/api-docs.yaml",
+                                "/swagger-ui.html",
+                                "/swagger-ui/**")
                         .permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**")
                         .permitAll()
