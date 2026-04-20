@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.costwise.api.dto.ApprovalWorkflowResponse;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.access.AccessDeniedException;
 
 class ApprovalWorkflowServiceTest {
 
@@ -35,15 +36,15 @@ class ApprovalWorkflowServiceTest {
         service.transition("3", "PLANNER", "SUBMIT", "기획 담당자", "검토 요청");
 
         ApprovalWorkflowResponse response =
-                service.transition("3", "DIVISION_HEAD", "COMMENT", "본부장", "원가 기준 재검토");
+                service.transition("3", "FINANCE_REVIEWER", "COMMENT", "재무검토자", "원가 기준 재검토");
 
         assertThat(response.status()).isEqualTo("REVIEW");
         assertThat(response.lastAction()).isEqualTo("COMMENT");
         assertThat(response.auditEvents())
                 .anySatisfy(
                         event -> {
-                            assertThat(event.actor()).isEqualTo("본부장");
-                            assertThat(event.role()).isEqualTo("DIVISION_HEAD");
+                            assertThat(event.actor()).isEqualTo("재무검토자");
+                            assertThat(event.role()).isEqualTo("FINANCE_REVIEWER");
                             assertThat(event.action()).isEqualTo("COMMENT");
                             assertThat(event.detail()).isEqualTo("원가 기준 재검토");
                         });
@@ -57,7 +58,7 @@ class ApprovalWorkflowServiceTest {
                         () ->
                                 service.transition(
                                         "3", "PLANNER", "APPROVE", "기획 담당자", "승인 시도"))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(AccessDeniedException.class)
                 .hasMessageContaining("cannot perform action");
     }
 
