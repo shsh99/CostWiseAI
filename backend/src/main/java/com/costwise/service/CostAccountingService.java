@@ -1,0 +1,172 @@
+package com.costwise.service;
+
+import com.costwise.api.dto.CostAccountingSummaryResponse;
+import com.costwise.api.dto.PortfolioSummaryResponse;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import org.springframework.stereotype.Service;
+
+@Service
+public class CostAccountingService {
+
+    private static final List<HeadquarterPlan> HEADQUARTERS = List.of(
+            new HeadquarterPlan("UND", "언더라이팅본부", 1.12, 0.64, 0.22, 0.13),
+            new HeadquarterPlan("PROD", "상품개발본부", 1.08, 0.62, 0.21, 0.12),
+            new HeadquarterPlan("SALES", "영업본부", 1.05, 0.60, 0.20, 0.11),
+            new HeadquarterPlan("IT", "IT본부", 1.18, 0.68, 0.24, 0.14),
+            new HeadquarterPlan("CORP", "경영지원본부", 1.02, 0.58, 0.19, 0.10));
+
+    private final PortfolioSummaryService portfolioSummaryService;
+
+    public CostAccountingService(PortfolioSummaryService portfolioSummaryService) {
+        this.portfolioSummaryService = portfolioSummaryService;
+    }
+
+    public CostAccountingSummaryResponse loadSummary() {
+        PortfolioSummaryResponse portfolio = portfolioSummaryService.loadPortfolioSummary();
+        List<ProjectCostView> projectCostViews = new ArrayList<>();
+
+        for (PortfolioSummaryResponse.ProjectSummary project : portfolio.projects()) {
+            double headquarterMultiplier = multiplierFor(project.headquarter());
+            long personnelCost = round(project.investmentKrw() * 0.22 * headquarterMultiplier);
+            long projectDirectCost = round(project.investmentKrw() * 0.31);
+            long standardCost = round(project.investmentKrw() * 0.60);
+            long actualCost = personnelCost + projectDirectCost + round(project.investmentKrw() * 0.12);
+            long transferNet = round(project.investmentKrw() * 0.12);
+            long variance = actualCost - standardCost;
+
+            projectCostViews.add(
+                    new ProjectCostView(
+                            project.rank(),
+                            project.code(),
+                            project.name(),
+                            project.headquarter(),
+                            personnelCost,
+                            projectDirectCost,
+                            standardCost,
+                            actualCost,
+                            variance,
+                            transferNet));
+        }
+
+        Map<String, List<ProjectCostView>> byHeadquarter = new LinkedHashMap<>();
+        for (ProjectCostView project : projectCostViews) {
+            byHeadquarter.computeIfAbsent(project.headquarter(), key -> new ArrayList<>()).add(project);
+        }
+
+        List<CostAccountingSummaryResponse.HeadquarterCostSummary> headquarters = HEADQUARTERS.stream()
+                .map(plan -> summarizeHeadquarter(plan, byHeadquarter.getOrDefault(plan.name(), List.of())))
+                .toList();
+
+        long enterpriseTotalCost = projectCostViews.stream().mapToLong(ProjectCostView::actualCostKrw).sum();
+        long internalTransferTotal = projectCostViews.stream().mapToLong(ProjectCostView::internalTransferNetKrw).sum();
+        long standardAllocatedTotal = projectCostViews.stream().mapToLong(ProjectCostView::standardCostKrw).sum();
+
+        List<CostAccountingSummaryResponse.FactorAnalysis> factorAnalysis = List.of(
+                new CostAccountingSummaryResponse.FactorAnalysis(
+                        "인력 원가",
+                        projectCostViews.stream().mapToLong(ProjectCostView::personnelCostKrw).sum(),
+                        "5개 본부의 인력 배치를 전사 프로젝트에 배부합니다."),
+                new CostAccountingSummaryResponse.FactorAnalysis(
+                        "프로젝트 직접비",
+                        projectCostViews.stream().mapToLong(ProjectCostView::projectDirectCostKrw).sum(),
+                        "프로젝트별 직접 투입 비용을 본부와 전사로 연결합니다."),
+                new CostAccountingSummaryResponse.FactorAnalysis(
+                        "내부대체가액",
+                        internalTransferTotal,
+                        "본부 간 내부거래를 표준 배부 기준으로 조정합니다."),
+                new CostAccountingSummaryResponse.FactorAnalysis(
+                        "표준원가 대비 차이",
+                        projectCostViews.stream().mapToLong(ProjectCostView::costVarianceKrw).sum(),
+                        "표준원가와 실제원가의 차이를 성과 요인으로 읽습니다."));
+
+        return new CostAccountingSummaryResponse(
+                portfolio.portfolioName(),
+                new CostAccountingSummaryResponse.Overview(
+                        portfolio.overview().headquarterCount(),
+                        portfolio.overview().projectCount(),
+                        enterpriseTotalCost,
+                        internalTransferTotal,
+                        standardAllocatedTotal),
+                headquarters,
+                projectCostViews.stream()
+                        .sorted(Comparator.comparingInt(ProjectCostView::rank))
+                        .map(this::toResponse)
+                        .toList(),
+                factorAnalysis);
+    }
+
+    private CostAccountingSummaryResponse.HeadquarterCostSummary summarizeHeadquarter(
+            HeadquarterPlan plan, List<ProjectCostView> projects) {
+        long personnelCost = projects.stream().mapToLong(ProjectCostView::personnelCostKrw).sum();
+        long projectDirectCost = projects.stream().mapToLong(ProjectCostView::projectDirectCostKrw).sum();
+        long enterpriseCost = projects.stream().mapToLong(ProjectCostView::actualCostKrw).sum();
+        long internalTransferTotal = projects.stream().mapToLong(ProjectCostView::internalTransferNetKrw).sum();
+        long standardAllocatedCost = projects.stream().mapToLong(ProjectCostView::standardCostKrw).sum();
+        String dominantFactor =
+                projects.isEmpty()
+                        ? "인력 원가"
+                        : (personnelCost >= projectDirectCost ? "인력 원가" : "프로젝트 직접비");
+
+        return new CostAccountingSummaryResponse.HeadquarterCostSummary(
+                plan.code(),
+                plan.name(),
+                personnelCost,
+                projectDirectCost,
+                enterpriseCost,
+                internalTransferTotal,
+                standardAllocatedCost,
+                dominantFactor);
+    }
+
+    private CostAccountingSummaryResponse.ProjectCostSummary toResponse(ProjectCostView project) {
+        return new CostAccountingSummaryResponse.ProjectCostSummary(
+                project.rank(),
+                project.projectId(),
+                project.projectName(),
+                project.headquarter(),
+                project.personnelCostKrw(),
+                project.projectDirectCostKrw(),
+                project.standardCostKrw(),
+                project.actualCostKrw(),
+                project.costVarianceKrw(),
+                project.internalTransferNetKrw());
+    }
+
+    private double multiplierFor(String headquarter) {
+        return HEADQUARTERS.stream()
+                .filter(plan -> plan.name().equals(headquarter))
+                .map(HeadquarterPlan::multiplier)
+                .findFirst()
+                .orElse(1.0);
+    }
+
+    private static long round(double value) {
+        return BigDecimal.valueOf(value).setScale(0, RoundingMode.HALF_UP).longValueExact();
+    }
+
+    private record HeadquarterPlan(
+            String code,
+            String name,
+            double multiplier,
+            double personnelShare,
+            double directShare,
+            double transferShare) {}
+
+    private record ProjectCostView(
+            int rank,
+            String projectId,
+            String projectName,
+            String headquarter,
+            long personnelCostKrw,
+            long projectDirectCostKrw,
+            long standardCostKrw,
+            long actualCostKrw,
+            long costVarianceKrw,
+            long internalTransferNetKrw) {}
+}

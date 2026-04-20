@@ -25,6 +25,7 @@ This document defines how Codex and other AI helpers should work in this reposit
 - Do not ask a worker to solve multiple unrelated problems.
 - After implementation, run a spec review and a quality review before declaring the slice done.
 - If a review finds a blocking issue, fix it before starting the next slice.
+- For frontend work, load the `frontend-design` skill first so the implementation has a deliberate visual direction, strong hierarchy, and production-grade polish.
 
 ## Prompt Template for Workers
 
