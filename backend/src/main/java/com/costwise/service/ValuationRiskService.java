@@ -13,28 +13,6 @@ import org.springframework.stereotype.Service;
 @Service
 public class ValuationRiskService {
 
-    private static final List<ProjectIdentity> PROJECT_IDENTITIES = List.of(
-            new ProjectIdentity("1", "암보험 신상품 출시", "언더라이팅본부"),
-            new ProjectIdentity("2", "인수심사 자동화", "언더라이팅본부"),
-            new ProjectIdentity("3", "위험요율 재설계", "언더라이팅본부"),
-            new ProjectIdentity("4", "사전심사 대시보드", "언더라이팅본부"),
-            new ProjectIdentity("5", "디지털 건강보험", "상품개발본부"),
-            new ProjectIdentity("6", "가족보험 패키지", "상품개발본부"),
-            new ProjectIdentity("7", "특약 정비", "상품개발본부"),
-            new ProjectIdentity("8", "상품약관 자동화", "상품개발본부"),
-            new ProjectIdentity("9", "GA 영업지원 포털", "영업본부"),
-            new ProjectIdentity("10", "설계사 리드분배", "영업본부"),
-            new ProjectIdentity("11", "모바일 견적 고도화", "영업본부"),
-            new ProjectIdentity("12", "채널 수익성 분석", "영업본부"),
-            new ProjectIdentity("13", "디지털 플랫폼 구축", "IT본부"),
-            new ProjectIdentity("14", "마이데이터 연계", "IT본부"),
-            new ProjectIdentity("15", "데이터허브 확장", "IT본부"),
-            new ProjectIdentity("16", "콜센터 고도화", "IT본부"),
-            new ProjectIdentity("17", "원가배분 체계개편", "경영지원본부"),
-            new ProjectIdentity("18", "감사로그 표준화", "경영지원본부"),
-            new ProjectIdentity("19", "성과관리 대시보드", "경영지원본부"),
-            new ProjectIdentity("20", "권한통제 재설계", "경영지원본부"));
-
     private final DcfValuationService dcfValuationService;
     private final PortfolioSummaryService portfolioSummaryService;
 
@@ -103,6 +81,7 @@ public class ValuationRiskService {
     }
 
     public DerivativeValuationResult valueDerivative(DerivativeInput input) {
+        String normalizedType = input.type().toUpperCase(Locale.ROOT);
         double s = input.underlyingPrice().doubleValue();
         double k = input.strikePrice().doubleValue();
         double t = input.timeToExpiryYears();
@@ -112,13 +91,17 @@ public class ValuationRiskService {
         double sqrtT = Math.sqrt(t);
         double d1 = (Math.log(s / k) + (r + (sigma * sigma) / 2.0) * t) / (sigma * sqrtT);
         double d2 = d1 - sigma * sqrtT;
-        double fairValue = s * normalCdf(d1) - k * Math.exp(-r * t) * normalCdf(d2);
-        double intrinsicValue = Math.max(0.0, s - k);
+        boolean put = "PUT".equals(normalizedType);
+        double fairValue =
+                put
+                        ? k * Math.exp(-r * t) * normalCdf(-d2) - s * normalCdf(-d1)
+                        : s * normalCdf(d1) - k * Math.exp(-r * t) * normalCdf(d2);
+        double intrinsicValue = put ? Math.max(0.0, k - s) : Math.max(0.0, s - k);
         double timeValue = fairValue - intrinsicValue;
 
         return new DerivativeValuationResult(
                 input.contractCode(),
-                input.type().toUpperCase(Locale.ROOT),
+                normalizedType,
                 BigDecimal.valueOf(fairValue).setScale(2, RoundingMode.HALF_UP),
                 BigDecimal.valueOf(intrinsicValue).setScale(2, RoundingMode.HALF_UP),
                 BigDecimal.valueOf(timeValue).setScale(2, RoundingMode.HALF_UP));
@@ -239,21 +222,16 @@ public class ValuationRiskService {
     }
 
     private ProjectProfile projectProfile(String projectId) {
-        ProjectIdentity identity =
-                PROJECT_IDENTITIES.stream()
-                        .filter(candidate -> candidate.projectId().equals(projectId))
-                        .findFirst()
-                        .orElseThrow(() -> new IllegalArgumentException("Unknown project id: " + projectId));
         PortfolioSummaryResponse.ProjectSummary project =
                 portfolioSummaryService.loadPortfolioSummary().projects().stream()
-                        .filter(candidate -> candidate.name().equals(identity.projectName()))
+                        .filter(candidate -> candidate.projectId().equals(projectId) || candidate.code().equals(projectId))
                         .findFirst()
                         .orElseThrow(() -> new IllegalArgumentException("Unknown project id: " + projectId));
 
         return new ProjectProfile(
-                projectId,
+                project.projectId(),
                 project.name(),
-                identity.headquarter(),
+                project.headquarter(),
                 project.investmentKrw(),
                 project.risk());
     }
@@ -416,6 +394,4 @@ public class ValuationRiskService {
             BigDecimal debtRatio) {}
 
     public record CreditRiskResult(BigDecimal score, String ratingBand) {}
-
-    private record ProjectIdentity(String projectId, String projectName, String headquarter) {}
 }

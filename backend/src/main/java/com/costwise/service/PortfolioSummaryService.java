@@ -47,6 +47,7 @@ public class PortfolioSummaryService {
                 .mapToObj(index -> {
                     ProjectSeed seed = rankedProjects.get(index);
                     return new ProjectSummary(
+                            String.valueOf(seed.rank()),
                             index + 1,
                             seed.code(),
                             seed.name(),

@@ -1,14 +1,15 @@
 import type { ReactNode } from 'react';
 
 type PanelProps = {
+  id?: string;
   title: string;
   subtitle?: string;
   children: ReactNode;
 };
 
-export function Panel({ title, subtitle, children }: PanelProps) {
+export function Panel({ id, title, subtitle, children }: PanelProps) {
   return (
-    <section className="panel">
+    <section className="panel" id={id}>
       <header className="panel__header">
         <div>
           <h2 className="panel__title">{title}</h2>

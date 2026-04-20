@@ -22,6 +22,11 @@ class CostAccountingServiceTest {
         assertThat(summary.headquarters()).hasSize(5);
         assertThat(summary.projects()).hasSize(20);
         assertThat(summary.factorAnalysis()).hasSizeGreaterThanOrEqualTo(4);
+        assertThat(summary.overview().standardAllocatedCostKrw())
+                .isEqualTo(
+                        summary.projects().stream()
+                                .mapToLong(CostAccountingSummaryResponse.ProjectCostSummary::standardAllocatedCostKrw)
+                                .sum());
         assertThat(summary.headquarters()).allSatisfy(headquarter -> {
             assertThat(headquarter.personnelCostKrw()).isPositive();
             assertThat(headquarter.projectDirectCostKrw()).isPositive();
@@ -38,6 +43,7 @@ class CostAccountingServiceTest {
 
         assertThat(project.personnelCostKrw()).isPositive();
         assertThat(project.projectDirectCostKrw()).isPositive();
+        assertThat(project.standardAllocatedCostKrw()).isPositive();
         assertThat(project.standardCostKrw()).isPositive();
         assertThat(project.actualCostKrw()).isPositive();
         assertThat(project.costVarianceKrw()).isNotZero();
