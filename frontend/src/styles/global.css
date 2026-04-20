@@ -180,6 +180,24 @@ textarea {
   border: 1px solid rgba(34, 211, 238, 0.24);
 }
 
+.status-pill--low {
+  background: rgba(34, 197, 94, 0.14);
+  color: #86efac;
+  border: 1px solid rgba(34, 197, 94, 0.24);
+}
+
+.status-pill--mid {
+  background: rgba(245, 158, 11, 0.14);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.24);
+}
+
+.status-pill--high {
+  background: rgba(248, 113, 113, 0.14);
+  color: #fca5a5;
+  border: 1px solid rgba(248, 113, 113, 0.24);
+}
+
 .chip {
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 999px;
@@ -333,6 +351,70 @@ textarea {
   display: grid;
   gap: 16px;
   min-width: 0;
+}
+
+.headquarter-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.headquarter-card {
+  border-radius: 20px;
+  padding: 18px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: grid;
+  gap: 14px;
+}
+
+.headquarter-card__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: start;
+}
+
+.headquarter-card__header strong {
+  display: block;
+  font-size: 1.02rem;
+}
+
+.headquarter-card__header span {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.headquarter-card__metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.headquarter-card__metrics div {
+  border-radius: 16px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.headquarter-card__metrics span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.headquarter-card__metrics strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 1rem;
+}
+
+.headquarter-card__footer {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
 }
 
 .dashboard__side .panel {
@@ -525,6 +607,16 @@ textarea {
   background: rgba(255, 255, 255, 0.03);
 }
 
+.data-table td strong {
+  display: block;
+}
+
+.table-subtle {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
 .mini-summary,
 .assumption-list__item {
   display: grid;
@@ -656,6 +748,9 @@ textarea {
     border-radius: 20px;
   }
 
+  .headquarter-grid,
+  .headquarter-card__metrics,
+  .summary-card__grid,
   .role-tabs,
   .progress-row,
   .allocation-row__meta,
