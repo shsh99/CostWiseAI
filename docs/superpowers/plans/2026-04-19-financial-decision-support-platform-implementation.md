@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build a submission-ready insurance/financial decision support platform that combines ABC cost allocation, DCF valuation, role-based access, and audit logging in a React + Spring + Supabase stack.
+**Goal:** Build a submission-ready insurance/financial management accounting and project valuation platform that combines ABC-based cost allocation across 5 operating headquarters and around 20 projects with DCF valuation, role-based access, and audit logging in a React + Spring + Supabase stack.
 
 **Architecture:** Use a modular monolith Spring Boot backend as the trust boundary, a feature-based React frontend for the executive dashboard and detail workflow, and Supabase PostgreSQL for storage and identity. Keep calculations on the backend, keep the UI thin, and enforce authorization in Spring Security with RLS only where direct database access is unavoidable.
 

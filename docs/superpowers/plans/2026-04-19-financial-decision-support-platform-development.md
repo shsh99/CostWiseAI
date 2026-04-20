@@ -1,11 +1,11 @@
 # Financial Decision Support Platform Development Document
 
-**Purpose:** implementation reference for the insurance/financial new business decision support platform  
-**Scope:** one-project MVP with ABC cost allocation, DCF valuation, role-based access, and audit logging
+**Purpose:** implementation reference for the insurance/financial management accounting and project valuation platform
+**Scope:** MVP slice covering 5 operating headquarters and around 20 projects, with ABC allocation, DCF valuation, role-based access, and audit logging
 
 ## 1. Implementation Summary
 
-Build a modular monolith backend and a feature-based frontend for a decision support tool that helps planners, finance reviewers, and executives evaluate a single new business project.
+Build a modular monolith backend and a feature-based frontend for a decision support tool that helps planners, finance reviewers, and executives evaluate a 5-headquarter, roughly 20-project operating portfolio for management accounting and project valuation.
 
 The backend is the trust boundary. It owns the business rules, calculations, authorization checks, and audit logging. The frontend is responsible for data entry, visualization, and decision review.
 
@@ -473,4 +473,3 @@ The development is ready when:
 - the frontend works on Cloudflare Pages,
 - the backend works with Spring Boot 3.x and Java 21,
 - the database layer works with Supabase PostgreSQL and RLS where needed.
-

@@ -4,8 +4,8 @@ This is the canonical entry point for the repository. Start here, then follow th
 
 ## Project Snapshot
 
-- Product: insurance/financial services new business decision support platform
-- Core flow: ABC cost allocation plus DCF investment evaluation
+- Product: insurance/financial services management accounting and project valuation platform
+- Core flow: ABC-based cost allocation across 5 operating headquarters and around 20 projects, plus DCF investment evaluation for new business decisions
 - Primary users: planner, finance reviewer, executive
 - Frontend: React 18, TypeScript, Vite, Tailwind CSS
 - Backend: Java 21, Spring Boot 3.x

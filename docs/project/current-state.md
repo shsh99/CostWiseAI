@@ -2,8 +2,8 @@
 
 ## Project
 
-- Product: insurance/financial services new business decision support platform
-- Core flow: ABC cost allocation plus DCF investment evaluation
+- Product: insurance/financial services management accounting and project valuation platform
+- Core flow: ABC-based cost allocation across 5 operating headquarters and around 20 projects, plus DCF investment evaluation for new business decisions
 - Primary users: planner, finance reviewer, executive
 
 ## Current Stack
@@ -15,9 +15,9 @@
 
 ## Current Implementation Snapshot
 
-- The frontend has a working Vite app scaffold with a dashboard-style landing page.
-- The backend has a Spring Boot scaffold with a checked-in Gradle wrapper bootstrap.
-- The database folder has initial migration and seed placeholders.
+- The frontend has a working Vite app scaffold with a dashboard-style landing page for project and cost review.
+- The backend has a Spring Boot scaffold with a checked-in Gradle wrapper bootstrap and calculation services for ABC and DCF.
+- The database folder has initial migration and seed placeholders for project, allocation, and valuation data.
 - The repository now has branch, worktree, and AI collaboration docs to keep agent work isolated.
 
 ## Immediate Direction
@@ -25,5 +25,6 @@
 - Keep feature work on `feat/*` branches.
 - Use one worktree per active feature branch.
 - Split new work into small vertical slices.
+- Treat the current MVP as the 5-headquarter, roughly 20-project operating slice of the management accounting and valuation platform.
 - Review every slice for spec fit and buildability before moving on.
 

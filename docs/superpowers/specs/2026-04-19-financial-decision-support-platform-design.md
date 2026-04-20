@@ -1,16 +1,17 @@
 # Financial Decision Support Platform Design
 
-**Project:** Insurance/financial services new business decision support platform  
-**Core idea:** combine ABC cost allocation and DCF-based investment evaluation into one workflow for planners, finance teams, and executives
+**Project:** Insurance/financial services management accounting and project valuation platform
+**Core idea:** combine ABC-based cost allocation across 5 operating headquarters and around 20 projects with DCF-based investment evaluation for new business decisions
 
 ## Goal
 
-Build a single-page-first web application that helps a user evaluate whether a new business project should be approved. The system must explain:
+Build a single-page-first web application that helps a user evaluate whether a new business project should be approved while also showing how operating costs are distributed across 5 operating headquarters and around 20 projects. The system must explain:
 
 1. how operating costs are allocated by activity using ABC,
-2. whether the project is financially attractive using DCF,
-3. who can view or edit each stage of the analysis,
-4. what changed over time through an auditable history.
+2. how those costs roll up across multiple headquarters and projects,
+3. whether the project is financially attractive using DCF,
+4. who can view or edit each stage of the analysis,
+5. what changed over time through an auditable history.
 
 The project is submission-bound, so the design prioritizes completion quality over breadth. The MVP must feel like a real internal decision tool, not a demo with disconnected charts.
 
@@ -18,9 +19,9 @@ The project is submission-bound, so the design prioritizes completion quality ov
 
 ### In scope
 
-- One new business project at a time
+- One operating portfolio with 5 headquarters and around 20 projects for the MVP slice
 - Three user roles: planner, finance reviewer, executive
-- ABC allocation for a small set of departments and cost pools
+- ABC allocation for a small set of departments, cost pools, headquarters, and projects within the 5-headquarter / 20-project MVP slice
 - DCF evaluation with NPV, IRR, and payback period
 - Scenario editing and recalculation
 - Approval and review history
@@ -29,7 +30,7 @@ The project is submission-bound, so the design prioritizes completion quality ov
 
 ### Out of scope
 
-- Multi-project portfolio management
+- Unbounded portfolio expansion beyond the 5-headquarter / 20-project MVP slice
 - Complex workflow engines
 - Real external banking or insurance integrations
 - File upload pipelines
