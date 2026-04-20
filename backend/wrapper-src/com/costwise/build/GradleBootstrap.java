@@ -41,7 +41,11 @@ public final class GradleBootstrap {
         }
 
         Path installRoot = getInstallRoot(distributionUrl);
+        Path wrapperInstallRoot = getWrapperInstallRoot(distributionUrl);
         Path gradleHome = findGradleHome(installRoot);
+        if (gradleHome == null) {
+            gradleHome = findGradleHome(wrapperInstallRoot);
+        }
         if (gradleHome == null) {
             downloadAndExtract(distributionUrl, installRoot);
             gradleHome = findGradleHome(installRoot);
@@ -113,10 +117,20 @@ public final class GradleBootstrap {
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(installRoot)) {
             for (Path candidate : stream) {
                 if (Files.isDirectory(candidate)) {
-                    Path windowsBinary = candidate.resolve("bin/gradle.bat");
-                    Path unixBinary = candidate.resolve("bin/gradle");
-                    if (Files.exists(windowsBinary) || Files.exists(unixBinary)) {
-                        return candidate;
+                    Path directMatch = gradleHomeIfPresent(candidate);
+                    if (directMatch != null) {
+                        return directMatch;
+                    }
+
+                    try (DirectoryStream<Path> nested = Files.newDirectoryStream(candidate)) {
+                        for (Path nestedCandidate : nested) {
+                            if (Files.isDirectory(nestedCandidate)) {
+                                Path nestedMatch = gradleHomeIfPresent(nestedCandidate);
+                                if (nestedMatch != null) {
+                                    return nestedMatch;
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -125,13 +139,46 @@ public final class GradleBootstrap {
         return null;
     }
 
+    private static Path gradleHomeIfPresent(Path candidate) {
+        Path windowsBinary = candidate.resolve("bin/gradle.bat");
+        Path unixBinary = candidate.resolve("bin/gradle");
+        return Files.exists(windowsBinary) || Files.exists(unixBinary) ? candidate : null;
+    }
+
     private static Path getInstallRoot(String distributionUrl) {
         String normalized = distributionUrl.substring(distributionUrl.lastIndexOf('/') + 1).replace(".zip", "");
-        String gradleUserHome = System.getenv("GRADLE_USER_HOME");
-        Path baseHome = gradleUserHome == null || gradleUserHome.isBlank()
-                ? Path.of(System.getProperty("user.home"), ".gradle")
-                : Path.of(gradleUserHome);
+        Path baseHome = resolveGradleUserHome();
         return baseHome.resolve("costwise").resolve(normalized);
+    }
+
+    private static Path getWrapperInstallRoot(String distributionUrl) {
+        String normalized = distributionUrl.substring(distributionUrl.lastIndexOf('/') + 1).replace(".zip", "");
+        Path baseHome = resolveGradleUserHome();
+        return baseHome.resolve("wrapper").resolve("dists").resolve(normalized);
+    }
+
+    private static Path resolveGradleUserHome() {
+        String explicit = System.getenv("GRADLE_USER_HOME");
+        if (explicit != null && !explicit.isBlank()) {
+            return Path.of(explicit);
+        }
+
+        String userProfile = System.getenv("USERPROFILE");
+        if (userProfile != null && !userProfile.isBlank()) {
+            return Path.of(userProfile, ".gradle");
+        }
+
+        String localAppData = System.getenv("LOCALAPPDATA");
+        if (localAppData != null && !localAppData.isBlank()) {
+            return Path.of(localAppData, "..", "..", ".gradle").normalize();
+        }
+
+        String userHome = System.getProperty("user.home");
+        if (userHome != null && !userHome.isBlank()) {
+            return Path.of(userHome, ".gradle");
+        }
+
+        return Path.of(System.getProperty("java.io.tmpdir"), "costwise-gradle-home");
     }
 
     private static boolean isWindows() {

@@ -115,4 +115,12 @@ class ValuationRiskServiceTest {
         assertTrue(result.projectValuation().npv().compareTo(BigDecimal.ZERO) > 0);
         assertEquals(5, result.riskMetrics().scenarioValues().size());
     }
+
+    @Test
+    void loadsProjectDetailDeterministicallyForRepeatedReads() {
+        var first = service.loadProjectDetail("13");
+        var second = service.loadProjectDetail("13");
+
+        assertEquals(first, second);
+    }
 }

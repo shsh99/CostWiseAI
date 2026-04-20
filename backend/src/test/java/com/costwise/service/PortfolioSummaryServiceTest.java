@@ -20,4 +20,12 @@ class PortfolioSummaryServiceTest {
         assertThat(summary.overview().approvedCount()).isEqualTo(4);
         assertThat(summary.overview().conditionalCount()).isEqualTo(5);
     }
+
+    @Test
+    void loadPortfolioSummaryIsDeterministicAcrossRepeatedCalls() {
+        PortfolioSummaryResponse first = service.loadPortfolioSummary();
+        PortfolioSummaryResponse second = service.loadPortfolioSummary();
+
+        assertThat(second).isEqualTo(first);
+    }
 }
