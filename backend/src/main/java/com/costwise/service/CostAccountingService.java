@@ -29,15 +29,23 @@ public class CostAccountingService {
 
     public CostAccountingSummaryResponse loadSummary() {
         PortfolioSummaryResponse portfolio = portfolioSummaryService.loadPortfolioSummary();
+        long enterpriseSupportPool = round(portfolio.overview().totalInvestmentKrw() * 0.14);
+        long standardCostPool = round(portfolio.overview().totalInvestmentKrw() * 0.11);
+        long totalDriverVolume = portfolio.projects().stream()
+                .mapToLong(project -> round(driverVolume(project)))
+                .sum();
         List<ProjectCostView> projectCostViews = new ArrayList<>();
 
         for (PortfolioSummaryResponse.ProjectSummary project : portfolio.projects()) {
-            double headquarterMultiplier = multiplierFor(project.headquarter());
-            long personnelCost = round(project.investmentKrw() * 0.22 * headquarterMultiplier);
-            long projectDirectCost = round(project.investmentKrw() * 0.31);
-            long standardCost = round(project.investmentKrw() * 0.60);
-            long actualCost = personnelCost + projectDirectCost + round(project.investmentKrw() * 0.12);
-            long transferNet = round(project.investmentKrw() * 0.12);
+            HeadquarterPlan plan = planFor(project.headquarter());
+            long driverVolume = round(driverVolume(project));
+            long personnelCost = round(project.investmentKrw() * plan.personnelShare() * plan.multiplier());
+            long projectDirectCost = round(project.investmentKrw() * plan.directShare());
+            long enterpriseAllocatedCost = allocatePool(enterpriseSupportPool, driverVolume, totalDriverVolume);
+            long standardAllocatedCost = allocatePool(standardCostPool, driverVolume, totalDriverVolume);
+            long standardCost = personnelCost + projectDirectCost + standardAllocatedCost;
+            long actualCost = personnelCost + projectDirectCost + enterpriseAllocatedCost;
+            long transferNet = round(project.investmentKrw() * plan.transferShare());
             long variance = actualCost - standardCost;
 
             projectCostViews.add(
@@ -48,6 +56,7 @@ public class CostAccountingService {
                             project.headquarter(),
                             personnelCost,
                             projectDirectCost,
+                            enterpriseAllocatedCost,
                             standardCost,
                             actualCost,
                             variance,
@@ -79,11 +88,15 @@ public class CostAccountingService {
                 new CostAccountingSummaryResponse.FactorAnalysis(
                         "내부대체가액",
                         internalTransferTotal,
-                        "본부 간 내부거래를 표준 배부 기준으로 조정합니다."),
+                        "공통 플랫폼과 지원 기능의 내부대체가액을 프로젝트에 반영합니다."),
                 new CostAccountingSummaryResponse.FactorAnalysis(
-                        "표준원가 대비 차이",
+                        "표준원가 배분",
+                        projectCostViews.stream().mapToLong(ProjectCostView::enterpriseAllocatedCostKrw).sum(),
+                        "전사 공통 원가 풀을 표준 드라이버로 배분합니다."),
+                new CostAccountingSummaryResponse.FactorAnalysis(
+                        "원가/성과 요인",
                         projectCostViews.stream().mapToLong(ProjectCostView::costVarianceKrw).sum(),
-                        "표준원가와 실제원가의 차이를 성과 요인으로 읽습니다."));
+                        "표준원가와 실제원가의 차이를 원가/성과 요인으로 해석합니다."));
 
         return new CostAccountingSummaryResponse(
                 portfolio.portfolioName(),
@@ -138,12 +151,24 @@ public class CostAccountingService {
                 project.internalTransferNetKrw());
     }
 
-    private double multiplierFor(String headquarter) {
+    private HeadquarterPlan planFor(String headquarter) {
         return HEADQUARTERS.stream()
                 .filter(plan -> plan.name().equals(headquarter))
-                .map(HeadquarterPlan::multiplier)
                 .findFirst()
-                .orElse(1.0);
+                .orElseThrow(() -> new IllegalArgumentException("Unknown headquarter: " + headquarter));
+    }
+
+    // The MVP uses a single deterministic driver so standard-cost and enterprise allocations stay auditable.
+    private double driverVolume(PortfolioSummaryResponse.ProjectSummary project) {
+        HeadquarterPlan plan = planFor(project.headquarter());
+        return project.investmentKrw() * ((plan.personnelShare() * 0.55) + (plan.directShare() * 0.45));
+    }
+
+    private long allocatePool(long poolAmount, long driverVolume, long totalDriverVolume) {
+        if (totalDriverVolume == 0) {
+            return 0L;
+        }
+        return round(poolAmount * ((double) driverVolume / totalDriverVolume));
     }
 
     private static long round(double value) {
@@ -165,6 +190,7 @@ public class CostAccountingService {
             String headquarter,
             long personnelCostKrw,
             long projectDirectCostKrw,
+            long enterpriseAllocatedCostKrw,
             long standardCostKrw,
             long actualCostKrw,
             long costVarianceKrw,

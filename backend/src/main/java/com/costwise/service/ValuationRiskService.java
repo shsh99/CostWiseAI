@@ -6,46 +6,46 @@ import com.costwise.api.dto.ValuationRiskResponse;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
 @Service
 public class ValuationRiskService {
 
-    private static final List<ProjectProfile> PROJECTS = List.of(
-            new ProjectProfile("1", "암보험 신상품 출시", "언더라이팅본부", 650_000_000L),
-            new ProjectProfile("2", "인수심사 자동화", "언더라이팅본부", 420_000_000L),
-            new ProjectProfile("3", "위험요율 재설계", "언더라이팅본부", 310_000_000L),
-            new ProjectProfile("4", "사전심사 대시보드", "언더라이팅본부", 280_000_000L),
-            new ProjectProfile("5", "디지털 건강보험", "상품개발본부", 540_000_000L),
-            new ProjectProfile("6", "가족보험 패키지", "상품개발본부", 460_000_000L),
-            new ProjectProfile("7", "특약 정비", "상품개발본부", 300_000_000L),
-            new ProjectProfile("8", "상품약관 자동화", "상품개발본부", 250_000_000L),
-            new ProjectProfile("9", "GA 영업지원 포털", "영업본부", 490_000_000L),
-            new ProjectProfile("10", "설계사 리드분배", "영업본부", 380_000_000L),
-            new ProjectProfile("11", "모바일 견적 고도화", "영업본부", 310_000_000L),
-            new ProjectProfile("12", "채널 수익성 분석", "영업본부", 270_000_000L),
-            new ProjectProfile("13", "디지털 플랫폼 구축", "IT본부", 780_000_000L),
-            new ProjectProfile("14", "마이데이터 연계", "IT본부", 590_000_000L),
-            new ProjectProfile("15", "데이터허브 확장", "IT본부", 430_000_000L),
-            new ProjectProfile("16", "콜센터 고도화", "IT본부", 390_000_000L),
-            new ProjectProfile("17", "원가배분 체계개편", "경영지원본부", 290_000_000L),
-            new ProjectProfile("18", "감사로그 표준화", "경영지원본부", 240_000_000L),
-            new ProjectProfile("19", "성과관리 대시보드", "경영지원본부", 320_000_000L),
-            new ProjectProfile("20", "권한통제 재설계", "경영지원본부", 210_000_000L));
+    private static final List<ProjectIdentity> PROJECT_IDENTITIES = List.of(
+            new ProjectIdentity("1", "암보험 신상품 출시", "언더라이팅본부"),
+            new ProjectIdentity("2", "인수심사 자동화", "언더라이팅본부"),
+            new ProjectIdentity("3", "위험요율 재설계", "언더라이팅본부"),
+            new ProjectIdentity("4", "사전심사 대시보드", "언더라이팅본부"),
+            new ProjectIdentity("5", "디지털 건강보험", "상품개발본부"),
+            new ProjectIdentity("6", "가족보험 패키지", "상품개발본부"),
+            new ProjectIdentity("7", "특약 정비", "상품개발본부"),
+            new ProjectIdentity("8", "상품약관 자동화", "상품개발본부"),
+            new ProjectIdentity("9", "GA 영업지원 포털", "영업본부"),
+            new ProjectIdentity("10", "설계사 리드분배", "영업본부"),
+            new ProjectIdentity("11", "모바일 견적 고도화", "영업본부"),
+            new ProjectIdentity("12", "채널 수익성 분석", "영업본부"),
+            new ProjectIdentity("13", "디지털 플랫폼 구축", "IT본부"),
+            new ProjectIdentity("14", "마이데이터 연계", "IT본부"),
+            new ProjectIdentity("15", "데이터허브 확장", "IT본부"),
+            new ProjectIdentity("16", "콜센터 고도화", "IT본부"),
+            new ProjectIdentity("17", "원가배분 체계개편", "경영지원본부"),
+            new ProjectIdentity("18", "감사로그 표준화", "경영지원본부"),
+            new ProjectIdentity("19", "성과관리 대시보드", "경영지원본부"),
+            new ProjectIdentity("20", "권한통제 재설계", "경영지원본부"));
 
     private final DcfValuationService dcfValuationService;
+    private final PortfolioSummaryService portfolioSummaryService;
 
-    public ValuationRiskService(DcfValuationService dcfValuationService) {
+    public ValuationRiskService(
+            DcfValuationService dcfValuationService, PortfolioSummaryService portfolioSummaryService) {
         this.dcfValuationService = dcfValuationService;
+        this.portfolioSummaryService = portfolioSummaryService;
     }
 
     public StockValuationResult valueStock(StockInput input) {
+        // Gordon growth keeps the stock example deterministic while still exposing fair value and upside.
         BigDecimal fairValue =
                 input.annualDividend()
                         .multiply(BigDecimal.valueOf(1.0 + input.dividendGrowthRate()))
@@ -73,6 +73,7 @@ public class ValuationRiskService {
     }
 
     public BondValuationResult valueBond(BondInput input) {
+        // Annual coupon math is enough for the MVP because the requirement is to show price, duration and convexity.
         int periods = input.yearsToMaturity();
         double coupon = input.faceValue().doubleValue() * input.couponRate().doubleValue();
         double yield = input.yieldToMaturity();
@@ -174,11 +175,7 @@ public class ValuationRiskService {
     }
 
     public ValuationRiskResponse loadProjectDetail(String projectId) {
-        ProjectProfile profile =
-                PROJECTS.stream()
-                        .filter(project -> project.projectId().equals(projectId))
-                        .findFirst()
-                        .orElseThrow(() -> new IllegalArgumentException("Unknown project id: " + projectId));
+        ProjectProfile profile = projectProfile(projectId);
 
         List<ComputeRequest.CashFlowInput> cashFlows = profile.cashFlows();
         BigDecimal discountRate = BigDecimal.valueOf(0.115);
@@ -241,6 +238,26 @@ public class ValuationRiskService {
                 new ValuationRiskResponse.CreditRisk(creditRisk.score(), creditRisk.ratingBand()));
     }
 
+    private ProjectProfile projectProfile(String projectId) {
+        ProjectIdentity identity =
+                PROJECT_IDENTITIES.stream()
+                        .filter(candidate -> candidate.projectId().equals(projectId))
+                        .findFirst()
+                        .orElseThrow(() -> new IllegalArgumentException("Unknown project id: " + projectId));
+        PortfolioSummaryResponse.ProjectSummary project =
+                portfolioSummaryService.loadPortfolioSummary().projects().stream()
+                        .filter(candidate -> candidate.name().equals(identity.projectName()))
+                        .findFirst()
+                        .orElseThrow(() -> new IllegalArgumentException("Unknown project id: " + projectId));
+
+        return new ProjectProfile(
+                projectId,
+                project.name(),
+                identity.headquarter(),
+                project.investmentKrw(),
+                project.risk());
+    }
+
     private double normalCdf(double value) {
         return 0.5 * (1.0 + erf(value / Math.sqrt(2.0)));
     }
@@ -271,7 +288,8 @@ public class ValuationRiskService {
             String projectId,
             String projectName,
             String headquarter,
-            long baseInvestmentKrw) {
+            long baseInvestmentKrw,
+            String riskLevel) {
 
         private List<ComputeRequest.CashFlowInput> cashFlows() {
             long scaledInvestment = Math.max(100_000_000L, baseInvestmentKrw);
@@ -322,13 +340,21 @@ public class ValuationRiskService {
         private CreditRiskInput creditRiskInput() {
             double leverage = 2.8 + (baseInvestmentKrw / 1_000_000_000.0);
             double coverage = 4.0 + (baseInvestmentKrw / 2_000_000_000.0);
-            double volatility = 0.18 + (baseInvestmentKrw / 10_000_000_000.0);
+            double volatility = 0.18 + (baseInvestmentKrw / 10_000_000_000.0) + riskPremium();
             double debtRatio = 10.0 + (baseInvestmentKrw / 50_000_000_000.0);
             return new CreditRiskInput(
                     BigDecimal.valueOf(leverage).setScale(2, RoundingMode.HALF_UP),
                     BigDecimal.valueOf(coverage).setScale(2, RoundingMode.HALF_UP),
                     BigDecimal.valueOf(volatility).setScale(2, RoundingMode.HALF_UP),
                     BigDecimal.valueOf(debtRatio).setScale(2, RoundingMode.HALF_UP));
+        }
+
+        private double riskPremium() {
+            return switch (riskLevel) {
+                case "높음" -> 0.08;
+                case "중간" -> 0.04;
+                default -> 0.01;
+            };
         }
     }
 
@@ -390,4 +416,6 @@ public class ValuationRiskService {
             BigDecimal debtRatio) {}
 
     public record CreditRiskResult(BigDecimal score, String ratingBand) {}
+
+    private record ProjectIdentity(String projectId, String projectName, String headquarter) {}
 }

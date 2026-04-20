@@ -45,20 +45,20 @@ public class ApprovalWorkflowService {
             throw new IllegalArgumentException("Role " + role + " cannot perform action " + action);
         }
 
-        String nextStatus = workflowAction.nextStatus;
         if (state.status.equals("APPROVED") || state.status.equals("REJECTED")) {
             throw new IllegalArgumentException("Workflow already completed for project " + projectId);
         }
 
-        if ("REVIEW".equals(workflowAction.nextStatus) && !"DRAFT".equals(state.status)) {
+        if (workflowAction == WorkflowAction.SUBMIT && !"DRAFT".equals(state.status)) {
             throw new IllegalArgumentException("Only draft projects can be moved to review");
         }
 
-        if (("APPROVED".equals(nextStatus) || "REJECTED".equals(nextStatus))
+        if ((workflowAction == WorkflowAction.APPROVE || workflowAction == WorkflowAction.REJECT)
                 && !"REVIEW".equals(state.status)) {
             throw new IllegalArgumentException("Only review projects can be approved or rejected");
         }
 
+        String nextStatus = workflowAction == WorkflowAction.COMMENT ? state.status : workflowAction.nextStatus;
         state.status = nextStatus;
         state.lastAction = workflowAction.name();
         state.updatedAt = LocalDateTime.now();
