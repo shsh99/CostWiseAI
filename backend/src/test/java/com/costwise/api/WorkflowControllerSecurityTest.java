@@ -78,20 +78,26 @@ class WorkflowControllerSecurityTest {
     }
 
     @Test
-    void auditLogsRejectInsufficientRole() throws Exception {
-        Instant now = Instant.now();
-        mockMvc.perform(get("/api/audit-logs")
-                        .header("Authorization", bearerToken(token("planner", ISSUER, AUDIENCE, now, now.plusSeconds(3600)))))
-                .andExpect(status().isForbidden());
+    void auditLogsRejectMissingToken() throws Exception {
+        mockMvc.perform(get("/api/audit-logs?projectId=P-100"))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
-    void auditLogsAllowExecutiveRole() throws Exception {
+    void auditLogsRequireProjectId() throws Exception {
         Instant now = Instant.now();
         mockMvc.perform(get("/api/audit-logs")
-                        .header("Authorization", bearerToken(token("executive", ISSUER, AUDIENCE, now, now.plusSeconds(3600)))))
+                        .header("Authorization", bearerToken(token("planner", ISSUER, AUDIENCE, now, now.plusSeconds(3600)))))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void auditLogsAllowPlannerRole() throws Exception {
+        Instant now = Instant.now();
+        mockMvc.perform(get("/api/audit-logs?projectId=P-100")
+                        .header("Authorization", bearerToken(token("planner", ISSUER, AUDIENCE, now, now.plusSeconds(3600)))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].actor").exists());
+                .andExpect(jsonPath("$.items").isArray());
     }
 
     @Test
