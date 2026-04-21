@@ -16,8 +16,43 @@ import { Panel } from './components/Panel';
 import { ProgressBar } from './components/ProgressBar';
 
 type NavigationKey = (typeof navigationItems)[number]['key'];
+type ExplorerSortKey = 'priority' | 'npv' | 'irr' | 'payback' | 'risk';
+type ExplorerQuickFilterKey =
+  | 'all'
+  | 'needs-review'
+  | 'accounting-focus'
+  | 'valuation-focus'
+  | 'shortlist';
 
 const workspaceSections = ['Project Summary', 'Drivers', 'Decision Surface', 'Next Actions'] as const;
+const defaultExplorerSort: ExplorerSortKey = 'priority';
+const defaultExplorerQuickFilter: ExplorerQuickFilterKey = 'all';
+
+const explorerSortOptions: Array<{ key: ExplorerSortKey; label: string }> = [
+  { key: 'priority', label: '우선순위 순' },
+  { key: 'npv', label: 'NPV 높은순' },
+  { key: 'irr', label: 'IRR 높은순' },
+  { key: 'payback', label: '회수기간 짧은순' },
+  { key: 'risk', label: '리스크 높은순' }
+];
+
+const explorerQuickFilterOptions: Array<{
+  key: ExplorerQuickFilterKey;
+  label: string;
+  helper: string;
+}> = [
+  { key: 'all', label: '전체', helper: '전체 프로젝트' },
+  { key: 'needs-review', label: '즉시 검토', helper: '승인 전 검토 대상' },
+  { key: 'accounting-focus', label: '관리회계 중심', helper: '원가·배분 우선 후보' },
+  { key: 'valuation-focus', label: '재무평가 중심', helper: '사업성 검토 우선 후보' },
+  { key: 'shortlist', label: '고우선순위', helper: '숏리스트 후보' }
+];
+
+const riskOrder = {
+  높음: 3,
+  중간: 2,
+  낮음: 1
+} as const;
 
 const viewMeta: Record<
   NavigationKey,
@@ -68,13 +103,18 @@ const riskToneMap = {
 } as const;
 
 export function App() {
+  const initialExplorerState = useMemo(() => parseExplorerState(window.location.search), []);
   const [selectedRole, setSelectedRole] = useState<Role>('임원');
-  const [activeView, setActiveView] = useState<NavigationKey>('dashboard');
+  const [activeView, setActiveView] = useState<NavigationKey>(initialExplorerState.view);
   const [portfolio, setPortfolio] = useState<PortfolioSummary>(defaultPortfolioSummary);
   const [source, setSource] = useState<'api' | 'local'>('local');
-  const [selectedProjectCode, setSelectedProjectCode] = useState(
-    defaultPortfolioSummary.projects[0]?.code ?? ''
+  const [searchTerm, setSearchTerm] = useState(initialExplorerState.search);
+  const [explorerSort, setExplorerSort] = useState<ExplorerSortKey>(initialExplorerState.sort);
+  const [explorerQuickFilter, setExplorerQuickFilter] = useState<ExplorerQuickFilterKey>(
+    initialExplorerState.quickFilter
   );
+  const [headquarterFilter, setHeadquarterFilter] = useState<string>(initialExplorerState.headquarter);
+  const [selectedProjectCode, setSelectedProjectCode] = useState(initialExplorerState.projectCode);
 
   useEffect(() => {
     let cancelled = false;
@@ -91,9 +131,13 @@ export function App() {
     };
   }, []);
 
-  const selectedProject =
-    portfolio.projects.find((project) => project.code === selectedProjectCode) ??
-    portfolio.projects[0];
+  const hasSelectedProject = useMemo(
+    () => portfolio.projects.some((project) => project.code === selectedProjectCode),
+    [portfolio.projects, selectedProjectCode]
+  );
+  const selectedProject = hasSelectedProject
+    ? portfolio.projects.find((project) => project.code === selectedProjectCode) ?? null
+    : null;
   const selectedDetail = selectedProject ? buildProjectDetail(selectedProject.code) : null;
   const selectedInsight = roleInsights[selectedRole];
   const decisionSignals = buildDecisionSignals(portfolio);
@@ -111,10 +155,144 @@ export function App() {
         { label: '리스크', value: selectedProject.risk }
       ]
     : [];
+  const headquarterOptions = useMemo(
+    () => ['all', ...portfolio.headquarters.map((headquarter) => headquarter.name)],
+    [portfolio.headquarters]
+  );
+  const filteredProjects = useMemo(() => {
+    const normalizedSearchTerm = searchTerm.trim().toLowerCase();
+
+    return portfolio.projects
+      .filter((project) => {
+        if (headquarterFilter !== 'all' && project.headquarter !== headquarterFilter) {
+          return false;
+        }
+
+        if (normalizedSearchTerm) {
+          const haystack = `${project.name} ${project.code} ${project.headquarter}`.toLowerCase();
+          if (!haystack.includes(normalizedSearchTerm)) {
+            return false;
+          }
+        }
+
+        if (explorerQuickFilter === 'all') {
+          return true;
+        }
+
+        if (explorerQuickFilter === 'needs-review') {
+          return project.status !== '승인';
+        }
+
+        if (explorerQuickFilter === 'accounting-focus') {
+          return project.assetCategory === '프로젝트' || project.status === '검토중';
+        }
+
+        if (explorerQuickFilter === 'valuation-focus') {
+          return project.npvKrw > 0 && project.irr >= 0.14;
+        }
+
+        return project.rank <= 5 || (project.status === '승인' && project.risk !== '높음');
+      })
+      .sort((left, right) => {
+        if (explorerSort === 'npv') {
+          return right.npvKrw - left.npvKrw;
+        }
+
+        if (explorerSort === 'irr') {
+          return right.irr - left.irr;
+        }
+
+        if (explorerSort === 'payback') {
+          return left.paybackYears - right.paybackYears;
+        }
+
+        if (explorerSort === 'risk') {
+          return riskOrder[right.risk] - riskOrder[left.risk];
+        }
+
+        return left.rank - right.rank;
+      });
+  }, [portfolio.projects, headquarterFilter, searchTerm, explorerQuickFilter, explorerSort]);
+
+  useEffect(() => {
+    if (headquarterFilter !== 'all' && !headquarterOptions.includes(headquarterFilter)) {
+      setHeadquarterFilter('all');
+    }
+  }, [headquarterFilter, headquarterOptions]);
+
+  useEffect(() => {
+    if (!selectedProjectCode) {
+      if (filteredProjects.length > 0) {
+        setSelectedProjectCode(filteredProjects[0].code);
+      }
+      return;
+    }
+
+    const isSelectedProjectVisible = filteredProjects.some(
+      (project) => project.code === selectedProjectCode
+    );
+    if (!isSelectedProjectVisible) {
+      setSelectedProjectCode('');
+    }
+  }, [selectedProjectCode, filteredProjects]);
+
+  useEffect(() => {
+    const query = new URLSearchParams();
+    if (activeView !== 'dashboard') {
+      query.set('view', activeView);
+    }
+    if (searchTerm.trim()) {
+      query.set('q', searchTerm.trim());
+    }
+    if (explorerSort !== defaultExplorerSort) {
+      query.set('sort', explorerSort);
+    }
+    if (explorerQuickFilter !== defaultExplorerQuickFilter) {
+      query.set('quick', explorerQuickFilter);
+    }
+    if (headquarterFilter !== 'all') {
+      query.set('hq', headquarterFilter);
+    }
+    if (selectedProjectCode) {
+      query.set('project', selectedProjectCode);
+    }
+
+    const nextQuery = query.toString();
+    const nextUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ''}${window.location.hash}`;
+    const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+
+    if (nextUrl !== currentUrl) {
+      window.history.replaceState(null, '', nextUrl);
+    }
+  }, [activeView, searchTerm, explorerSort, explorerQuickFilter, headquarterFilter, selectedProjectCode]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const restored = parseExplorerState(window.location.search);
+      setActiveView(restored.view);
+      setSearchTerm(restored.search);
+      setExplorerSort(restored.sort);
+      setExplorerQuickFilter(restored.quickFilter);
+      setHeadquarterFilter(restored.headquarter);
+      setSelectedProjectCode(restored.projectCode);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
 
   function openWorkspace(target: 'accounting' | 'valuation', projectCode: string) {
     setSelectedProjectCode(projectCode);
     setActiveView(target);
+  }
+
+  function resetExplorerControls() {
+    setSearchTerm('');
+    setExplorerSort(defaultExplorerSort);
+    setExplorerQuickFilter(defaultExplorerQuickFilter);
+    setHeadquarterFilter('all');
   }
 
   return (
@@ -362,6 +540,78 @@ export function App() {
                 title="Project workspace entry"
                 subtitle="프로젝트 상세를 항상 펼치지 않고, 필요한 워크스페이스로 선택 진입합니다."
               >
+                <div className="explorer-controls" aria-label="프로젝트 탐색 컨트롤">
+                  <div className="explorer-controls__row">
+                    <label className="explorer-search" htmlFor="project-search-input">
+                      <span>프로젝트 검색</span>
+                      <input
+                        id="project-search-input"
+                        type="search"
+                        value={searchTerm}
+                        placeholder="프로젝트명, 코드, 본부 검색"
+                        onChange={(event) => setSearchTerm(event.target.value)}
+                      />
+                    </label>
+
+                    <label className="explorer-sort" htmlFor="project-sort-select">
+                      <span>정렬</span>
+                      <select
+                        id="project-sort-select"
+                        value={explorerSort}
+                        onChange={(event) => setExplorerSort(event.target.value as ExplorerSortKey)}
+                      >
+                        {explorerSortOptions.map((option) => (
+                          <option key={option.key} value={option.key}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+
+                  <div className="explorer-controls__group" aria-label="빠른 필터">
+                    {explorerQuickFilterOptions.map((filter) => (
+                      <button
+                        key={filter.key}
+                        type="button"
+                        className={`explorer-pill ${
+                          explorerQuickFilter === filter.key ? 'explorer-pill--active' : ''
+                        }`}
+                        aria-pressed={explorerQuickFilter === filter.key}
+                        onClick={() => setExplorerQuickFilter(filter.key)}
+                        title={filter.helper}
+                      >
+                        {filter.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="explorer-controls__group" aria-label="본부 필터">
+                    {headquarterOptions.map((headquarter) => (
+                      <button
+                        key={headquarter}
+                        type="button"
+                        className={`explorer-pill explorer-pill--subtle ${
+                          headquarterFilter === headquarter ? 'explorer-pill--active' : ''
+                        }`}
+                        aria-pressed={headquarterFilter === headquarter}
+                        onClick={() => setHeadquarterFilter(headquarter)}
+                      >
+                        {headquarter === 'all' ? '전체 본부' : headquarter}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="explorer-controls__footer">
+                    <p>
+                      결과 <strong>{filteredProjects.length}</strong> / {portfolio.projects.length}
+                    </p>
+                    <button type="button" className="explorer-reset" onClick={resetExplorerControls}>
+                      필터 초기화
+                    </button>
+                  </div>
+                </div>
+
                 <div className="table-shell">
                   <table className="data-table">
                     <thead>
@@ -375,7 +625,7 @@ export function App() {
                       </tr>
                     </thead>
                     <tbody>
-                      {portfolio.projects.map((project) => (
+                      {filteredProjects.map((project) => (
                         <tr key={project.code} className={project.code === selectedProjectCode ? 'data-table__row--selected' : ''}>
                           <td>{project.rank}</td>
                           <td>
@@ -391,6 +641,9 @@ export function App() {
                           <td>{formatKrwCompact(project.npvKrw)}</td>
                           <td>
                             <div className="table-actions">
+                              <button type="button" onClick={() => setSelectedProjectCode(project.code)}>
+                                선택
+                              </button>
                               <button type="button" onClick={() => openWorkspace('accounting', project.code)}>
                                 관리회계
                               </button>
@@ -403,6 +656,14 @@ export function App() {
                       ))}
                     </tbody>
                   </table>
+                  {filteredProjects.length === 0 ? (
+                    <div className="empty-state">
+                      <p>조건에 맞는 프로젝트가 없습니다.</p>
+                      <button type="button" onClick={resetExplorerControls}>
+                        탐색 조건 초기화
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
               </Panel>
             </section>
@@ -539,6 +800,49 @@ export function App() {
       </div>
     </div>
   );
+}
+
+function parseExplorerState(search: string): {
+  view: NavigationKey;
+  search: string;
+  sort: ExplorerSortKey;
+  quickFilter: ExplorerQuickFilterKey;
+  headquarter: string;
+  projectCode: string;
+} {
+  const query = new URLSearchParams(search);
+  const rawView = query.get('view');
+  const rawSort = query.get('sort');
+  const rawQuickFilter = query.get('quick');
+  const rawHeadquarter = query.get('hq');
+  const rawSearch = query.get('q');
+  const rawProjectCode = query.get('project');
+
+  const view: NavigationKey =
+    rawView && navigationItems.some((item) => item.key === rawView)
+      ? (rawView as NavigationKey)
+      : 'dashboard';
+  const sort: ExplorerSortKey =
+    rawSort && explorerSortOptions.some((option) => option.key === rawSort)
+      ? (rawSort as ExplorerSortKey)
+      : defaultExplorerSort;
+  const quickFilter: ExplorerQuickFilterKey =
+    rawQuickFilter && explorerQuickFilterOptions.some((option) => option.key === rawQuickFilter)
+      ? (rawQuickFilter as ExplorerQuickFilterKey)
+      : defaultExplorerQuickFilter;
+  const headquarter = rawHeadquarter?.trim() ? rawHeadquarter : 'all';
+  const searchTerm = rawSearch?.trim() ?? '';
+  const projectCode =
+    rawProjectCode?.trim() || defaultPortfolioSummary.projects[0]?.code || '';
+
+  return {
+    view,
+    search: searchTerm,
+    sort,
+    quickFilter,
+    headquarter,
+    projectCode
+  };
 }
 
 function statusTone(status: ProjectStatus) {
