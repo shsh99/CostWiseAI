@@ -6,6 +6,7 @@ Use this directory to record comparison results, branch/worktree choices, and im
 
 - `docs/dev-logs/2026-04-19-harness-context-structure.md`
 - `docs/dev-logs/2026-04-21-precommit-scope-split.md`
+- `docs/dev-logs/2026-04-21-cockpit-readability.md`
 
 ## Required Before PR
 

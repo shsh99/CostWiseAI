@@ -153,10 +153,23 @@ export function App() {
     ? [
         { label: 'NPV', value: formatKrwCompact(selectedProject.npvKrw) },
         { label: 'IRR', value: formatPercent(selectedProject.irr) },
-        { label: '회수기간', value: formatYears(selectedProject.paybackYears) },
-        { label: '리스크', value: selectedProject.risk }
+        { label: '회수기간', value: formatYears(selectedProject.paybackYears) }
       ]
     : [];
+  const cockpitMetaItems = [
+    { label: '우선순위', value: selectedProject ? `${selectedProject.rank}위` : '-' },
+    { label: 'Owner', value: selectedDetail?.manager ?? '-' },
+    { label: 'Current Stage', value: selectedDetail?.workflow.currentStage ?? '-' },
+    { label: '리스크 상태', value: selectedProject?.risk ?? '-' }
+  ];
+  const cockpitNextAction =
+    activeWorkspaceTab === 'allocation'
+      ? '원가담당자와 재무검토자가 배부 기준 변경안을 합의 후 재배분을 실행합니다.'
+      : activeWorkspaceTab === 'valuation'
+        ? '기대값 기준 승인 조건을 확정하고 비관 시나리오 한계를 검토합니다.'
+        : activeWorkspaceTab === 'risk'
+          ? '비관 시나리오 확률을 재추정하고 손실 한계 조건을 재설정합니다.'
+          : selectedInsight.nextAction;
   const valuationExpectedCase =
     selectedDetail?.scenarioReturns.find((scenario) => scenario.label === '기준') ?? null;
   const riskDownsideScenario =
@@ -720,7 +733,7 @@ export function App() {
           {activeView === 'accounting' || activeView === 'valuation' ? (
             <section className="workspace-stage cockpit-stage">
               <div className="workspace-stage__summary cockpit-summary-strip" aria-label="프로젝트 요약 스트립">
-                <div>
+                <div className="cockpit-summary-strip__intro">
                   <p className="workspace-stage__eyebrow">
                     {activeView === 'accounting' ? 'Management Accounting' : 'Financial Evaluation'}
                   </p>
@@ -729,20 +742,42 @@ export function App() {
                     {selectedProject?.headquarter} · {selectedDetail?.assetCategory} · {selectedDetail?.headline}
                   </p>
                 </div>
-                <div className="workspace-stage__meta cockpit-summary-strip__kpis">
-                  {selectedWorkspaceKpis.map((item) => (
-                    <InfoTile key={item.label} label={item.label} value={item.value} />
-                  ))}
+                <div className="cockpit-summary-strip__focus" aria-label="핵심 신호와 다음 행동">
+                  <div className="workspace-stage__meta cockpit-summary-strip__kpis">
+                    {selectedWorkspaceKpis.map((item) => (
+                      <InfoTile key={item.label} label={item.label} value={item.value} />
+                    ))}
+                    <InfoTile label="다음 단계" value={selectedDetail?.workflow.nextStep ?? '-'} />
+                  </div>
+                  <article className="cockpit-next-action">
+                    <span>Next action</span>
+                    <strong>{selectedDetail?.workflow.nextStep ?? '검토 단계 확인 필요'}</strong>
+                    <p>{cockpitNextAction}</p>
+                  </article>
                 </div>
               </div>
 
               <div className="cockpit-meta-band" aria-label="요약 메타 정보">
-                <InfoTile label="우선순위" value={selectedProject ? `${selectedProject.rank}위` : '-'} />
-                <InfoTile label="Asset Class" value={selectedDetail?.assetCategory ?? '-'} />
-                <InfoTile label="Owner" value={selectedDetail?.manager ?? '-'} />
-                <InfoTile label="Current Stage" value={selectedDetail?.workflow.currentStage ?? '-'} />
-                <InfoTile label="리스크 상태" value={selectedProject?.risk ?? '-'} />
-                <InfoTile label="다음 결정" value={selectedDetail?.workflow.nextStep ?? '-'} />
+                {cockpitMetaItems.map((item) => (
+                  <InfoTile key={item.label} label={item.label} value={item.value} />
+                ))}
+              </div>
+              <div className="cockpit-scan-rail" aria-label="의사결정 스캔 경로">
+                <article className="cockpit-scan-rail__step">
+                  <span>01</span>
+                  <strong>Focus signal</strong>
+                  <p>{selectedProject ? `${selectedProject.name} 핵심 KPI를 먼저 확인합니다.` : '프로젝트를 선택하세요.'}</p>
+                </article>
+                <article className="cockpit-scan-rail__step">
+                  <span>02</span>
+                  <strong>Decision point</strong>
+                  <p>{selectedDetail?.workflow.nextStep ?? '다음 결정을 확인합니다.'}</p>
+                </article>
+                <article className="cockpit-scan-rail__step">
+                  <span>03</span>
+                  <strong>Validation</strong>
+                  <p>탭별 근거를 확인한 뒤 승인/보류를 확정합니다.</p>
+                </article>
               </div>
 
               <div className="cockpit-tabs" role="tablist" aria-label="프로젝트 분석 탭">
@@ -812,8 +847,8 @@ export function App() {
                       <article className="workflow-note">
                         <strong>배분 해석</strong>
                         <p>
-                          표준 대비 {formatKrwCompact(selectedDetail.allocation.efficiencyGapKrw)} 초과 배분으로,
-                          인력과 공통원가 배부 기준 재정의가 필요합니다.
+                          표준 대비 {formatKrwCompact(selectedDetail.allocation.efficiencyGapKrw)} 초과입니다.
+                          인력·공통원가 배부 기준을 재정의해야 합니다.
                         </p>
                       </article>
                       <article className="workflow-note">
@@ -849,7 +884,7 @@ export function App() {
                           {formatKrwCompact(
                             Math.abs((valuationExpectedCase?.npvKrw ?? 0) - (riskDownsideScenario?.npvKrw ?? 0))
                           )}
-                          입니다. 확률 가중 기대값 기반으로 승인 조건을 설정해야 합니다.
+                          입니다. 기대값 기준 승인 조건을 먼저 확정하세요.
                         </p>
                       </article>
                     </section>
@@ -899,13 +934,13 @@ export function App() {
                       <article className="workflow-note">
                         <strong>리스크 의미</strong>
                         <p>
-                          현 구간은 단순 severity가 아니라 현금흐름 방어력 문제입니다. downside에서 손실 한계와
-                          승인 임계치를 함께 확인해야 합니다.
+                          현재 이슈는 단순 심각도가 아니라 현금흐름 방어력입니다.
+                          downside 손실 한계와 승인 임계치를 함께 확인해야 합니다.
                         </p>
                       </article>
                       <article className="workflow-note">
                         <strong>권장 액션</strong>
-                        <p>비관 시나리오 확률 재추정, 민감도 재평가, 승인 조건부 코버넌트 제안을 병행합니다.</p>
+                        <p>비관 확률 재추정과 민감도 재평가를 먼저 수행한 뒤 조건부 승인안을 작성합니다.</p>
                       </article>
                     </section>
                   </>
