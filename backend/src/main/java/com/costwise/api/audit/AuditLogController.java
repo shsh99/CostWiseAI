@@ -1,9 +1,9 @@
-package com.costwise.api;
+package com.costwise.api.audit;
 
 import com.costwise.api.dto.audit.AuditLogEntryResponse;
 import com.costwise.api.dto.audit.AuditLogListResponse;
 import com.costwise.api.dto.audit.CreateAuditLogRequest;
-import com.costwise.service.AuditLogService;
+import com.costwise.audit.AuditLogService;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.servlet.http.HttpServletRequest;

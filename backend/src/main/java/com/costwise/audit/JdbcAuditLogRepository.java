@@ -1,4 +1,4 @@
-package com.costwise.service;
+package com.costwise.audit;
 
 import com.costwise.config.AuditPersistenceProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;

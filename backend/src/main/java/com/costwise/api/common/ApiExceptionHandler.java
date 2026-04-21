@@ -1,4 +1,4 @@
-package com.costwise.api;
+package com.costwise.api.common;
 
 import java.util.Map;
 import org.springframework.security.access.AccessDeniedException;

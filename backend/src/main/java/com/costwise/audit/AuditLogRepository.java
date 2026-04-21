@@ -1,4 +1,4 @@
-package com.costwise.service;
+package com.costwise.audit;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import java.time.Instant;

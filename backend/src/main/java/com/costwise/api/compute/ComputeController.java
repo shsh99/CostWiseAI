@@ -1,4 +1,4 @@
-package com.costwise.api;
+package com.costwise.api.compute;
 
 import com.costwise.api.dto.ComputeRequest;
 import com.costwise.api.dto.ComputeResponse;

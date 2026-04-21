@@ -1,4 +1,4 @@
-package com.costwise.api;
+package com.costwise.api.dashboard;
 
 import java.time.LocalDateTime;
 import java.util.List;

@@ -1,4 +1,4 @@
-package com.costwise.api;
+package com.costwise.api.persistence;
 
 import com.costwise.api.dto.persistence.AnalysisUpdateResponse;
 import com.costwise.api.dto.persistence.AnalysisUpsertRequest;
@@ -9,7 +9,7 @@ import com.costwise.api.dto.persistence.ProjectSummaryResponse;
 import com.costwise.api.dto.persistence.ScenarioResponse;
 import com.costwise.api.dto.persistence.UpdateProjectRequest;
 import com.costwise.api.dto.persistence.UpdateScenarioRequest;
-import com.costwise.service.PersistenceService;
+import com.costwise.persistence.PersistenceService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

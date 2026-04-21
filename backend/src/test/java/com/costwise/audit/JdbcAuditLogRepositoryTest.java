@@ -1,4 +1,4 @@
-package com.costwise.service;
+package com.costwise.audit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

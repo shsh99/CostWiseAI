@@ -1,4 +1,4 @@
-package com.costwise.service;
+package com.costwise.persistence;
 
 import com.costwise.api.dto.persistence.AnalysisUpdateResponse;
 import com.costwise.api.dto.persistence.AnalysisUpsertRequest;
