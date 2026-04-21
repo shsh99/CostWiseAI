@@ -3,10 +3,42 @@ set -e
 
 cd "$(git rev-parse --show-toplevel)"
 
-cd frontend
-npm run lint
-npm run format:check
+STAGED_FILES="$(git diff --cached --name-only --diff-filter=ACMR)"
 
-cd ..
-cd backend
-./gradlew --no-daemon check
+if [ -z "$STAGED_FILES" ]; then
+  echo "[pre-commit] No staged files. Skipping checks."
+  exit 0
+fi
+
+FRONTEND_CHANGED=0
+BACKEND_CHANGED=0
+
+for path in $STAGED_FILES; do
+  case "$path" in
+    frontend/*)
+      FRONTEND_CHANGED=1
+      ;;
+    backend/*)
+      BACKEND_CHANGED=1
+      ;;
+  esac
+done
+
+if [ "$FRONTEND_CHANGED" -eq 1 ]; then
+  echo "[pre-commit] frontend changes detected -> running lint/format checks"
+  cd frontend
+  npm run lint
+  npm run format:check
+  cd ..
+else
+  echo "[pre-commit] no frontend changes -> skipping frontend checks"
+fi
+
+if [ "$BACKEND_CHANGED" -eq 1 ]; then
+  echo "[pre-commit] backend changes detected -> running gradle check"
+  cd backend
+  ./gradlew --no-daemon check
+  cd ..
+else
+  echo "[pre-commit] no backend changes -> skipping backend checks"
+fi
