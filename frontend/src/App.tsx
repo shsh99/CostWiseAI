@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type KeyboardEvent } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties, type KeyboardEvent } from 'react';
 import {
   buildDecisionSignals,
   buildProjectDetail,
@@ -178,6 +178,76 @@ export function App() {
     selectedDetail && riskDownsideScenario
       ? Math.abs(selectedDetail.valuation.var95Krw - riskDownsideScenario.npvKrw)
       : 0;
+  const valuationGap =
+    Math.abs((valuationExpectedCase?.npvKrw ?? 0) - (riskDownsideScenario?.npvKrw ?? 0));
+  const allocationDecisionBars = selectedDetail
+    ? buildDecisionBars([
+        {
+          key: 'project',
+          label: '프로젝트 직접원가',
+          value: selectedDetail.allocation.projectCostKrw,
+          formattedValue: formatKrwCompact(selectedDetail.allocation.projectCostKrw),
+          cue: 'solid',
+          annotation: '투입 원가의 기준점'
+        },
+        {
+          key: 'personnel',
+          label: '인력원가',
+          value: selectedDetail.allocation.personnelCostKrw,
+          formattedValue: formatKrwCompact(selectedDetail.allocation.personnelCostKrw),
+          cue: 'stripe',
+          annotation: '배부 기준 재조정 우선 후보'
+        },
+        {
+          key: 'hq',
+          label: '본부 공통원가',
+          value: selectedDetail.allocation.headquarterCostKrw,
+          formattedValue: formatKrwCompact(selectedDetail.allocation.headquarterCostKrw),
+          cue: 'dot',
+          annotation: '공통비 배분 근거 확인 필요'
+        }
+      ])
+    : [];
+  const valuationDecisionBars = selectedDetail
+    ? buildDecisionBars(
+        selectedDetail.scenarioReturns.map((scenario) => ({
+          key: scenario.label,
+          label: `${scenario.label} 시나리오`,
+          value: scenario.npvKrw,
+          formattedValue: formatKrwCompact(scenario.npvKrw),
+          cue: scenario.label === '기준' ? 'solid' : scenario.label === '낙관' ? 'stripe' : 'dot',
+          annotation: `발생 확률 ${formatPercent(scenario.probability)}`
+        }))
+      )
+    : [];
+  const riskDecisionBars = selectedDetail
+    ? buildDecisionBars([
+        {
+          key: 'var95',
+          label: 'VaR 95%',
+          value: selectedDetail.valuation.var95Krw,
+          formattedValue: formatKrwCompact(selectedDetail.valuation.var95Krw),
+          cue: 'solid',
+          annotation: '95% 신뢰수준 손실 하한'
+        },
+        {
+          key: 'cvar95',
+          label: 'CVaR 95%',
+          value: selectedDetail.valuation.cvar95Krw,
+          formattedValue: formatKrwCompact(selectedDetail.valuation.cvar95Krw),
+          cue: 'stripe',
+          annotation: '극단 구간 평균 손실'
+        },
+        {
+          key: 'downside',
+          label: '비관 시나리오 NPV',
+          value: riskDownsideScenario?.npvKrw ?? 0,
+          formattedValue: formatKrwCompact(riskDownsideScenario?.npvKrw ?? 0),
+          cue: 'dot',
+          annotation: '시나리오 하방 기준선'
+        }
+      ])
+    : [];
   const headquarterOptions = useMemo(
     () => ['all', ...portfolio.headquarters.map((headquarter) => headquarter.name)],
     [portfolio.headquarters]
@@ -819,42 +889,30 @@ export function App() {
                       <InfoTile label="성과 갭" value={formatKrwCompact(selectedDetail.allocation.performanceGapKrw)} />
                     </section>
                     <section className="cockpit-dominant-surface" aria-label="배분 비교 surface">
-                      <article className="distribution-card">
-                        <div className="distribution-card__header">
-                          <strong>Cost Driver 구성</strong>
-                          <span>총 배분원가 {formatKrwCompact(selectedDetail.allocation.allocatedCostKrw)}</span>
-                        </div>
-                        <div className="distribution-chart">
-                          <div className="distribution-chart__item">
-                            <div className="distribution-chart__bar" style={{ height: '82%' }} />
-                            <strong>{formatKrwCompact(selectedDetail.allocation.personnelCostKrw)}</strong>
-                            <span>인력원가</span>
-                          </div>
-                          <div className="distribution-chart__item">
-                            <div className="distribution-chart__bar" style={{ height: '100%' }} />
-                            <strong>{formatKrwCompact(selectedDetail.allocation.projectCostKrw)}</strong>
-                            <span>프로젝트 직접원가</span>
-                          </div>
-                          <div className="distribution-chart__item">
-                            <div className="distribution-chart__bar" style={{ height: '56%' }} />
-                            <strong>{formatKrwCompact(selectedDetail.allocation.headquarterCostKrw)}</strong>
-                            <span>본부 공통원가</span>
-                          </div>
-                        </div>
-                      </article>
+                      <DecisionBarChart
+                        title="Cost Driver 기여도"
+                        subtitle={`총 배분원가 ${formatKrwCompact(selectedDetail.allocation.allocatedCostKrw)}`}
+                        bars={allocationDecisionBars}
+                        summary={`표준원가 대비 ${formatKrwCompact(selectedDetail.allocation.efficiencyGapKrw)} 초과 상태`}
+                      />
                     </section>
                     <section className="cockpit-support-grid" aria-label="배분 해석 및 다음 행동">
-                      <article className="workflow-note">
-                        <strong>배분 해석</strong>
-                        <p>
-                          표준 대비 {formatKrwCompact(selectedDetail.allocation.efficiencyGapKrw)} 초과입니다.
-                          인력·공통원가 배부 기준을 재정의해야 합니다.
-                        </p>
-                      </article>
-                      <article className="workflow-note">
-                        <strong>다음 행동</strong>
-                        <p>원가담당자와 재무검토자가 배부 기준 변경안을 합의 후 재배분을 실행합니다.</p>
-                      </article>
+                      <DecisionSummary
+                        title="배분 해석"
+                        items={[
+                          `표준 대비 ${formatKrwCompact(selectedDetail.allocation.efficiencyGapKrw)} 초과`,
+                          `성과 갭 ${formatKrwCompact(selectedDetail.allocation.performanceGapKrw)}로 수익성 압박`,
+                          '인력·공통원가 배부 룰 검증 우선'
+                        ]}
+                      />
+                      <DecisionSummary
+                        title="다음 행동"
+                        items={[
+                          '원가담당자/재무검토자가 기준안 합의',
+                          '배부 기준 변경 후 재배분 시뮬레이션 실행',
+                          '승인 전 기준안과 수정안 차이 기록'
+                        ]}
+                      />
                     </section>
                   </>
                 ) : null}
@@ -868,27 +926,22 @@ export function App() {
                       <InfoTile label="회수기간" value={formatYears(selectedProject?.paybackYears ?? 0)} />
                     </section>
                     <section className="cockpit-dominant-surface" aria-label="시나리오 가치 비교 surface">
-                      <article className="scenario-panel">
-                        {selectedDetail.scenarioReturns.map((scenario) => (
-                          <div key={scenario.label} className="scenario-panel__item">
-                            <span>{scenario.label}</span>
-                            <strong>{formatKrwCompact(scenario.npvKrw)}</strong>
-                            <small>확률 {formatPercent(scenario.probability)}</small>
-                          </div>
-                        ))}
-                      </article>
-                      <article className="workflow-note">
-                        <strong>의사결정 컨텍스트</strong>
-                        <p>
-                          기준 대비 비관 시나리오 격차는{' '}
-                          {formatKrwCompact(
-                            Math.abs((valuationExpectedCase?.npvKrw ?? 0) - (riskDownsideScenario?.npvKrw ?? 0))
-                          )}
-                          입니다. 기대값 기준 승인 조건을 먼저 확정하세요.
-                        </p>
-                      </article>
+                      <DecisionBarChart
+                        title="시나리오 가치 비교"
+                        subtitle="확률 가중 흐름을 한 화면에서 비교"
+                        bars={valuationDecisionBars}
+                        summary={`기준 대비 비관 격차 ${formatKrwCompact(valuationGap)}`}
+                      />
                     </section>
                     <section className="cockpit-support-grid" aria-label="가치평가 보조 정보">
+                      <DecisionSummary
+                        title="의사결정 포인트"
+                        items={[
+                          '기준 시나리오를 승인 기준선으로 사용',
+                          `비관 시나리오 하방 여유 ${formatKrwCompact(valuationGap)} 확보 필요`,
+                          '확률 가정 변경 시 재계산 후 승인'
+                        ]}
+                      />
                       <InfoTile label="신용등급" value={selectedDetail.valuation.creditGrade} />
                       <InfoTile label="Credit Score" value={`${selectedDetail.valuation.creditRiskScore}점`} />
                       <InfoTile label="Duration" value={`${selectedDetail.valuation.duration}년`} />
@@ -906,42 +959,30 @@ export function App() {
                       <InfoTile label="하방 격차" value={formatKrwCompact(riskGuardrailGap)} />
                     </section>
                     <section className="cockpit-dominant-surface" aria-label="하방 노출 surface">
-                      <article className="distribution-card">
-                        <div className="distribution-card__header">
-                          <strong>Downside Exposure</strong>
-                          <span>비관 시나리오 대비 VaR guardrail</span>
-                        </div>
-                        <div className="distribution-chart">
-                          <div className="distribution-chart__item">
-                            <div className="distribution-chart__bar" style={{ height: '96%' }} />
-                            <strong>{formatKrwCompact(selectedDetail.valuation.var95Krw)}</strong>
-                            <span>VaR 95%</span>
-                          </div>
-                          <div className="distribution-chart__item">
-                            <div className="distribution-chart__bar" style={{ height: '78%' }} />
-                            <strong>{formatKrwCompact(selectedDetail.valuation.cvar95Krw)}</strong>
-                            <span>CVaR 95%</span>
-                          </div>
-                          <div className="distribution-chart__item">
-                            <div className="distribution-chart__bar" style={{ height: '62%' }} />
-                            <strong>{formatKrwCompact(riskDownsideScenario?.npvKrw ?? 0)}</strong>
-                            <span>비관 시나리오 NPV</span>
-                          </div>
-                        </div>
-                      </article>
+                      <DecisionBarChart
+                        title="Downside Exposure"
+                        subtitle="손실 한계와 시나리오 하방을 동시 비교"
+                        bars={riskDecisionBars}
+                        summary={`VaR 대비 하방 격차 ${formatKrwCompact(riskGuardrailGap)}`}
+                      />
                     </section>
                     <section className="cockpit-support-grid" aria-label="리스크 해석">
-                      <article className="workflow-note">
-                        <strong>리스크 의미</strong>
-                        <p>
-                          현재 이슈는 단순 심각도가 아니라 현금흐름 방어력입니다.
-                          downside 손실 한계와 승인 임계치를 함께 확인해야 합니다.
-                        </p>
-                      </article>
-                      <article className="workflow-note">
-                        <strong>권장 액션</strong>
-                        <p>비관 확률 재추정과 민감도 재평가를 먼저 수행한 뒤 조건부 승인안을 작성합니다.</p>
-                      </article>
+                      <DecisionSummary
+                        title="리스크 의미"
+                        items={[
+                          '심각도 등급이 아니라 현금흐름 방어력 확인이 핵심',
+                          `하방 격차 ${formatKrwCompact(riskGuardrailGap)}는 승인 임계치 근거`,
+                          '손실 허용 범위와 승인 조건을 함께 검증'
+                        ]}
+                      />
+                      <DecisionSummary
+                        title="권장 액션"
+                        items={[
+                          '비관 확률 재추정',
+                          '민감도 재평가 후 조건부 승인안 작성',
+                          '승인 코멘트에 하방 한계 수치 명시'
+                        ]}
+                      />
                     </section>
                   </>
                 ) : null}
@@ -1101,5 +1142,82 @@ function InfoTile({ label, value }: { label: string; value: string }) {
       <span>{label}</span>
       <strong>{value}</strong>
     </div>
+  );
+}
+
+type DecisionBarCue = 'solid' | 'stripe' | 'dot';
+
+type DecisionBarInput = {
+  key: string;
+  label: string;
+  value: number;
+  formattedValue: string;
+  cue: DecisionBarCue;
+  annotation: string;
+};
+
+type DecisionBarItem = DecisionBarInput & {
+  ratio: number;
+};
+
+function buildDecisionBars(items: DecisionBarInput[]): DecisionBarItem[] {
+  const maxMagnitude = Math.max(...items.map((item) => Math.abs(item.value)), 1);
+  return items.map((item) => ({
+    ...item,
+    ratio: Math.max(Math.abs(item.value) / maxMagnitude, 0.08)
+  }));
+}
+
+function DecisionBarChart({
+  title,
+  subtitle,
+  bars,
+  summary
+}: {
+  title: string;
+  subtitle: string;
+  bars: DecisionBarItem[];
+  summary: string;
+}) {
+  return (
+    <article className="decision-chart-card">
+      <div className="decision-chart-card__header">
+        <strong>{title}</strong>
+        <span>{subtitle}</span>
+      </div>
+      <ul className="decision-chart" aria-label={title}>
+        {bars.map((bar) => (
+          <li key={bar.key} className="decision-chart__row">
+            <div className="decision-chart__meta">
+              <span className={`decision-cue decision-cue--${bar.cue}`} aria-hidden="true" />
+              <strong>{bar.label}</strong>
+              <small>{bar.annotation}</small>
+            </div>
+            <div
+              className={`decision-bar decision-bar--${bar.cue}`}
+              style={{ '--bar-ratio': `${bar.ratio * 100}%` } as CSSProperties}
+            />
+            <div className="decision-chart__value">
+              <strong>{bar.formattedValue}</strong>
+              <span>{bar.value < 0 ? '손실 구간' : '기여 구간'}</span>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <p className="decision-chart-card__summary">{summary}</p>
+    </article>
+  );
+}
+
+function DecisionSummary({ title, items }: { title: string; items: string[] }) {
+  return (
+    <article className="decision-summary">
+      <strong>{title}</strong>
+      <ul>
+        {items.map((item) => (
+          <li key={item}>{item}</li>
+        ))}
+      </ul>
+    </article>
   );
 }

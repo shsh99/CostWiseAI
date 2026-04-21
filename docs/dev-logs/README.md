@@ -8,6 +8,7 @@ Use this directory to record comparison results, branch/worktree choices, and im
 - `docs/dev-logs/2026-04-21-precommit-scope-split.md`
 - `docs/dev-logs/2026-04-21-cockpit-readability.md`
 - `docs/dev-logs/2026-04-21-audit-db-persistence.md`
+- `docs/dev-logs/2026-04-21-detail-visualization.md`
 
 ## Required Before PR
 
