@@ -2,8 +2,6 @@ package com.costwise.api;
 
 import com.costwise.api.dto.ApprovalWorkflowResponse;
 import com.costwise.service.ApprovalWorkflowService;
-import com.costwise.service.AuditLogService;
-import java.util.List;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,12 +16,9 @@ import org.springframework.web.bind.annotation.RestController;
 public class WorkflowController {
 
     private final ApprovalWorkflowService approvalWorkflowService;
-    private final AuditLogService auditLogService;
 
-    public WorkflowController(
-            ApprovalWorkflowService approvalWorkflowService, AuditLogService auditLogService) {
+    public WorkflowController(ApprovalWorkflowService approvalWorkflowService) {
         this.approvalWorkflowService = approvalWorkflowService;
-        this.auditLogService = auditLogService;
     }
 
     @GetMapping("/projects/{projectId}/workflow")
@@ -45,12 +40,6 @@ public class WorkflowController {
         String actor = authentication == null ? null : authentication.getName();
         return approvalWorkflowService.transition(
                 projectId, role, command.action(), actor, command.comment());
-    }
-
-    @GetMapping("/audit-logs")
-    @PreAuthorize("hasRole('EXECUTIVE')")
-    public List<ApprovalWorkflowResponse.AuditEvent> auditLogs() {
-        return auditLogService.recentEvents();
     }
 
     public record ReviewCommand(String action, String comment) {}
