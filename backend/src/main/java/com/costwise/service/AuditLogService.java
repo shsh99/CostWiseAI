@@ -10,12 +10,9 @@ import java.time.LocalDateTime;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicLong;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -34,15 +31,15 @@ public class AuditLogService {
 
     private static final String MASKED_VALUE = "***";
 
-    private final List<AuditEntry> entries = new CopyOnWriteArrayList<>();
-    private final AtomicLong sequence = new AtomicLong(0L);
+    private final AuditLogRepository auditLogRepository;
 
-    public AuditLogService() {}
+    public AuditLogService(AuditLogRepository auditLogRepository) {
+        this.auditLogRepository = auditLogRepository;
+    }
 
     public AuditLogEntryResponse append(AppendCommand command) {
-        long id = sequence.incrementAndGet();
-        AuditEntry entry = new AuditEntry(
-                id,
+        Instant createdAt = Instant.now();
+        AuditLogRepository.StoredAuditEntry entry = auditLogRepository.append(new AuditLogRepository.NewAuditEntry(
                 command.projectId().trim(),
                 command.eventType().trim(),
                 command.actorRole().trim(),
@@ -53,8 +50,7 @@ public class AuditLogService {
                 sanitize(command.metadata()),
                 sanitize(command.requestContext()),
                 command.occurredAt(),
-                Instant.now());
-        entries.add(entry);
+                createdAt));
         return toResponse(entry);
     }
 
@@ -92,15 +88,14 @@ public class AuditLogService {
         }
 
         Long cursor = parseCursor(command.cursor());
-        List<AuditEntry> filtered = entries.stream()
-                .filter(entry -> entry.projectId().equals(command.projectId().trim()))
-                .filter(entry -> command.eventType() == null
-                        || entry.eventType().equalsIgnoreCase(command.eventType().trim()))
-                .filter(entry -> command.from() == null || !entry.occurredAt().isBefore(command.from()))
-                .filter(entry -> command.to() == null || !entry.occurredAt().isAfter(command.to()))
-                .filter(entry -> cursor == null || entry.id() < cursor)
-                .sorted(Comparator.comparingLong(AuditEntry::id).reversed())
-                .toList();
+        List<AuditLogRepository.StoredAuditEntry> filtered = auditLogRepository.query(
+                new AuditLogRepository.QueryFilter(
+                        command.projectId().trim(),
+                        command.eventType() == null ? null : command.eventType().trim(),
+                        command.from(),
+                        command.to(),
+                        cursor),
+                limit + 1);
 
         List<AuditLogEntryResponse> items = filtered.stream()
                 .limit(limit)
@@ -128,7 +123,7 @@ public class AuditLogService {
         }
     }
 
-    private AuditLogEntryResponse toResponse(AuditEntry entry) {
+    private AuditLogEntryResponse toResponse(AuditLogRepository.StoredAuditEntry entry) {
         return new AuditLogEntryResponse(
                 String.valueOf(entry.id()),
                 entry.projectId(),
@@ -218,18 +213,4 @@ public class AuditLogService {
             Instant to,
             Integer limit,
             String cursor) {}
-
-    private record AuditEntry(
-            long id,
-            String projectId,
-            String eventType,
-            String actorRole,
-            String actorId,
-            String action,
-            String target,
-            String result,
-            JsonNode metadata,
-            JsonNode requestContext,
-            Instant occurredAt,
-            Instant createdAt) {}
 }

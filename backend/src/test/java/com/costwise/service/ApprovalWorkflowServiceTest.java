@@ -4,13 +4,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.costwise.api.dto.ApprovalWorkflowResponse;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.access.AccessDeniedException;
 
 class ApprovalWorkflowServiceTest {
 
     private final PortfolioSummaryService portfolioSummaryService = new PortfolioSummaryService();
-    private final AuditLogService auditLogService = new AuditLogService();
+    private final AuditLogService auditLogService = new AuditLogService(new InMemoryAuditLogRepository());
     private final ApprovalWorkflowService service =
             new ApprovalWorkflowService(portfolioSummaryService, auditLogService);
 
@@ -95,5 +99,44 @@ class ApprovalWorkflowServiceTest {
                                         "3", "PLANNER", "SUBMIT", "기획 담당자", "검토 요청"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Only draft projects");
+    }
+
+    private static final class InMemoryAuditLogRepository implements AuditLogRepository {
+
+        private long sequence = 0L;
+        private final List<StoredAuditEntry> entries = new ArrayList<>();
+
+        @Override
+        public StoredAuditEntry append(NewAuditEntry entry) {
+            long id = ++sequence;
+            StoredAuditEntry stored = new StoredAuditEntry(
+                    id,
+                    entry.projectId(),
+                    entry.eventType(),
+                    entry.actorRole(),
+                    entry.actorId(),
+                    entry.action(),
+                    entry.target(),
+                    entry.result(),
+                    entry.metadata() == null ? JsonNodeFactory.instance.objectNode() : entry.metadata(),
+                    entry.requestContext() == null ? JsonNodeFactory.instance.objectNode() : entry.requestContext(),
+                    entry.occurredAt(),
+                    entry.createdAt());
+            entries.add(stored);
+            return stored;
+        }
+
+        @Override
+        public List<StoredAuditEntry> query(QueryFilter filter, int fetchSize) {
+            return entries.stream()
+                    .filter(entry -> entry.projectId().equals(filter.projectId()))
+                    .filter(entry -> filter.eventType() == null || entry.eventType().equalsIgnoreCase(filter.eventType()))
+                    .filter(entry -> filter.from() == null || !entry.occurredAt().isBefore(filter.from()))
+                    .filter(entry -> filter.to() == null || !entry.occurredAt().isAfter(filter.to()))
+                    .filter(entry -> filter.cursor() == null || entry.id() < filter.cursor())
+                    .sorted(Comparator.comparingLong(StoredAuditEntry::id).reversed())
+                    .limit(fetchSize)
+                    .toList();
+        }
     }
 }
