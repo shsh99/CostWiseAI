@@ -45,4 +45,3 @@ export function formatDateTime(iso: string) {
     timeStyle: 'short'
   }).format(date);
 }
-

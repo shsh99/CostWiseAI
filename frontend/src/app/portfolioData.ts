@@ -131,26 +131,266 @@ type ProjectSeed = {
 };
 
 const projectSeeds: ProjectSeed[] = [
-  { code: 'UND-01', name: '암보험 신상품 출시', headquarter: '언더라이팅본부', investmentKrw: 6_500_000_000, expectedRevenueKrw: 11_200_000_000, npvKrw: 2_100_000_000, irr: 0.182, paybackYears: 2.8, status: '승인', risk: '중간', assetCategory: '프로젝트' },
-  { code: 'UND-02', name: '인수심사 자동화', headquarter: '언더라이팅본부', investmentKrw: 4_200_000_000, expectedRevenueKrw: 8_100_000_000, npvKrw: 1_700_000_000, irr: 0.171, paybackYears: 3.1, status: '조건부 진행', risk: '낮음', assetCategory: '파생상품' },
-  { code: 'UND-03', name: '위험요율 재설계', headquarter: '언더라이팅본부', investmentKrw: 3_100_000_000, expectedRevenueKrw: 5_900_000_000, npvKrw: 900_000_000, irr: 0.129, paybackYears: 3.8, status: '검토중', risk: '중간', assetCategory: '채권' },
-  { code: 'UND-04', name: '사전심사 대시보드', headquarter: '언더라이팅본부', investmentKrw: 2_800_000_000, expectedRevenueKrw: 4_700_000_000, npvKrw: -400_000_000, irr: 0.094, paybackYears: 4.6, status: '보류', risk: '높음', assetCategory: '주식' },
-  { code: 'PROD-01', name: '디지털 건강보험', headquarter: '상품개발본부', investmentKrw: 5_400_000_000, expectedRevenueKrw: 9_800_000_000, npvKrw: 2_400_000_000, irr: 0.194, paybackYears: 2.5, status: '승인', risk: '중간', assetCategory: '프로젝트' },
-  { code: 'PROD-02', name: '가족보험 패키지', headquarter: '상품개발본부', investmentKrw: 4_600_000_000, expectedRevenueKrw: 8_300_000_000, npvKrw: 1_500_000_000, irr: 0.161, paybackYears: 3.0, status: '조건부 진행', risk: '낮음', assetCategory: '주식' },
-  { code: 'PROD-03', name: '특약 정비', headquarter: '상품개발본부', investmentKrw: 3_000_000_000, expectedRevenueKrw: 4_900_000_000, npvKrw: 300_000_000, irr: 0.112, paybackYears: 4.2, status: '검토중', risk: '중간', assetCategory: '채권' },
-  { code: 'PROD-04', name: '상품약관 자동화', headquarter: '상품개발본부', investmentKrw: 2_500_000_000, expectedRevenueKrw: 4_100_000_000, npvKrw: -700_000_000, irr: 0.089, paybackYears: 4.8, status: '보류', risk: '높음', assetCategory: '파생상품' },
-  { code: 'SALES-01', name: 'GA 영업지원 포털', headquarter: '영업본부', investmentKrw: 4_900_000_000, expectedRevenueKrw: 9_500_000_000, npvKrw: 1_900_000_000, irr: 0.168, paybackYears: 2.9, status: '승인', risk: '중간', assetCategory: '프로젝트' },
-  { code: 'SALES-02', name: '설계사 리드분배', headquarter: '영업본부', investmentKrw: 3_800_000_000, expectedRevenueKrw: 7_200_000_000, npvKrw: 1_100_000_000, irr: 0.143, paybackYears: 3.4, status: '조건부 진행', risk: '낮음', assetCategory: '주식' },
-  { code: 'SALES-03', name: '모바일 견적 고도화', headquarter: '영업본부', investmentKrw: 3_100_000_000, expectedRevenueKrw: 5_600_000_000, npvKrw: 200_000_000, irr: 0.108, paybackYears: 4.1, status: '검토중', risk: '중간', assetCategory: '채권' },
-  { code: 'SALES-04', name: '채널 수익성 분석', headquarter: '영업본부', investmentKrw: 2_700_000_000, expectedRevenueKrw: 4_300_000_000, npvKrw: -900_000_000, irr: 0.081, paybackYears: 5.0, status: '보류', risk: '높음', assetCategory: '파생상품' },
-  { code: 'IT-01', name: '디지털 플랫폼 구축', headquarter: 'IT본부', investmentKrw: 7_800_000_000, expectedRevenueKrw: 13_600_000_000, npvKrw: 3_500_000_000, irr: 0.207, paybackYears: 2.3, status: '승인', risk: '중간', assetCategory: '프로젝트' },
-  { code: 'IT-02', name: '마이데이터 연계', headquarter: 'IT본부', investmentKrw: 5_900_000_000, expectedRevenueKrw: 10_700_000_000, npvKrw: 2_000_000_000, irr: 0.176, paybackYears: 2.8, status: '조건부 진행', risk: '낮음', assetCategory: '주식' },
-  { code: 'IT-03', name: '데이터허브 확장', headquarter: 'IT본부', investmentKrw: 4_300_000_000, expectedRevenueKrw: 7_400_000_000, npvKrw: 800_000_000, irr: 0.131, paybackYears: 3.7, status: '검토중', risk: '중간', assetCategory: '채권' },
-  { code: 'IT-04', name: '콜센터 고도화', headquarter: 'IT본부', investmentKrw: 3_900_000_000, expectedRevenueKrw: 6_200_000_000, npvKrw: -1_100_000_000, irr: 0.079, paybackYears: 5.2, status: '보류', risk: '높음', assetCategory: '파생상품' },
-  { code: 'CORP-01', name: '원가배분 체계개편', headquarter: '경영지원본부', investmentKrw: 2_900_000_000, expectedRevenueKrw: 5_300_000_000, npvKrw: 600_000_000, irr: 0.122, paybackYears: 3.9, status: '검토중', risk: '낮음', assetCategory: '프로젝트' },
-  { code: 'CORP-02', name: '감사로그 표준화', headquarter: '경영지원본부', investmentKrw: 2_400_000_000, expectedRevenueKrw: 4_500_000_000, npvKrw: 400_000_000, irr: 0.117, paybackYears: 4.0, status: '조건부 진행', risk: '낮음', assetCategory: '채권' },
-  { code: 'CORP-03', name: '성과관리 대시보드', headquarter: '경영지원본부', investmentKrw: 3_200_000_000, expectedRevenueKrw: 5_100_000_000, npvKrw: -300_000_000, irr: 0.097, paybackYears: 4.4, status: '검토중', risk: '중간', assetCategory: '주식' },
-  { code: 'CORP-04', name: '권한통제 재설계', headquarter: '경영지원본부', investmentKrw: 2_100_000_000, expectedRevenueKrw: 3_700_000_000, npvKrw: -1_200_000_000, irr: 0.074, paybackYears: 5.6, status: '보류', risk: '높음', assetCategory: '파생상품' }
+  {
+    code: 'UND-01',
+    name: '암보험 신상품 출시',
+    headquarter: '언더라이팅본부',
+    investmentKrw: 6_500_000_000,
+    expectedRevenueKrw: 11_200_000_000,
+    npvKrw: 2_100_000_000,
+    irr: 0.182,
+    paybackYears: 2.8,
+    status: '승인',
+    risk: '중간',
+    assetCategory: '프로젝트'
+  },
+  {
+    code: 'UND-02',
+    name: '인수심사 자동화',
+    headquarter: '언더라이팅본부',
+    investmentKrw: 4_200_000_000,
+    expectedRevenueKrw: 8_100_000_000,
+    npvKrw: 1_700_000_000,
+    irr: 0.171,
+    paybackYears: 3.1,
+    status: '조건부 진행',
+    risk: '낮음',
+    assetCategory: '파생상품'
+  },
+  {
+    code: 'UND-03',
+    name: '위험요율 재설계',
+    headquarter: '언더라이팅본부',
+    investmentKrw: 3_100_000_000,
+    expectedRevenueKrw: 5_900_000_000,
+    npvKrw: 900_000_000,
+    irr: 0.129,
+    paybackYears: 3.8,
+    status: '검토중',
+    risk: '중간',
+    assetCategory: '채권'
+  },
+  {
+    code: 'UND-04',
+    name: '사전심사 대시보드',
+    headquarter: '언더라이팅본부',
+    investmentKrw: 2_800_000_000,
+    expectedRevenueKrw: 4_700_000_000,
+    npvKrw: -400_000_000,
+    irr: 0.094,
+    paybackYears: 4.6,
+    status: '보류',
+    risk: '높음',
+    assetCategory: '주식'
+  },
+  {
+    code: 'PROD-01',
+    name: '디지털 건강보험',
+    headquarter: '상품개발본부',
+    investmentKrw: 5_400_000_000,
+    expectedRevenueKrw: 9_800_000_000,
+    npvKrw: 2_400_000_000,
+    irr: 0.194,
+    paybackYears: 2.5,
+    status: '승인',
+    risk: '중간',
+    assetCategory: '프로젝트'
+  },
+  {
+    code: 'PROD-02',
+    name: '가족보험 패키지',
+    headquarter: '상품개발본부',
+    investmentKrw: 4_600_000_000,
+    expectedRevenueKrw: 8_300_000_000,
+    npvKrw: 1_500_000_000,
+    irr: 0.161,
+    paybackYears: 3.0,
+    status: '조건부 진행',
+    risk: '낮음',
+    assetCategory: '주식'
+  },
+  {
+    code: 'PROD-03',
+    name: '특약 정비',
+    headquarter: '상품개발본부',
+    investmentKrw: 3_000_000_000,
+    expectedRevenueKrw: 4_900_000_000,
+    npvKrw: 300_000_000,
+    irr: 0.112,
+    paybackYears: 4.2,
+    status: '검토중',
+    risk: '중간',
+    assetCategory: '채권'
+  },
+  {
+    code: 'PROD-04',
+    name: '상품약관 자동화',
+    headquarter: '상품개발본부',
+    investmentKrw: 2_500_000_000,
+    expectedRevenueKrw: 4_100_000_000,
+    npvKrw: -700_000_000,
+    irr: 0.089,
+    paybackYears: 4.8,
+    status: '보류',
+    risk: '높음',
+    assetCategory: '파생상품'
+  },
+  {
+    code: 'SALES-01',
+    name: 'GA 영업지원 포털',
+    headquarter: '영업본부',
+    investmentKrw: 4_900_000_000,
+    expectedRevenueKrw: 9_500_000_000,
+    npvKrw: 1_900_000_000,
+    irr: 0.168,
+    paybackYears: 2.9,
+    status: '승인',
+    risk: '중간',
+    assetCategory: '프로젝트'
+  },
+  {
+    code: 'SALES-02',
+    name: '설계사 리드분배',
+    headquarter: '영업본부',
+    investmentKrw: 3_800_000_000,
+    expectedRevenueKrw: 7_200_000_000,
+    npvKrw: 1_100_000_000,
+    irr: 0.143,
+    paybackYears: 3.4,
+    status: '조건부 진행',
+    risk: '낮음',
+    assetCategory: '주식'
+  },
+  {
+    code: 'SALES-03',
+    name: '모바일 견적 고도화',
+    headquarter: '영업본부',
+    investmentKrw: 3_100_000_000,
+    expectedRevenueKrw: 5_600_000_000,
+    npvKrw: 200_000_000,
+    irr: 0.108,
+    paybackYears: 4.1,
+    status: '검토중',
+    risk: '중간',
+    assetCategory: '채권'
+  },
+  {
+    code: 'SALES-04',
+    name: '채널 수익성 분석',
+    headquarter: '영업본부',
+    investmentKrw: 2_700_000_000,
+    expectedRevenueKrw: 4_300_000_000,
+    npvKrw: -900_000_000,
+    irr: 0.081,
+    paybackYears: 5.0,
+    status: '보류',
+    risk: '높음',
+    assetCategory: '파생상품'
+  },
+  {
+    code: 'IT-01',
+    name: '디지털 플랫폼 구축',
+    headquarter: 'IT본부',
+    investmentKrw: 7_800_000_000,
+    expectedRevenueKrw: 13_600_000_000,
+    npvKrw: 3_500_000_000,
+    irr: 0.207,
+    paybackYears: 2.3,
+    status: '승인',
+    risk: '중간',
+    assetCategory: '프로젝트'
+  },
+  {
+    code: 'IT-02',
+    name: '마이데이터 연계',
+    headquarter: 'IT본부',
+    investmentKrw: 5_900_000_000,
+    expectedRevenueKrw: 10_700_000_000,
+    npvKrw: 2_000_000_000,
+    irr: 0.176,
+    paybackYears: 2.8,
+    status: '조건부 진행',
+    risk: '낮음',
+    assetCategory: '주식'
+  },
+  {
+    code: 'IT-03',
+    name: '데이터허브 확장',
+    headquarter: 'IT본부',
+    investmentKrw: 4_300_000_000,
+    expectedRevenueKrw: 7_400_000_000,
+    npvKrw: 800_000_000,
+    irr: 0.131,
+    paybackYears: 3.7,
+    status: '검토중',
+    risk: '중간',
+    assetCategory: '채권'
+  },
+  {
+    code: 'IT-04',
+    name: '콜센터 고도화',
+    headquarter: 'IT본부',
+    investmentKrw: 3_900_000_000,
+    expectedRevenueKrw: 6_200_000_000,
+    npvKrw: -1_100_000_000,
+    irr: 0.079,
+    paybackYears: 5.2,
+    status: '보류',
+    risk: '높음',
+    assetCategory: '파생상품'
+  },
+  {
+    code: 'CORP-01',
+    name: '원가배분 체계개편',
+    headquarter: '경영지원본부',
+    investmentKrw: 2_900_000_000,
+    expectedRevenueKrw: 5_300_000_000,
+    npvKrw: 600_000_000,
+    irr: 0.122,
+    paybackYears: 3.9,
+    status: '검토중',
+    risk: '낮음',
+    assetCategory: '프로젝트'
+  },
+  {
+    code: 'CORP-02',
+    name: '감사로그 표준화',
+    headquarter: '경영지원본부',
+    investmentKrw: 2_400_000_000,
+    expectedRevenueKrw: 4_500_000_000,
+    npvKrw: 400_000_000,
+    irr: 0.117,
+    paybackYears: 4.0,
+    status: '조건부 진행',
+    risk: '낮음',
+    assetCategory: '채권'
+  },
+  {
+    code: 'CORP-03',
+    name: '성과관리 대시보드',
+    headquarter: '경영지원본부',
+    investmentKrw: 3_200_000_000,
+    expectedRevenueKrw: 5_100_000_000,
+    npvKrw: -300_000_000,
+    irr: 0.097,
+    paybackYears: 4.4,
+    status: '검토중',
+    risk: '중간',
+    assetCategory: '주식'
+  },
+  {
+    code: 'CORP-04',
+    name: '권한통제 재설계',
+    headquarter: '경영지원본부',
+    investmentKrw: 2_100_000_000,
+    expectedRevenueKrw: 3_700_000_000,
+    npvKrw: -1_200_000_000,
+    irr: 0.074,
+    paybackYears: 5.6,
+    status: '보류',
+    risk: '높음',
+    assetCategory: '파생상품'
+  }
 ];
 
 export const navigationItems = [
@@ -174,7 +414,8 @@ export const headquarterPalette: Record<string, string> = {
   경영지원본부: 'hq-chip--rose'
 };
 
-export const defaultPortfolioSummary: PortfolioSummary = buildPortfolioSummary();
+export const defaultPortfolioSummary: PortfolioSummary =
+  buildPortfolioSummary();
 
 export const roleInsights: Record<Role, RoleInsight> = {
   원가담당자: {
@@ -212,7 +453,8 @@ export const roleInsights: Record<Role, RoleInsight> = {
 };
 
 export const apiBaseUrl =
-  import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ?? 'http://localhost:8080';
+  import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ??
+  'http://localhost:8080';
 
 export async function loadPortfolioSummary(): Promise<{
   summary: PortfolioSummary;
@@ -247,7 +489,9 @@ export function buildDecisionSignals(summary: PortfolioSummary) {
 
 function buildPortfolioSummary(): PortfolioSummary {
   const headquarters = buildHeadquartersSummary();
-  const sortedProjects = [...projectSeeds].sort((left, right) => right.npvKrw - left.npvKrw);
+  const sortedProjects = [...projectSeeds].sort(
+    (left, right) => right.npvKrw - left.npvKrw
+  );
   const projects = sortedProjects.map((seed, index) => ({
     rank: index + 1,
     code: seed.code,
@@ -263,19 +507,27 @@ function buildPortfolioSummary(): PortfolioSummary {
     assetCategory: seed.assetCategory
   }));
 
-  const totalInvestmentKrw = projectSeeds.reduce((sum, project) => sum + project.investmentKrw, 0);
+  const totalInvestmentKrw = projectSeeds.reduce(
+    (sum, project) => sum + project.investmentKrw,
+    0
+  );
   const totalExpectedRevenueKrw = projectSeeds.reduce(
     (sum, project) => sum + project.expectedRevenueKrw,
     0
   );
   const averageNpvKrw = Math.round(
-    projectSeeds.reduce((sum, project) => sum + project.npvKrw, 0) / projectSeeds.length
+    projectSeeds.reduce((sum, project) => sum + project.npvKrw, 0) /
+      projectSeeds.length
   );
   const averageIrr =
-    projectSeeds.reduce((sum, project) => sum + project.irr, 0) / projectSeeds.length;
+    projectSeeds.reduce((sum, project) => sum + project.irr, 0) /
+    projectSeeds.length;
   const averagePaybackYears =
-    projectSeeds.reduce((sum, project) => sum + project.paybackYears, 0) / projectSeeds.length;
-  const approvedCount = projectSeeds.filter((project) => project.status === '승인').length;
+    projectSeeds.reduce((sum, project) => sum + project.paybackYears, 0) /
+    projectSeeds.length;
+  const approvedCount = projectSeeds.filter(
+    (project) => project.status === '승인'
+  ).length;
   const conditionalCount = projectSeeds.filter(
     (project) => project.status === '조건부 진행'
   ).length;
@@ -334,9 +586,12 @@ function buildPortfolioSummary(): PortfolioSummary {
 }
 
 export function buildProjectDetail(projectCode: string): ProjectDetail {
-  const seedIndex = projectSeeds.findIndex((project) => project.code === projectCode);
+  const seedIndex = projectSeeds.findIndex(
+    (project) => project.code === projectCode
+  );
   const seed =
-    projectSeeds.find((project) => project.code === projectCode) ?? projectSeeds[0];
+    projectSeeds.find((project) => project.code === projectCode) ??
+    projectSeeds[0];
   const managerByHeadquarter: Record<string, string> = {
     언더라이팅본부: '박하늘 PM',
     상품개발본부: '이수민 PM',
@@ -364,7 +619,9 @@ export function buildProjectDetail(projectCode: string): ProjectDetail {
   const var99Krw = Math.round(seed.npvKrw - volatility * 2.33);
   const cvar95Krw = Math.round(seed.npvKrw - volatility * 2.06);
   const duration = Number((1.8 + seed.paybackYears * 0.46).toFixed(2));
-  const convexity = Number((duration * 1.38 + (seed.risk === '높음' ? 1.7 : 0.8)).toFixed(2));
+  const convexity = Number(
+    (duration * 1.38 + (seed.risk === '높음' ? 1.7 : 0.8)).toFixed(2)
+  );
   const creditRiskScore = Math.max(
     24,
     Math.min(
@@ -405,12 +662,26 @@ export function buildProjectDetail(projectCode: string): ProjectDetail {
       convexity,
       creditRiskScore,
       creditGrade:
-        creditRiskScore >= 85 ? 'AA' : creditRiskScore >= 75 ? 'A' : creditRiskScore >= 65 ? 'BBB' : 'BB'
+        creditRiskScore >= 85
+          ? 'AA'
+          : creditRiskScore >= 75
+            ? 'A'
+            : creditRiskScore >= 65
+              ? 'BBB'
+              : 'BB'
     },
     scenarioReturns: [
-      { label: '낙관', npvKrw: Math.round(seed.npvKrw * 1.42), probability: 0.25 },
+      {
+        label: '낙관',
+        npvKrw: Math.round(seed.npvKrw * 1.42),
+        probability: 0.25
+      },
       { label: '기준', npvKrw: seed.npvKrw, probability: 0.5 },
-      { label: '비관', npvKrw: Math.round(seed.npvKrw * 0.58 - investmentBase * 0.07), probability: 0.25 }
+      {
+        label: '비관',
+        npvKrw: Math.round(seed.npvKrw * 0.58 - investmentBase * 0.07),
+        probability: 0.25
+      }
     ],
     workflow: {
       currentStage:
@@ -443,17 +714,29 @@ function buildHeadquartersSummary(): HeadquartersSummary[] {
   ];
 }
 
-function buildHeadquarter(code: string, name: string, risk: RiskLevel): HeadquartersSummary {
-  const projects = projectSeeds.filter((project) => project.code.startsWith(code));
+function buildHeadquarter(
+  code: string,
+  name: string,
+  risk: RiskLevel
+): HeadquartersSummary {
+  const projects = projectSeeds.filter((project) =>
+    project.code.startsWith(code)
+  );
   const projectCount = projects.length;
-  const totalInvestmentKrw = projects.reduce((sum, project) => sum + project.investmentKrw, 0);
+  const totalInvestmentKrw = projects.reduce(
+    (sum, project) => sum + project.investmentKrw,
+    0
+  );
   const totalExpectedRevenueKrw = projects.reduce(
     (sum, project) => sum + project.expectedRevenueKrw,
     0
   );
-  const averageNpvKrw = Math.round(projects.reduce((sum, project) => sum + project.npvKrw, 0) / projectCount);
+  const averageNpvKrw = Math.round(
+    projects.reduce((sum, project) => sum + project.npvKrw, 0) / projectCount
+  );
   const priorityProject =
-    projects.slice().sort((left, right) => right.npvKrw - left.npvKrw)[0]?.name ?? '프로젝트 없음';
+    projects.slice().sort((left, right) => right.npvKrw - left.npvKrw)[0]
+      ?.name ?? '프로젝트 없음';
 
   return {
     code,

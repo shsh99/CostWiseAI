@@ -191,7 +191,8 @@ export const roleInsights: Record<Role, RoleInsight> = {
     summary:
       '신규 사업이 어떤 고객 문제를 풀고, 어떤 부서 자원을 쓰며, 어떤 가정을 전제로 성립하는지 확인합니다.',
     decisionFocus: '사업 범위, 실행 시점, 기능 우선순위',
-    riskWatch: '가정값이 빠진 상태로 승인을 요청하면 DCF 결과가 과대평가될 수 있습니다.',
+    riskWatch:
+      '가정값이 빠진 상태로 승인을 요청하면 DCF 결과가 과대평가될 수 있습니다.',
     nextAction: '가정값 수정 후 재계산 요청'
   },
   재무팀: {

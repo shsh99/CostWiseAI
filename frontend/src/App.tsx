@@ -12,7 +12,12 @@ import {
   type ProjectStatus,
   type Role
 } from './app/portfolioData';
-import { formatDateTime, formatKrwCompact, formatPercent, formatYears } from './app/format';
+import {
+  formatDateTime,
+  formatKrwCompact,
+  formatPercent,
+  formatYears
+} from './app/format';
 import { MetricCard } from './components/MetricCard';
 import { Panel } from './components/Panel';
 import { ProgressBar } from './components/ProgressBar';
@@ -31,7 +36,9 @@ export function App() {
   const [activeView, setActiveView] = useState<NavigationKey>('dashboard');
   const [activeTab, setActiveTab] = useState<DetailTabKey>('allocation');
   const [selectedHeadquarter, setSelectedHeadquarter] = useState('전체 본부');
-  const [portfolio, setPortfolio] = useState<PortfolioSummary>(defaultPortfolioSummary);
+  const [portfolio, setPortfolio] = useState<PortfolioSummary>(
+    defaultPortfolioSummary
+  );
   const [source, setSource] = useState<'api' | 'local'>('local');
   const [selectedProjectCode, setSelectedProjectCode] = useState(
     defaultPortfolioSummary.projects[0]?.code ?? ''
@@ -63,14 +70,19 @@ export function App() {
   }, [portfolio.projects, selectedHeadquarter]);
 
   useEffect(() => {
-    if (!filteredProjects.some((project) => project.code === selectedProjectCode)) {
-      setSelectedProjectCode(filteredProjects[0]?.code ?? portfolio.projects[0]?.code ?? '');
+    if (
+      !filteredProjects.some((project) => project.code === selectedProjectCode)
+    ) {
+      setSelectedProjectCode(
+        filteredProjects[0]?.code ?? portfolio.projects[0]?.code ?? ''
+      );
     }
   }, [filteredProjects, portfolio.projects, selectedProjectCode]);
 
   const selectedProject =
-    portfolio.projects.find((project) => project.code === selectedProjectCode) ??
-    portfolio.projects[0];
+    portfolio.projects.find(
+      (project) => project.code === selectedProjectCode
+    ) ?? portfolio.projects[0];
   const selectedDetail = selectedProject
     ? buildProjectDetail(selectedProject.code)
     : null;
@@ -80,16 +92,22 @@ export function App() {
   const maxHeadquarterInvestment = useMemo(
     () =>
       Math.max(
-        ...portfolio.headquarters.map((headquarter) => headquarter.totalInvestmentKrw)
+        ...portfolio.headquarters.map(
+          (headquarter) => headquarter.totalInvestmentKrw
+        )
       ),
     [portfolio.headquarters]
   );
   const selectedRank =
-    portfolio.projects.find((project) => project.code === selectedProjectCode)?.rank ?? '-';
+    portfolio.projects.find((project) => project.code === selectedProjectCode)
+      ?.rank ?? '-';
   const selectedTabLabel =
-    detailTabs.find((tab) => tab.key === activeTab)?.label ?? detailTabs[0].label;
+    detailTabs.find((tab) => tab.key === activeTab)?.label ??
+    detailTabs[0].label;
   const maxScenarioNpv = selectedDetail
-    ? Math.max(...selectedDetail.scenarioReturns.map((item) => Math.abs(item.npvKrw)))
+    ? Math.max(
+        ...selectedDetail.scenarioReturns.map((item) => Math.abs(item.npvKrw))
+      )
     : 1;
 
   return (
@@ -117,7 +135,11 @@ export function App() {
               onClick={() => setActiveView(item.key)}
             >
               <span className="nav__icon" aria-hidden="true">
-                {item.key === 'dashboard' ? '▦' : item.key === 'projects' ? '▤' : '◷'}
+                {item.key === 'dashboard'
+                  ? '▦'
+                  : item.key === 'projects'
+                    ? '▤'
+                    : '◷'}
               </span>
               <span>{item.label}</span>
             </button>
@@ -142,7 +164,9 @@ export function App() {
               className={`hq-filter ${selectedHeadquarter === headquarter.name ? 'hq-filter--active' : ''}`}
               onClick={() => setSelectedHeadquarter(headquarter.name)}
             >
-              <span className={`hq-filter__dot ${headquarterPalette[headquarter.name]}`} />
+              <span
+                className={`hq-filter__dot ${headquarterPalette[headquarter.name]}`}
+              />
               <span>{headquarter.name.replace('본부', '')}</span>
               <small>{headquarter.projectCount}</small>
             </button>
@@ -162,7 +186,9 @@ export function App() {
           </div>
           <div className="sidebar__summary-card">
             <span>예상 수익</span>
-            <strong>{formatKrwCompact(portfolio.overview.totalExpectedRevenueKrw)}</strong>
+            <strong>
+              {formatKrwCompact(portfolio.overview.totalExpectedRevenueKrw)}
+            </strong>
             <small>전사 포트폴리오 기준 기대 수익</small>
           </div>
         </section>
@@ -209,7 +235,9 @@ export function App() {
               <div className="hero-strip__status-stack">
                 <span
                   className={`status-pill status-pill--${
-                    selectedProject ? riskToneMap[selectedProject.risk] : 'active'
+                    selectedProject
+                      ? riskToneMap[selectedProject.risk]
+                      : 'active'
                   }`}
                 >
                   {selectedProject ? selectedProject.status : portfolio.status}
@@ -255,7 +283,9 @@ export function App() {
             />
             <MetricCard
               label="배분원가"
-              value={formatKrwCompact(selectedDetail?.allocation.allocatedCostKrw ?? 0)}
+              value={formatKrwCompact(
+                selectedDetail?.allocation.allocatedCostKrw ?? 0
+              )}
               detail="선택 프로젝트 기준 ABC 배부"
               tone="warning"
             />
@@ -294,32 +324,45 @@ export function App() {
               >
                 <div className="headquarter-grid">
                   {portfolio.headquarters.map((headquarter) => (
-                    <article key={headquarter.code} className="headquarter-card">
+                    <article
+                      key={headquarter.code}
+                      className="headquarter-card"
+                    >
                       <div className="headquarter-card__header">
                         <div>
                           <div className="headquarter-card__title">
-                            <span className={`hq-filter__dot ${headquarterPalette[headquarter.name]}`} />
+                            <span
+                              className={`hq-filter__dot ${headquarterPalette[headquarter.name]}`}
+                            />
                             <strong>{headquarter.name}</strong>
                           </div>
                           <span>{headquarter.projectCount}개 프로젝트</span>
                         </div>
-                        <span className={`status-pill status-pill--${riskToneMap[headquarter.risk]}`}>
+                        <span
+                          className={`status-pill status-pill--${riskToneMap[headquarter.risk]}`}
+                        >
                           {headquarter.risk}
                         </span>
                       </div>
                       <div className="headquarter-card__metrics">
                         <div>
                           <span>총 투자액</span>
-                          <strong>{formatKrwCompact(headquarter.totalInvestmentKrw)}</strong>
+                          <strong>
+                            {formatKrwCompact(headquarter.totalInvestmentKrw)}
+                          </strong>
                         </div>
                         <div>
                           <span>평균 NPV</span>
-                          <strong>{formatKrwCompact(headquarter.averageNpvKrw)}</strong>
+                          <strong>
+                            {formatKrwCompact(headquarter.averageNpvKrw)}
+                          </strong>
                         </div>
                       </div>
                       <ProgressBar
                         label="투자 비중"
-                        value={Math.round(headquarter.totalInvestmentKrw / 10000)}
+                        value={Math.round(
+                          headquarter.totalInvestmentKrw / 10000
+                        )}
                         max={Math.round(maxHeadquarterInvestment / 10000)}
                         tone={
                           headquarter.risk === '높음'
@@ -382,7 +425,11 @@ export function App() {
                         {filteredProjects.map((project) => (
                           <tr
                             key={project.code}
-                            className={project.code === selectedProjectCode ? 'data-table__row--selected' : ''}
+                            className={
+                              project.code === selectedProjectCode
+                                ? 'data-table__row--selected'
+                                : ''
+                            }
                             onClick={() => setSelectedProjectCode(project.code)}
                             role="button"
                             tabIndex={0}
@@ -403,7 +450,9 @@ export function App() {
                             <td>{project.headquarter}</td>
                             <td>{project.assetCategory}</td>
                             <td>
-                              <span className={`status-pill status-pill--${statusTone(project.status)}`}>
+                              <span
+                                className={`status-pill status-pill--${statusTone(project.status)}`}
+                              >
                                 {project.status}
                               </span>
                             </td>
@@ -430,25 +479,48 @@ export function App() {
               >
                 {selectedProject && selectedDetail ? (
                   <div className="detail-shell">
-                    <section className="project-spotlight" aria-label="선택 프로젝트 요약">
+                    <section
+                      className="project-spotlight"
+                      aria-label="선택 프로젝트 요약"
+                    >
                       <div className="project-spotlight__header">
                         <div>
-                          <span className="project-spotlight__code">{selectedProject.code}</span>
+                          <span className="project-spotlight__code">
+                            {selectedProject.code}
+                          </span>
                           <strong>{selectedProject.name}</strong>
                         </div>
-                        <span className={`status-pill status-pill--${riskToneMap[selectedProject.risk]}`}>
+                        <span
+                          className={`status-pill status-pill--${riskToneMap[selectedProject.risk]}`}
+                        >
                           {selectedProject.risk}
                         </span>
                       </div>
                       <div className="project-spotlight__band">
-                        <InfoTile label="우선순위" value={`${selectedRank}위`} />
-                        <InfoTile label="자산군" value={selectedDetail.assetCategory} />
-                        <InfoTile label="책임 PM" value={selectedDetail.manager} />
-                        <InfoTile label="현재 단계" value={selectedDetail.workflow.currentStage} />
+                        <InfoTile
+                          label="우선순위"
+                          value={`${selectedRank}위`}
+                        />
+                        <InfoTile
+                          label="자산군"
+                          value={selectedDetail.assetCategory}
+                        />
+                        <InfoTile
+                          label="책임 PM"
+                          value={selectedDetail.manager}
+                        />
+                        <InfoTile
+                          label="현재 단계"
+                          value={selectedDetail.workflow.currentStage}
+                        />
                       </div>
                     </section>
 
-                    <div className="detail-tabs" role="tablist" aria-label="상세 탭">
+                    <div
+                      className="detail-tabs"
+                      role="tablist"
+                      aria-label="상세 탭"
+                    >
                       {detailTabs.map((tab) => (
                         <button
                           key={tab.key}
@@ -464,20 +536,64 @@ export function App() {
                     {activeTab === 'allocation' ? (
                       <div className="detail-stack">
                         <div className="detail-kpis">
-                          <InfoTile label="인력 원가" value={formatKrwCompact(selectedDetail.allocation.personnelCostKrw)} />
-                          <InfoTile label="프로젝트 원가" value={formatKrwCompact(selectedDetail.allocation.projectCostKrw)} />
-                          <InfoTile label="본부 공통원가" value={formatKrwCompact(selectedDetail.allocation.headquarterCostKrw)} />
-                          <InfoTile label="전사 공통원가" value={formatKrwCompact(selectedDetail.allocation.enterpriseCostKrw)} />
+                          <InfoTile
+                            label="인력 원가"
+                            value={formatKrwCompact(
+                              selectedDetail.allocation.personnelCostKrw
+                            )}
+                          />
+                          <InfoTile
+                            label="프로젝트 원가"
+                            value={formatKrwCompact(
+                              selectedDetail.allocation.projectCostKrw
+                            )}
+                          />
+                          <InfoTile
+                            label="본부 공통원가"
+                            value={formatKrwCompact(
+                              selectedDetail.allocation.headquarterCostKrw
+                            )}
+                          />
+                          <InfoTile
+                            label="전사 공통원가"
+                            value={formatKrwCompact(
+                              selectedDetail.allocation.enterpriseCostKrw
+                            )}
+                          />
                         </div>
                         <div className="callout callout--accent">
                           <strong>내부대체가액</strong>
-                          <span>{formatKrwCompact(selectedDetail.allocation.internalTransferPriceKrw)}</span>
+                          <span>
+                            {formatKrwCompact(
+                              selectedDetail.allocation.internalTransferPriceKrw
+                            )}
+                          </span>
                         </div>
                         <div className="detail-grid">
-                          <InfoTile label="표준원가" value={formatKrwCompact(selectedDetail.allocation.standardCostKrw)} />
-                          <InfoTile label="배분원가" value={formatKrwCompact(selectedDetail.allocation.allocatedCostKrw)} />
-                          <InfoTile label="원가 효율 차이" value={formatKrwCompact(selectedDetail.allocation.efficiencyGapKrw)} />
-                          <InfoTile label="성과 요인 차이" value={formatKrwCompact(selectedDetail.allocation.performanceGapKrw)} />
+                          <InfoTile
+                            label="표준원가"
+                            value={formatKrwCompact(
+                              selectedDetail.allocation.standardCostKrw
+                            )}
+                          />
+                          <InfoTile
+                            label="배분원가"
+                            value={formatKrwCompact(
+                              selectedDetail.allocation.allocatedCostKrw
+                            )}
+                          />
+                          <InfoTile
+                            label="원가 효율 차이"
+                            value={formatKrwCompact(
+                              selectedDetail.allocation.efficiencyGapKrw
+                            )}
+                          />
+                          <InfoTile
+                            label="성과 요인 차이"
+                            value={formatKrwCompact(
+                              selectedDetail.allocation.performanceGapKrw
+                            )}
+                          />
                         </div>
                       </div>
                     ) : null}
@@ -485,17 +601,38 @@ export function App() {
                     {activeTab === 'valuation' ? (
                       <div className="detail-stack">
                         <div className="detail-kpis">
-                          <InfoTile label="공정가치" value={formatKrwCompact(selectedDetail.valuation.fairValueKrw)} />
-                          <InfoTile label="NPV" value={formatKrwCompact(selectedProject.npvKrw)} />
-                          <InfoTile label="IRR" value={formatPercent(selectedProject.irr)} />
-                          <InfoTile label="회수기간" value={formatYears(selectedProject.paybackYears)} />
+                          <InfoTile
+                            label="공정가치"
+                            value={formatKrwCompact(
+                              selectedDetail.valuation.fairValueKrw
+                            )}
+                          />
+                          <InfoTile
+                            label="NPV"
+                            value={formatKrwCompact(selectedProject.npvKrw)}
+                          />
+                          <InfoTile
+                            label="IRR"
+                            value={formatPercent(selectedProject.irr)}
+                          />
+                          <InfoTile
+                            label="회수기간"
+                            value={formatYears(selectedProject.paybackYears)}
+                          />
                         </div>
                         <div className="scenario-panel">
                           {selectedDetail.scenarioReturns.map((scenario) => (
-                            <div key={scenario.label} className="scenario-panel__item">
+                            <div
+                              key={scenario.label}
+                              className="scenario-panel__item"
+                            >
                               <span>{scenario.label}</span>
-                              <strong>{formatKrwCompact(scenario.npvKrw)}</strong>
-                              <small>확률 {formatPercent(scenario.probability)}</small>
+                              <strong>
+                                {formatKrwCompact(scenario.npvKrw)}
+                              </strong>
+                              <small>
+                                확률 {formatPercent(scenario.probability)}
+                              </small>
                             </div>
                           ))}
                         </div>
@@ -514,12 +651,38 @@ export function App() {
                           </strong>
                         </div>
                         <div className="detail-grid">
-                          <InfoTile label="VaR (95%)" value={formatKrwCompact(selectedDetail.valuation.var95Krw)} />
-                          <InfoTile label="VaR (99%)" value={formatKrwCompact(selectedDetail.valuation.var99Krw)} />
-                          <InfoTile label="CVaR" value={formatKrwCompact(selectedDetail.valuation.cvar95Krw)} />
-                          <InfoTile label="신용등급" value={selectedDetail.valuation.creditGrade} />
-                          <InfoTile label="Duration" value={`${selectedDetail.valuation.duration}년`} />
-                          <InfoTile label="Convexity" value={selectedDetail.valuation.convexity.toFixed(2)} />
+                          <InfoTile
+                            label="VaR (95%)"
+                            value={formatKrwCompact(
+                              selectedDetail.valuation.var95Krw
+                            )}
+                          />
+                          <InfoTile
+                            label="VaR (99%)"
+                            value={formatKrwCompact(
+                              selectedDetail.valuation.var99Krw
+                            )}
+                          />
+                          <InfoTile
+                            label="CVaR"
+                            value={formatKrwCompact(
+                              selectedDetail.valuation.cvar95Krw
+                            )}
+                          />
+                          <InfoTile
+                            label="신용등급"
+                            value={selectedDetail.valuation.creditGrade}
+                          />
+                          <InfoTile
+                            label="Duration"
+                            value={`${selectedDetail.valuation.duration}년`}
+                          />
+                          <InfoTile
+                            label="Convexity"
+                            value={selectedDetail.valuation.convexity.toFixed(
+                              2
+                            )}
+                          />
                         </div>
                         <div className="distribution-card">
                           <div className="distribution-card__header">
@@ -528,13 +691,20 @@ export function App() {
                           </div>
                           <div className="distribution-chart">
                             {selectedDetail.scenarioReturns.map((scenario) => (
-                              <div key={scenario.label} className="distribution-chart__item">
+                              <div
+                                key={scenario.label}
+                                className="distribution-chart__item"
+                              >
                                 <div
                                   className="distribution-chart__bar"
                                   style={{
                                     height: `${Math.max(
                                       18,
-                                      Math.round((Math.abs(scenario.npvKrw) / maxScenarioNpv) * 180)
+                                      Math.round(
+                                        (Math.abs(scenario.npvKrw) /
+                                          maxScenarioNpv) *
+                                          180
+                                      )
                                     )}px`
                                   }}
                                 />
@@ -546,10 +716,12 @@ export function App() {
                         </div>
                         <div className="risk-method">
                           <strong>신용평가 리스크 점수</strong>
-                          <span>{selectedDetail.valuation.creditRiskScore} / 100</span>
+                          <span>
+                            {selectedDetail.valuation.creditRiskScore} / 100
+                          </span>
                           <p>
-                            기준 시나리오 NPV, 변동성, 자산군별 민감도, 상태 리스크를
-                            결합한 내부 평가 점수입니다.
+                            기준 시나리오 NPV, 변동성, 자산군별 민감도, 상태
+                            리스크를 결합한 내부 평가 점수입니다.
                           </p>
                         </div>
                       </div>
@@ -572,13 +744,21 @@ export function App() {
                           ))}
                         </div>
                         <div className="detail-grid">
-                          <InfoTile label="프로젝트 오너" value={selectedDetail.workflow.owner} />
-                          <InfoTile label="재무 검토" value={selectedDetail.workflow.financeReviewer} />
+                          <InfoTile
+                            label="프로젝트 오너"
+                            value={selectedDetail.workflow.owner}
+                          />
+                          <InfoTile
+                            label="재무 검토"
+                            value={selectedDetail.workflow.financeReviewer}
+                          />
                         </div>
                         <div className="workflow-note">
                           <strong>임원 코멘트</strong>
                           <p>{selectedDetail.workflow.executiveComment}</p>
-                          <small>다음 단계 · {selectedDetail.workflow.nextStep}</small>
+                          <small>
+                            다음 단계 · {selectedDetail.workflow.nextStep}
+                          </small>
                         </div>
                       </div>
                     ) : null}
@@ -586,10 +766,17 @@ export function App() {
                 ) : null}
               </Panel>
 
-              <Panel title={`역할별 검토 패널 · ${selectedRole}`} subtitle="같은 포트폴리오를 다른 책임 관점에서 봅니다.">
+              <Panel
+                title={`역할별 검토 패널 · ${selectedRole}`}
+                subtitle="같은 포트폴리오를 다른 책임 관점에서 봅니다."
+              >
                 <div className="insight-card">
-                  <p className="insight-card__headline">{selectedInsight.headline}</p>
-                  <p className="insight-card__summary">{selectedInsight.summary}</p>
+                  <p className="insight-card__headline">
+                    {selectedInsight.headline}
+                  </p>
+                  <p className="insight-card__summary">
+                    {selectedInsight.summary}
+                  </p>
                   <dl className="insight-grid">
                     <div>
                       <dt>검토 초점</dt>
@@ -611,7 +798,10 @@ export function App() {
                 </div>
               </Panel>
 
-              <Panel title="가정값 및 감사" subtitle="포트폴리오 가정값과 최근 변경 이력을 함께 유지합니다.">
+              <Panel
+                title="가정값 및 감사"
+                subtitle="포트폴리오 가정값과 최근 변경 이력을 함께 유지합니다."
+              >
                 <div className="assumption-list">
                   {portfolio.assumptions.map((item) => (
                     <div key={item.label} className="assumption-list__item">
@@ -622,7 +812,10 @@ export function App() {
                 </div>
                 <div className="audit-inline">
                   {portfolio.auditEvents.slice(-2).map((item) => (
-                    <div key={`${item.actor}-${item.at}`} className="audit-inline__item">
+                    <div
+                      key={`${item.actor}-${item.at}`}
+                      className="audit-inline__item"
+                    >
                       <strong>{item.actor}</strong>
                       <span>{item.action}</span>
                       <small>{formatDateTime(item.at)}</small>
