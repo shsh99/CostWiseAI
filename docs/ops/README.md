@@ -8,3 +8,5 @@ This directory holds workflow rules that help AI and humans work safely in the r
 - `docs/worktree-strategy.md`: branch and worktree policy with A/B comparison.
 - `docs/ops/pr-ai-review.md`: GitHub Actions-based rule review flow for pull requests.
 - `docs/ops/security-audit.md`: security posture, RBAC target, and audit flow for the finance platform.
+- `docs/ops/orchestrator-agent-playbook.md`: decision-authority orchestrator model and subagent control loop.
+- `docs/ops/orchestrator-manager-automation.md`: issue triage/dispatch automation script usage.
