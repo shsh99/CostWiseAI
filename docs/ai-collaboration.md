@@ -18,6 +18,67 @@ This document defines how Codex and other AI helpers should work in this reposit
 - Quality reviewer: checks buildability, maintainability, and missing setup.
 - Security reviewer: checks auth, access control, secrets, and audit coverage.
 
+## Orchestrator Decision Authority
+
+- The main orchestrator is the only role that can declare:
+  - issue priority
+  - parallel vs sequential execution
+  - merge order
+  - done/not-done status
+- Workers and reviewers must not self-promote scope, merge order, or completion status.
+- The orchestrator must freeze one acceptance contract per slice before dispatch:
+  - scope boundaries
+  - verification commands
+  - non-touch files
+  - handoff format
+
+## Subagent Control Loop
+
+Use this loop for each slice:
+
+1. Contract freeze
+- Define one slice goal, file scope, constraints, and pass/fail checks.
+
+2. Dispatch
+- Assign exactly one worker per independent slice.
+- If overlap risk exists, run sequentially.
+
+3. Collect
+- Require worker output in fixed format:
+  - changed files
+  - verification results
+  - residual risks
+
+4. Gate
+- Run spec + quality review.
+- If blocking findings exist, route back to the same worker.
+
+5. Integrate
+- Confirm verification evidence.
+- Update dev log when required.
+- Decide next slice or PR.
+
+Enforcement:
+- If a worker changes out-of-scope files, reject the output and rerun the slice.
+- If mandatory verification evidence is missing, reject the output.
+- If review decisions conflict, quality/security blocking findings block merge until resolved.
+
+Reference:
+- Detailed protocol: `docs/ops/orchestrator-agent-playbook.md`
+
+## Mandatory Worker Report Format
+
+```text
+변경 파일 목록
+- ...
+
+검증 결과
+- command: result
+
+남은 리스크
+- ...
+```
+
 ## Subagent Usage Rules
 
 - Use one worker per file slice or subsystem.
