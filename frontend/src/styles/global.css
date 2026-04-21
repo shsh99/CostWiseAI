@@ -904,6 +904,124 @@ textarea {
   border-radius: 20px;
 }
 
+.explorer-controls {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 14px;
+  padding: 14px;
+  border: 1px solid rgba(123, 137, 167, 0.16);
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(247, 249, 253, 0.88), rgba(255, 255, 255, 0.92));
+}
+
+.explorer-controls__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) minmax(200px, 1fr);
+  gap: 12px;
+}
+
+.explorer-search,
+.explorer-sort {
+  display: grid;
+  gap: 6px;
+}
+
+.explorer-search span,
+.explorer-sort span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.explorer-search input,
+.explorer-sort select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid rgba(123, 137, 167, 0.3);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--text);
+  font: inherit;
+}
+
+.explorer-search input:focus-visible,
+.explorer-sort select:focus-visible,
+.explorer-pill:focus-visible,
+.explorer-reset:focus-visible,
+.empty-state button:focus-visible {
+  outline: 3px solid rgba(79, 103, 246, 0.26);
+  outline-offset: 2px;
+}
+
+.explorer-controls__group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.explorer-pill {
+  border: 1px solid rgba(123, 137, 167, 0.28);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--text);
+  font-size: 0.84rem;
+  font-weight: 700;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.explorer-pill--subtle {
+  font-weight: 600;
+  color: #364a72;
+}
+
+.explorer-pill--active {
+  border-color: rgba(79, 103, 246, 0.5);
+  background: rgba(79, 103, 246, 0.1);
+  color: #203875;
+}
+
+.explorer-controls__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.explorer-controls__footer p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.explorer-reset,
+.empty-state button {
+  border: 1px solid rgba(123, 137, 167, 0.3);
+  border-radius: 10px;
+  background: #fff;
+  color: #30446b;
+  font-size: 0.84rem;
+  font-weight: 700;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.empty-state {
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  padding: 24px;
+  border-top: 1px solid rgba(123, 137, 167, 0.12);
+  color: var(--muted);
+  text-align: center;
+}
+
+.empty-state p {
+  margin: 0;
+}
+
 .data-table {
   width: 100%;
   min-width: 760px;
@@ -1441,6 +1559,15 @@ textarea {
 
   .topbar__cluster {
     justify-items: start;
+  }
+
+  .explorer-controls__row {
+    grid-template-columns: 1fr;
+  }
+
+  .explorer-controls__footer {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .context-pills,
