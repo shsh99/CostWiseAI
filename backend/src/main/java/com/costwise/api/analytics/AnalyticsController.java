@@ -1,4 +1,4 @@
-package com.costwise.api;
+package com.costwise.api.analytics;
 
 import com.costwise.api.dto.CostAccountingSummaryResponse;
 import com.costwise.api.dto.ValuationRiskResponse;

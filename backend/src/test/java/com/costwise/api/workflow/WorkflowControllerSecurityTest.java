@@ -1,4 +1,4 @@
-package com.costwise.api;
+package com.costwise.api.workflow;
 
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;

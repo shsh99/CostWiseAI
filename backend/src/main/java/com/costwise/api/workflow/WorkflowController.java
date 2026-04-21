@@ -1,7 +1,7 @@
-package com.costwise.api;
+package com.costwise.api.workflow;
 
-import com.costwise.api.dto.ApprovalWorkflowResponse;
-import com.costwise.service.ApprovalWorkflowService;
+import com.costwise.api.dto.workflow.ApprovalWorkflowResponse;
+import com.costwise.workflow.ApprovalWorkflowService;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;

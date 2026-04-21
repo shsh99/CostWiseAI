@@ -1,4 +1,4 @@
-package com.costwise.api.dto;
+package com.costwise.api.dto.workflow;
 
 import java.time.LocalDateTime;
 import java.util.List;

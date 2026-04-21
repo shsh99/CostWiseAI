@@ -1,8 +1,8 @@
-package com.costwise.service;
+package com.costwise.audit;
 
-import com.costwise.api.dto.ApprovalWorkflowResponse;
 import com.costwise.api.dto.audit.AuditLogEntryResponse;
 import com.costwise.api.dto.audit.AuditLogListResponse;
+import com.costwise.api.dto.workflow.ApprovalWorkflowResponse;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
