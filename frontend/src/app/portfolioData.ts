@@ -394,9 +394,12 @@ const projectSeeds: ProjectSeed[] = [
 ];
 
 export const navigationItems = [
-  { key: 'dashboard', label: '포트폴리오 대시보드' },
-  { key: 'projects', label: '프로젝트 목록' },
-  { key: 'audit', label: '감사 로그' }
+  { key: 'dashboard', label: 'Dashboard', description: 'Executive overview와 우선 신호를 먼저 봅니다.' },
+  { key: 'portfolio', label: 'Portfolio', description: '프로젝트 풀과 진입 대상을 정리합니다.' },
+  { key: 'accounting', label: 'Management Accounting', description: '원가·배분 관점의 프로젝트 워크스페이스입니다.' },
+  { key: 'valuation', label: 'Financial Evaluation', description: '가치평가와 투자 판단 워크스페이스입니다.' },
+  { key: 'reviews', label: 'Reviews', description: '가정값과 감사 이력을 검토합니다.' },
+  { key: 'settings', label: 'Settings', description: '역할과 선호 컨텍스트를 조정합니다.' }
 ] as const;
 
 export const detailTabs = [

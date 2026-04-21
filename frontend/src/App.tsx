@@ -3,8 +3,6 @@ import {
   buildDecisionSignals,
   buildProjectDetail,
   defaultPortfolioSummary,
-  detailTabs,
-  headquarterPalette,
   loadPortfolioSummary,
   navigationItems,
   roleInsights,
@@ -12,18 +10,56 @@ import {
   type ProjectStatus,
   type Role
 } from './app/portfolioData';
-import {
-  formatDateTime,
-  formatKrwCompact,
-  formatPercent,
-  formatYears
-} from './app/format';
+import { formatDateTime, formatKrwCompact, formatPercent, formatYears } from './app/format';
 import { MetricCard } from './components/MetricCard';
 import { Panel } from './components/Panel';
 import { ProgressBar } from './components/ProgressBar';
 
 type NavigationKey = (typeof navigationItems)[number]['key'];
-type DetailTabKey = (typeof detailTabs)[number]['key'];
+
+const workspaceSections = ['Project Summary', 'Drivers', 'Decision Surface', 'Next Actions'] as const;
+
+const viewMeta: Record<
+  NavigationKey,
+  { eyebrow: string; title: string; description: string; breadcrumb: string[] }
+> = {
+  dashboard: {
+    eyebrow: 'Executive overview',
+    title: 'Task-first decision shell',
+    description: '플랫폼 진입 즉시 포트폴리오 상태와 다음 작업 경로를 이해하도록 셸을 재구성했습니다.',
+    breadcrumb: ['Platform', 'Dashboard']
+  },
+  portfolio: {
+    eyebrow: 'Portfolio queue',
+    title: 'Portfolio as the default landing context',
+    description: '프로젝트를 한곳에서 검토하고, 필요한 워크스페이스로 의도적으로 진입합니다.',
+    breadcrumb: ['Platform', 'Portfolio']
+  },
+  accounting: {
+    eyebrow: 'Workspace',
+    title: 'Management accounting workspace',
+    description: '선택된 프로젝트의 원가·배분 맥락만 집중해서 봅니다.',
+    breadcrumb: ['Platform', 'Workspaces', 'Management Accounting']
+  },
+  valuation: {
+    eyebrow: 'Workspace',
+    title: 'Financial evaluation workspace',
+    description: '투자 타당성, 시나리오, 리스크를 프로젝트 단위로 읽습니다.',
+    breadcrumb: ['Platform', 'Workspaces', 'Financial Evaluation']
+  },
+  reviews: {
+    eyebrow: 'Review history',
+    title: 'Assumptions and review evidence',
+    description: '가정값과 감사 흐름을 별도 검토 레이어로 분리했습니다.',
+    breadcrumb: ['Platform', 'Reviews']
+  },
+  settings: {
+    eyebrow: 'Administration',
+    title: 'Role and workspace preferences',
+    description: '역할과 선호 컨텍스트는 글로벌 네비게이션과 분리된 설정 영역으로 둡니다.',
+    breadcrumb: ['Platform', 'Settings']
+  }
+};
 
 const riskToneMap = {
   낮음: 'low',
@@ -34,11 +70,7 @@ const riskToneMap = {
 export function App() {
   const [selectedRole, setSelectedRole] = useState<Role>('임원');
   const [activeView, setActiveView] = useState<NavigationKey>('dashboard');
-  const [activeTab, setActiveTab] = useState<DetailTabKey>('allocation');
-  const [selectedHeadquarter, setSelectedHeadquarter] = useState('전체 본부');
-  const [portfolio, setPortfolio] = useState<PortfolioSummary>(
-    defaultPortfolioSummary
-  );
+  const [portfolio, setPortfolio] = useState<PortfolioSummary>(defaultPortfolioSummary);
   const [source, setSource] = useState<'api' | 'local'>('local');
   const [selectedProjectCode, setSelectedProjectCode] = useState(
     defaultPortfolioSummary.projects[0]?.code ?? ''
@@ -59,749 +91,407 @@ export function App() {
     };
   }, []);
 
-  const filteredProjects = useMemo(() => {
-    if (selectedHeadquarter === '전체 본부') {
-      return portfolio.projects;
-    }
-
-    return portfolio.projects.filter(
-      (project) => project.headquarter === selectedHeadquarter
-    );
-  }, [portfolio.projects, selectedHeadquarter]);
-
-  useEffect(() => {
-    if (
-      !filteredProjects.some((project) => project.code === selectedProjectCode)
-    ) {
-      setSelectedProjectCode(
-        filteredProjects[0]?.code ?? portfolio.projects[0]?.code ?? ''
-      );
-    }
-  }, [filteredProjects, portfolio.projects, selectedProjectCode]);
-
   const selectedProject =
-    portfolio.projects.find(
-      (project) => project.code === selectedProjectCode
-    ) ?? portfolio.projects[0];
-  const selectedDetail = selectedProject
-    ? buildProjectDetail(selectedProject.code)
-    : null;
+    portfolio.projects.find((project) => project.code === selectedProjectCode) ??
+    portfolio.projects[0];
+  const selectedDetail = selectedProject ? buildProjectDetail(selectedProject.code) : null;
   const selectedInsight = roleInsights[selectedRole];
-  const latestAudit = portfolio.auditEvents.at(-1);
   const decisionSignals = buildDecisionSignals(portfolio);
+  const currentViewMeta = viewMeta[activeView];
+  const priorityProjects = useMemo(() => portfolio.projects.slice(0, 6), [portfolio.projects]);
   const maxHeadquarterInvestment = useMemo(
-    () =>
-      Math.max(
-        ...portfolio.headquarters.map(
-          (headquarter) => headquarter.totalInvestmentKrw
-        )
-      ),
+    () => Math.max(...portfolio.headquarters.map((headquarter) => headquarter.totalInvestmentKrw)),
     [portfolio.headquarters]
   );
-  const selectedRank =
-    portfolio.projects.find((project) => project.code === selectedProjectCode)
-      ?.rank ?? '-';
-  const selectedTabLabel =
-    detailTabs.find((tab) => tab.key === activeTab)?.label ??
-    detailTabs[0].label;
-  const maxScenarioNpv = selectedDetail
-    ? Math.max(
-        ...selectedDetail.scenarioReturns.map((item) => Math.abs(item.npvKrw))
-      )
-    : 1;
+  const selectedWorkspaceKpis = selectedProject
+    ? [
+        { label: 'NPV', value: formatKrwCompact(selectedProject.npvKrw) },
+        { label: 'IRR', value: formatPercent(selectedProject.irr) },
+        { label: '회수기간', value: formatYears(selectedProject.paybackYears) },
+        { label: '리스크', value: selectedProject.risk }
+      ]
+    : [];
+
+  function openWorkspace(target: 'accounting' | 'valuation', projectCode: string) {
+    setSelectedProjectCode(projectCode);
+    setActiveView(target);
+  }
 
   return (
-    <div className="app-shell">
+    <div className="app-shell app-shell--task-first">
       <a className="skip-link" href="#main-content">
         본문으로 건너뛰기
       </a>
 
-      <aside className="sidebar">
+      <aside className="sidebar sidebar--task-first">
         <div className="brand">
           <div className="brand__mark">CW</div>
           <div>
             <strong>CostWiseAI</strong>
-            <p>Multi-Project Portfolio Management Platform</p>
+            <p>Task-first portfolio operating system</p>
           </div>
         </div>
 
-        <nav className="nav" aria-label="메인 탐색">
-          <p className="nav__label">Navigation</p>
+        <nav className="nav nav--stacked" aria-label="제품 맵">
+          <p className="nav__label">Product Map</p>
           {navigationItems.map((item) => (
             <button
               key={item.key}
               type="button"
-              className={`nav__item ${activeView === item.key ? 'nav__item--active' : ''}`}
+              className={`nav__item nav__item--stacked ${
+                activeView === item.key ? 'nav__item--active' : ''
+              }`}
               onClick={() => setActiveView(item.key)}
             >
-              <span className="nav__icon" aria-hidden="true">
-                {item.key === 'dashboard'
-                  ? '▦'
-                  : item.key === 'projects'
-                    ? '▤'
-                    : '◷'}
-              </span>
-              <span>{item.label}</span>
+              <span className="nav__eyebrow">{item.label}</span>
+              <strong>{item.description}</strong>
             </button>
           ))}
         </nav>
 
-        <section className="sidebar__section" aria-label="본부 필터">
-          <p className="nav__label">본부별 필터</p>
-          <button
-            type="button"
-            className={`hq-filter ${selectedHeadquarter === '전체 본부' ? 'hq-filter--active' : ''}`}
-            onClick={() => setSelectedHeadquarter('전체 본부')}
-          >
-            <span className="hq-filter__dot hq-chip--neutral" />
-            <span>전체 본부</span>
-            <small>{portfolio.overview.projectCount}</small>
-          </button>
-          {portfolio.headquarters.map((headquarter) => (
-            <button
-              key={headquarter.code}
-              type="button"
-              className={`hq-filter ${selectedHeadquarter === headquarter.name ? 'hq-filter--active' : ''}`}
-              onClick={() => setSelectedHeadquarter(headquarter.name)}
-            >
-              <span
-                className={`hq-filter__dot ${headquarterPalette[headquarter.name]}`}
-              />
-              <span>{headquarter.name.replace('본부', '')}</span>
-              <small>{headquarter.projectCount}</small>
-            </button>
-          ))}
-        </section>
-
-        <section className="sidebar__summary" aria-label="운영 요약">
-          <div className="sidebar__summary-card">
-            <span>승인 완료</span>
-            <strong>{portfolio.overview.approvedCount}건</strong>
-            <small>현재 포트폴리오 승인된 프로젝트</small>
-          </div>
-          <div className="sidebar__summary-card">
-            <span>조건부 진행</span>
-            <strong>{portfolio.overview.conditionalCount}건</strong>
-            <small>추가 검토가 필요한 안건</small>
-          </div>
-          <div className="sidebar__summary-card">
-            <span>예상 수익</span>
-            <strong>
-              {formatKrwCompact(portfolio.overview.totalExpectedRevenueKrw)}
-            </strong>
-            <small>전사 포트폴리오 기준 기대 수익</small>
-          </div>
-        </section>
+        <div className="sidebar__footer">
+          <span>Current role</span>
+          <strong>{selectedRole}</strong>
+          <small>역할 전환은 상단 컨텍스트 바에서 수행합니다.</small>
+        </div>
       </aside>
 
-      <div className="workspace">
-        <header className="topbar">
-          <div>
-            <p className="topbar__eyebrow">Portfolio Control Room</p>
-            <h1>전사 포트폴리오 및 상세 대시보드</h1>
-          </div>
-          <div className="topbar__meta">
-            <div className="topbar__date">
-              {source === 'api' ? '백엔드 연동' : '로컬 시드'}
+      <div className="workspace workspace--task-first">
+        <header className="topbar topbar--task-first">
+          <div className="topbar__context">
+            <p className="topbar__eyebrow">{currentViewMeta.eyebrow}</p>
+            <div className="breadcrumb" aria-label="현재 위치">
+              {currentViewMeta.breadcrumb.map((item, index) => (
+                <span key={item} className="breadcrumb__item">
+                  {index > 0 ? <span className="breadcrumb__divider">/</span> : null}
+                  {item}
+                </span>
+              ))}
             </div>
-            <div className="topbar__user">박재영 (CFO)</div>
-            <div className="topbar__date">2026.04.20</div>
+            <h1>{currentViewMeta.title}</h1>
+            <p className="topbar__description">{currentViewMeta.description}</p>
+          </div>
+
+          <div className="topbar__cluster">
+            <div className="context-pills" aria-label="운영 컨텍스트">
+              <span className="context-pill">{source === 'api' ? '백엔드 연동' : '로컬 시드'}</span>
+              <span className="context-pill">{portfolio.overview.projectCount}개 프로젝트</span>
+              <span className="context-pill">{portfolio.overview.conditionalCount}개 승인 대기</span>
+            </div>
+            <div className="role-switcher" role="tablist" aria-label="역할 컨텍스트">
+              {(Object.keys(roleInsights) as Role[]).map((role) => (
+                <button
+                  key={role}
+                  type="button"
+                  className={`role-switcher__item ${
+                    selectedRole === role ? 'role-switcher__item--active' : ''
+                  }`}
+                  aria-pressed={selectedRole === role}
+                  onClick={() => setSelectedRole(role)}
+                >
+                  {role}
+                </button>
+              ))}
+            </div>
+            {selectedProject ? (
+              <div className="project-context">
+                <span>Selected project</span>
+                <strong>{selectedProject.name}</strong>
+                <small>
+                  {selectedProject.code} · {selectedProject.headquarter} · {selectedProject.status}
+                </small>
+              </div>
+            ) : null}
           </div>
         </header>
 
-        <main id="main-content" className="content">
-          <section className="hero-strip" aria-label="포트폴리오 현재 상태">
-            <div className="hero-strip__content">
-              <a className="hero-strip__back" href="#portfolio-overview">
-                포트폴리오 개요로 돌아가기
-              </a>
-              <p className="hero-strip__eyebrow">Portfolio Control Room</p>
-              <h2>5개 본부 · 20개 프로젝트 포트폴리오</h2>
-              <p>
-                {selectedProject
-                  ? `${selectedProject.name} · ${selectedProject.headquarter} · ${selectedDetail?.manager} · 착수 ${selectedDetail?.startDate}`
-                  : '5개 본부와 20개 프로젝트를 함께 모니터링하는 전사 포트폴리오 화면'}
-              </p>
-              <div className="hero-strip__chips">
-                {decisionSignals.map((signal) => (
-                  <div key={signal.label} className="hero-chip">
-                    <span>{signal.label}</span>
-                    <strong>{signal.value}</strong>
+        <main id="main-content" className="content content--task-first">
+          {activeView === 'dashboard' ? (
+            <>
+              <section className="hero-strip hero-strip--workspace" aria-label="현재 방향">
+                <div className="hero-strip__content">
+                  <p className="hero-strip__eyebrow">Default landing</p>
+                  <h2>포트폴리오에서 시작하고, 프로젝트 워크스페이스로 내려갑니다.</h2>
+                  <p>
+                    현재 셸은 플랫폼, 포트폴리오, 프로젝트 워크스페이스를 같은 캔버스에
+                    섞지 않습니다. 먼저 상태를 파악하고, 필요한 프로젝트만 선택해
+                    관리회계 또는 재무평가 워크스페이스로 진입합니다.
+                  </p>
+                  <div className="hero-strip__chips">
+                    {decisionSignals.map((signal) => (
+                      <div key={signal.label} className="hero-chip">
+                        <span>{signal.label}</span>
+                        <strong>{signal.value}</strong>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </div>
-            <div className="hero-strip__status">
-              <div className="hero-strip__status-stack">
-                <span
-                  className={`status-pill status-pill--${
-                    selectedProject
-                      ? riskToneMap[selectedProject.risk]
-                      : 'active'
-                  }`}
+                </div>
+                <div className="hero-strip__status">
+                  <div className="hero-strip__note">
+                    <span>Current focus</span>
+                    <strong>{selectedInsight.decisionFocus}</strong>
+                    <small>{selectedInsight.nextAction}</small>
+                  </div>
+                </div>
+              </section>
+
+              <section className="metrics metrics--hero" aria-label="핵심 KPI">
+                <MetricCard
+                  label="총 투자액"
+                  value={formatKrwCompact(portfolio.overview.totalInvestmentKrw)}
+                  detail="포트폴리오 기준"
+                  tone="primary"
+                />
+                <MetricCard
+                  label="평균 NPV"
+                  value={formatKrwCompact(portfolio.overview.averageNpvKrw)}
+                  detail="프로젝트 사업성 평균"
+                  tone="success"
+                />
+                <MetricCard
+                  label="평균 IRR"
+                  value={formatPercent(portfolio.overview.averageIrr)}
+                  detail="기준 시나리오 가중 평균"
+                  tone="warning"
+                />
+                <MetricCard
+                  label="승인 완료"
+                  value={`${portfolio.overview.approvedCount}건`}
+                  detail="최종 승인된 프로젝트"
+                  tone="primary"
+                />
+              </section>
+
+              <section className="dashboard-grid">
+                <Panel
+                  title="Priority queue"
+                  subtitle="다음 검토 대상을 빠르게 고르고 워크스페이스로 진입합니다."
                 >
-                  {selectedProject ? selectedProject.status : portfolio.status}
-                </span>
-                <span className="risk-badge">
-                  {selectedProject
-                    ? `${selectedProject.risk.toUpperCase?.() ?? selectedProject.risk} Risk`
-                    : `${portfolio.risk} 리스크`}
-                </span>
-              </div>
-              <div className="hero-strip__note">
-                <span>현재 포커스</span>
-                <strong>{selectedTabLabel}</strong>
-                <small>{selectedInsight.decisionFocus}</small>
-              </div>
-            </div>
-          </section>
+                  <div className="queue-list">
+                    {priorityProjects.map((project) => (
+                      <article key={project.code} className="queue-card">
+                        <div>
+                          <span className="queue-card__eyebrow">
+                            {project.rank}위 · {project.headquarter}
+                          </span>
+                          <strong>{project.name}</strong>
+                          <p>
+                            {project.assetCategory} · {project.status} · NPV{' '}
+                            {formatKrwCompact(project.npvKrw)}
+                          </p>
+                        </div>
+                        <div className="queue-card__actions">
+                          <button type="button" onClick={() => openWorkspace('accounting', project.code)}>
+                            관리회계 열기
+                          </button>
+                          <button type="button" onClick={() => openWorkspace('valuation', project.code)}>
+                            재무평가 열기
+                          </button>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                </Panel>
 
-          <section className="metrics metrics--hero" aria-label="핵심 KPI">
-            <MetricCard
-              label="총 투자액"
-              value={formatKrwCompact(portfolio.overview.totalInvestmentKrw)}
-              detail="20개 프로젝트 누적 투자 규모"
-              tone="primary"
-            />
-            <MetricCard
-              label="평균 NPV"
-              value={formatKrwCompact(portfolio.overview.averageNpvKrw)}
-              detail="프로젝트 사업성 평균"
-              tone="success"
-            />
-            <MetricCard
-              label="평균 IRR"
-              value={formatPercent(portfolio.overview.averageIrr)}
-              detail="기준 시나리오 가중 평균"
-              tone="warning"
-            />
-            <MetricCard
-              label="회수기간"
-              value={formatYears(portfolio.overview.averagePaybackYears)}
-              detail="전사 포트폴리오 평균"
-              tone="primary"
-            />
-            <MetricCard
-              label="배분원가"
-              value={formatKrwCompact(
-                selectedDetail?.allocation.allocatedCostKrw ?? 0
-              )}
-              detail="선택 프로젝트 기준 ABC 배부"
-              tone="warning"
-            />
-            <MetricCard
-              label="VaR(95%)"
-              value={formatKrwCompact(selectedDetail?.valuation.var95Krw ?? 0)}
-              detail="선택 프로젝트 기준 리스크 한계"
-              tone="warning"
-            />
-          </section>
-
-          <section className="role-tabs" aria-label="역할별 인사이트">
-            {Object.keys(roleInsights).map((role) => {
-              const typedRole = role as Role;
-              return (
-                <button
-                  key={typedRole}
-                  type="button"
-                  className={`role-tab ${typedRole === selectedRole ? 'role-tab--active' : ''}`}
-                  aria-pressed={typedRole === selectedRole}
-                  onClick={() => setSelectedRole(typedRole)}
+                <Panel
+                  title="Workspace lanes"
+                  subtitle="동일한 프로젝트를 역할과 의사결정 목적에 따라 다른 워크스페이스로 읽습니다."
                 >
-                  <span>{typedRole}</span>
-                  <small>{roleInsights[typedRole].headline}</small>
-                </button>
-              );
-            })}
-          </section>
+                  <div className="lane-grid">
+                    <article className="lane-card lane-card--accounting">
+                      <span>Management Accounting</span>
+                      <strong>원가 구조와 배분 기준 확인</strong>
+                      <p>활동 기준 원가, 배분 차이, 효율 격차를 프로젝트별로 분리해 봅니다.</p>
+                    </article>
+                    <article className="lane-card lane-card--valuation">
+                      <span>Financial Evaluation</span>
+                      <strong>투자 타당성과 시나리오 판단</strong>
+                      <p>NPV, IRR, 회수기간과 시나리오 비교를 프로젝트 단위로 읽습니다.</p>
+                    </article>
+                    <article className="lane-card lane-card--review">
+                      <span>Review Layer</span>
+                      <strong>가정값과 감사 근거 추적</strong>
+                      <p>검토 흐름과 이력은 별도 레이어에서 확인해 네비게이션과 경쟁하지 않게 합니다.</p>
+                    </article>
+                  </div>
+                </Panel>
+              </section>
+            </>
+          ) : null}
 
-          <section className="main-grid">
-            <div className="main-grid__primary">
+          {activeView === 'portfolio' ? (
+            <section className="portfolio-grid">
               <Panel
-                id="portfolio-overview"
-                title="포트폴리오 개요"
-                subtitle="5개 본부와 20개 프로젝트를 포트폴리오 우선순위 관점에서 정리합니다."
+                title="Portfolio overview"
+                subtitle="본부 수준 상태를 먼저 읽고, 이후 프로젝트 워크스페이스로 이동합니다."
               >
                 <div className="headquarter-grid">
                   {portfolio.headquarters.map((headquarter) => (
-                    <article
-                      key={headquarter.code}
-                      className="headquarter-card"
-                    >
+                    <article key={headquarter.code} className="headquarter-card">
                       <div className="headquarter-card__header">
                         <div>
-                          <div className="headquarter-card__title">
-                            <span
-                              className={`hq-filter__dot ${headquarterPalette[headquarter.name]}`}
-                            />
-                            <strong>{headquarter.name}</strong>
-                          </div>
+                          <strong>{headquarter.name}</strong>
                           <span>{headquarter.projectCount}개 프로젝트</span>
                         </div>
-                        <span
-                          className={`status-pill status-pill--${riskToneMap[headquarter.risk]}`}
-                        >
+                        <span className={`status-pill status-pill--${riskToneMap[headquarter.risk]}`}>
                           {headquarter.risk}
                         </span>
                       </div>
+                      <ProgressBar
+                        label="투자 비중"
+                        value={Math.round(headquarter.totalInvestmentKrw / 10000)}
+                        max={Math.round(maxHeadquarterInvestment / 10000)}
+                        tone={headquarter.risk === '높음' ? 'rose' : headquarter.risk === '중간' ? 'amber' : 'teal'}
+                      />
                       <div className="headquarter-card__metrics">
                         <div>
                           <span>총 투자액</span>
-                          <strong>
-                            {formatKrwCompact(headquarter.totalInvestmentKrw)}
-                          </strong>
+                          <strong>{formatKrwCompact(headquarter.totalInvestmentKrw)}</strong>
                         </div>
                         <div>
                           <span>평균 NPV</span>
-                          <strong>
-                            {formatKrwCompact(headquarter.averageNpvKrw)}
-                          </strong>
+                          <strong>{formatKrwCompact(headquarter.averageNpvKrw)}</strong>
                         </div>
                       </div>
-                      <ProgressBar
-                        label="투자 비중"
-                        value={Math.round(
-                          headquarter.totalInvestmentKrw / 10000
-                        )}
-                        max={Math.round(maxHeadquarterInvestment / 10000)}
-                        tone={
-                          headquarter.risk === '높음'
-                            ? 'rose'
-                            : headquarter.risk === '중간'
-                              ? 'amber'
-                              : 'teal'
-                        }
-                      />
-                      <p className="headquarter-card__footer">
-                        우선 추진 프로젝트 · {headquarter.priorityProject}
-                      </p>
                     </article>
                   ))}
                 </div>
               </Panel>
 
               <Panel
-                title={
-                  activeView === 'audit'
-                    ? '감사 로그'
-                    : activeView === 'projects'
-                      ? '프로젝트 목록'
-                      : '프로젝트 랭킹'
-                }
-                subtitle={
-                  activeView === 'audit'
-                    ? '승인, 접근, 원가 배부 변경 이력을 시간순으로 추적합니다.'
-                    : '선택한 본부 필터를 기준으로 프로젝트 우선순위와 리스크를 확인합니다.'
-                }
+                title="Project workspace entry"
+                subtitle="프로젝트 상세를 항상 펼치지 않고, 필요한 워크스페이스로 선택 진입합니다."
               >
-                {activeView === 'audit' ? (
-                  <ol className="audit-list audit-list--wide">
-                    {portfolio.auditEvents.map((item) => (
-                      <li key={`${item.actor}-${item.at}`}>
-                        <strong>{item.actor}</strong>
-                        <span>{item.action}</span>
-                        <small>
-                          {item.domain} · {formatDateTime(item.at)}
-                        </small>
-                      </li>
-                    ))}
-                  </ol>
-                ) : (
-                  <div className="table-shell">
-                    <table className="data-table">
-                      <thead>
-                        <tr>
-                          <th>순위</th>
-                          <th>프로젝트</th>
-                          <th>본부</th>
-                          <th>자산군</th>
-                          <th>상태</th>
-                          <th>NPV</th>
-                          <th>IRR</th>
-                          <th>회수기간</th>
+                <div className="table-shell">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>순위</th>
+                        <th>프로젝트</th>
+                        <th>본부</th>
+                        <th>상태</th>
+                        <th>NPV</th>
+                        <th>워크스페이스</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {portfolio.projects.map((project) => (
+                        <tr key={project.code} className={project.code === selectedProjectCode ? 'data-table__row--selected' : ''}>
+                          <td>{project.rank}</td>
+                          <td>
+                            <strong>{project.name}</strong>
+                            <div className="table-subtle">{project.code}</div>
+                          </td>
+                          <td>{project.headquarter}</td>
+                          <td>
+                            <span className={`status-pill status-pill--${statusTone(project.status)}`}>
+                              {project.status}
+                            </span>
+                          </td>
+                          <td>{formatKrwCompact(project.npvKrw)}</td>
+                          <td>
+                            <div className="table-actions">
+                              <button type="button" onClick={() => openWorkspace('accounting', project.code)}>
+                                관리회계
+                              </button>
+                              <button type="button" onClick={() => openWorkspace('valuation', project.code)}>
+                                재무평가
+                              </button>
+                            </div>
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody>
-                        {filteredProjects.map((project) => (
-                          <tr
-                            key={project.code}
-                            className={
-                              project.code === selectedProjectCode
-                                ? 'data-table__row--selected'
-                                : ''
-                            }
-                            onClick={() => setSelectedProjectCode(project.code)}
-                            role="button"
-                            tabIndex={0}
-                            aria-pressed={project.code === selectedProjectCode}
-                            aria-label={`${project.name} 상세 보기`}
-                            onKeyDown={(event) => {
-                              if (event.key === 'Enter' || event.key === ' ') {
-                                event.preventDefault();
-                                setSelectedProjectCode(project.code);
-                              }
-                            }}
-                          >
-                            <td>{project.rank}</td>
-                            <td>
-                              <strong>{project.name}</strong>
-                              <div className="table-subtle">{project.code}</div>
-                            </td>
-                            <td>{project.headquarter}</td>
-                            <td>{project.assetCategory}</td>
-                            <td>
-                              <span
-                                className={`status-pill status-pill--${statusTone(project.status)}`}
-                              >
-                                {project.status}
-                              </span>
-                            </td>
-                            <td>{formatKrwCompact(project.npvKrw)}</td>
-                            <td>{formatPercent(project.irr)}</td>
-                            <td>{formatYears(project.paybackYears)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </Panel>
-            </div>
-
-            <aside className="main-grid__detail">
-              <Panel
-                title={selectedProject ? selectedProject.name : '프로젝트 상세'}
-                subtitle={
-                  selectedDetail
-                    ? `${selectedProject?.headquarter} · ${selectedDetail.assetCategory} · ${selectedDetail.headline}`
-                    : '프로젝트를 선택하면 상세 정보를 표시합니다.'
-                }
-              >
-                {selectedProject && selectedDetail ? (
-                  <div className="detail-shell">
-                    <section
-                      className="project-spotlight"
-                      aria-label="선택 프로젝트 요약"
-                    >
-                      <div className="project-spotlight__header">
-                        <div>
-                          <span className="project-spotlight__code">
-                            {selectedProject.code}
-                          </span>
-                          <strong>{selectedProject.name}</strong>
-                        </div>
-                        <span
-                          className={`status-pill status-pill--${riskToneMap[selectedProject.risk]}`}
-                        >
-                          {selectedProject.risk}
-                        </span>
-                      </div>
-                      <div className="project-spotlight__band">
-                        <InfoTile
-                          label="우선순위"
-                          value={`${selectedRank}위`}
-                        />
-                        <InfoTile
-                          label="자산군"
-                          value={selectedDetail.assetCategory}
-                        />
-                        <InfoTile
-                          label="책임 PM"
-                          value={selectedDetail.manager}
-                        />
-                        <InfoTile
-                          label="현재 단계"
-                          value={selectedDetail.workflow.currentStage}
-                        />
-                      </div>
-                    </section>
-
-                    <div
-                      className="detail-tabs"
-                      role="tablist"
-                      aria-label="상세 탭"
-                    >
-                      {detailTabs.map((tab) => (
-                        <button
-                          key={tab.key}
-                          type="button"
-                          className={`detail-tab ${activeTab === tab.key ? 'detail-tab--active' : ''}`}
-                          onClick={() => setActiveTab(tab.key)}
-                        >
-                          {tab.label}
-                        </button>
                       ))}
-                    </div>
-
-                    {activeTab === 'allocation' ? (
-                      <div className="detail-stack">
-                        <div className="detail-kpis">
-                          <InfoTile
-                            label="인력 원가"
-                            value={formatKrwCompact(
-                              selectedDetail.allocation.personnelCostKrw
-                            )}
-                          />
-                          <InfoTile
-                            label="프로젝트 원가"
-                            value={formatKrwCompact(
-                              selectedDetail.allocation.projectCostKrw
-                            )}
-                          />
-                          <InfoTile
-                            label="본부 공통원가"
-                            value={formatKrwCompact(
-                              selectedDetail.allocation.headquarterCostKrw
-                            )}
-                          />
-                          <InfoTile
-                            label="전사 공통원가"
-                            value={formatKrwCompact(
-                              selectedDetail.allocation.enterpriseCostKrw
-                            )}
-                          />
-                        </div>
-                        <div className="callout callout--accent">
-                          <strong>내부대체가액</strong>
-                          <span>
-                            {formatKrwCompact(
-                              selectedDetail.allocation.internalTransferPriceKrw
-                            )}
-                          </span>
-                        </div>
-                        <div className="detail-grid">
-                          <InfoTile
-                            label="표준원가"
-                            value={formatKrwCompact(
-                              selectedDetail.allocation.standardCostKrw
-                            )}
-                          />
-                          <InfoTile
-                            label="배분원가"
-                            value={formatKrwCompact(
-                              selectedDetail.allocation.allocatedCostKrw
-                            )}
-                          />
-                          <InfoTile
-                            label="원가 효율 차이"
-                            value={formatKrwCompact(
-                              selectedDetail.allocation.efficiencyGapKrw
-                            )}
-                          />
-                          <InfoTile
-                            label="성과 요인 차이"
-                            value={formatKrwCompact(
-                              selectedDetail.allocation.performanceGapKrw
-                            )}
-                          />
-                        </div>
-                      </div>
-                    ) : null}
-
-                    {activeTab === 'valuation' ? (
-                      <div className="detail-stack">
-                        <div className="detail-kpis">
-                          <InfoTile
-                            label="공정가치"
-                            value={formatKrwCompact(
-                              selectedDetail.valuation.fairValueKrw
-                            )}
-                          />
-                          <InfoTile
-                            label="NPV"
-                            value={formatKrwCompact(selectedProject.npvKrw)}
-                          />
-                          <InfoTile
-                            label="IRR"
-                            value={formatPercent(selectedProject.irr)}
-                          />
-                          <InfoTile
-                            label="회수기간"
-                            value={formatYears(selectedProject.paybackYears)}
-                          />
-                        </div>
-                        <div className="scenario-panel">
-                          {selectedDetail.scenarioReturns.map((scenario) => (
-                            <div
-                              key={scenario.label}
-                              className="scenario-panel__item"
-                            >
-                              <span>{scenario.label}</span>
-                              <strong>
-                                {formatKrwCompact(scenario.npvKrw)}
-                              </strong>
-                              <small>
-                                확률 {formatPercent(scenario.probability)}
-                              </small>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ) : null}
-
-                    {activeTab === 'risk' ? (
-                      <div className="detail-stack">
-                        <div className="risk-banner">
-                          <strong>
-                            {selectedProject.risk === '높음'
-                              ? 'CRITICAL RISK'
-                              : selectedProject.risk === '중간'
-                                ? 'MEDIUM RISK'
-                                : 'CONTROLLED RISK'}
-                          </strong>
-                        </div>
-                        <div className="detail-grid">
-                          <InfoTile
-                            label="VaR (95%)"
-                            value={formatKrwCompact(
-                              selectedDetail.valuation.var95Krw
-                            )}
-                          />
-                          <InfoTile
-                            label="VaR (99%)"
-                            value={formatKrwCompact(
-                              selectedDetail.valuation.var99Krw
-                            )}
-                          />
-                          <InfoTile
-                            label="CVaR"
-                            value={formatKrwCompact(
-                              selectedDetail.valuation.cvar95Krw
-                            )}
-                          />
-                          <InfoTile
-                            label="신용등급"
-                            value={selectedDetail.valuation.creditGrade}
-                          />
-                          <InfoTile
-                            label="Duration"
-                            value={`${selectedDetail.valuation.duration}년`}
-                          />
-                          <InfoTile
-                            label="Convexity"
-                            value={selectedDetail.valuation.convexity.toFixed(
-                              2
-                            )}
-                          />
-                        </div>
-                        <div className="distribution-card">
-                          <div className="distribution-card__header">
-                            <strong>NPV 시나리오 분포</strong>
-                            <span>낙관/기준/비관 기준 확률 가중</span>
-                          </div>
-                          <div className="distribution-chart">
-                            {selectedDetail.scenarioReturns.map((scenario) => (
-                              <div
-                                key={scenario.label}
-                                className="distribution-chart__item"
-                              >
-                                <div
-                                  className="distribution-chart__bar"
-                                  style={{
-                                    height: `${Math.max(
-                                      18,
-                                      Math.round(
-                                        (Math.abs(scenario.npvKrw) /
-                                          maxScenarioNpv) *
-                                          180
-                                      )
-                                    )}px`
-                                  }}
-                                />
-                                <strong>{scenario.label}</strong>
-                                <span>{formatKrwCompact(scenario.npvKrw)}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                        <div className="risk-method">
-                          <strong>신용평가 리스크 점수</strong>
-                          <span>
-                            {selectedDetail.valuation.creditRiskScore} / 100
-                          </span>
-                          <p>
-                            기준 시나리오 NPV, 변동성, 자산군별 민감도, 상태
-                            리스크를 결합한 내부 평가 점수입니다.
-                          </p>
-                        </div>
-                      </div>
-                    ) : null}
-
-                    {activeTab === 'workflow' ? (
-                      <div className="detail-stack">
-                        <div className="workflow-steps">
-                          {['기획', '검토', '승인', '보류'].map((stage) => (
-                            <div
-                              key={stage}
-                              className={`workflow-step ${
-                                selectedDetail.workflow.currentStage === stage
-                                  ? 'workflow-step--active'
-                                  : ''
-                              }`}
-                            >
-                              {stage}
-                            </div>
-                          ))}
-                        </div>
-                        <div className="detail-grid">
-                          <InfoTile
-                            label="프로젝트 오너"
-                            value={selectedDetail.workflow.owner}
-                          />
-                          <InfoTile
-                            label="재무 검토"
-                            value={selectedDetail.workflow.financeReviewer}
-                          />
-                        </div>
-                        <div className="workflow-note">
-                          <strong>임원 코멘트</strong>
-                          <p>{selectedDetail.workflow.executiveComment}</p>
-                          <small>
-                            다음 단계 · {selectedDetail.workflow.nextStep}
-                          </small>
-                        </div>
-                      </div>
-                    ) : null}
-                  </div>
-                ) : null}
-              </Panel>
-
-              <Panel
-                title={`역할별 검토 패널 · ${selectedRole}`}
-                subtitle="같은 포트폴리오를 다른 책임 관점에서 봅니다."
-              >
-                <div className="insight-card">
-                  <p className="insight-card__headline">
-                    {selectedInsight.headline}
-                  </p>
-                  <p className="insight-card__summary">
-                    {selectedInsight.summary}
-                  </p>
-                  <dl className="insight-grid">
-                    <div>
-                      <dt>검토 초점</dt>
-                      <dd>{selectedInsight.decisionFocus}</dd>
-                    </div>
-                    <div>
-                      <dt>리스크</dt>
-                      <dd>{selectedInsight.riskWatch}</dd>
-                    </div>
-                    <div>
-                      <dt>다음 행동</dt>
-                      <dd>{selectedInsight.nextAction}</dd>
-                    </div>
-                    <div>
-                      <dt>최종 이벤트</dt>
-                      <dd>{latestAudit?.action ?? '이력 없음'}</dd>
-                    </div>
-                  </dl>
+                    </tbody>
+                  </table>
                 </div>
               </Panel>
+            </section>
+          ) : null}
 
-              <Panel
-                title="가정값 및 감사"
-                subtitle="포트폴리오 가정값과 최근 변경 이력을 함께 유지합니다."
-              >
+          {activeView === 'accounting' || activeView === 'valuation' ? (
+            <section className="workspace-stage">
+              <div className="workspace-stage__summary">
+                <div>
+                  <p className="workspace-stage__eyebrow">
+                    {activeView === 'accounting' ? 'Management Accounting' : 'Financial Evaluation'}
+                  </p>
+                  <h2>{selectedProject?.name ?? '선택된 프로젝트 없음'}</h2>
+                  <p>
+                    {selectedProject?.headquarter} · {selectedDetail?.assetCategory} · {selectedDetail?.headline}
+                  </p>
+                </div>
+                <div className="workspace-stage__meta">
+                  {selectedWorkspaceKpis.map((item) => (
+                    <InfoTile key={item.label} label={item.label} value={item.value} />
+                  ))}
+                </div>
+              </div>
+
+              <div className="local-nav" aria-label="프로젝트 수준 로컬 네비게이션">
+                {workspaceSections.map((section) => (
+                  <span key={section} className="local-nav__item">
+                    {section}
+                  </span>
+                ))}
+              </div>
+
+              <div className="workspace-columns">
+                <Panel
+                  title={activeView === 'accounting' ? 'Allocation workspace' : 'Valuation workspace'}
+                  subtitle="프로젝트 상세 cockpit 대신, 워크스페이스 진입과 읽기 순서에 집중한 셸 레벨 구조입니다."
+                >
+                  {activeView === 'accounting' && selectedDetail ? (
+                    <div className="workspace-card-grid">
+                      <InfoTile label="배분원가" value={formatKrwCompact(selectedDetail.allocation.allocatedCostKrw)} />
+                      <InfoTile label="표준원가" value={formatKrwCompact(selectedDetail.allocation.standardCostKrw)} />
+                      <InfoTile label="효율 차이" value={formatKrwCompact(selectedDetail.allocation.efficiencyGapKrw)} />
+                      <InfoTile label="성과 차이" value={formatKrwCompact(selectedDetail.allocation.performanceGapKrw)} />
+                    </div>
+                  ) : null}
+                  {activeView === 'valuation' && selectedDetail ? (
+                    <div className="workspace-card-grid">
+                      <InfoTile label="공정가치" value={formatKrwCompact(selectedDetail.valuation.fairValueKrw)} />
+                      <InfoTile label="VaR 95%" value={formatKrwCompact(selectedDetail.valuation.var95Krw)} />
+                      <InfoTile label="CVaR 95%" value={formatKrwCompact(selectedDetail.valuation.cvar95Krw)} />
+                      <InfoTile label="신용등급" value={selectedDetail.valuation.creditGrade} />
+                    </div>
+                  ) : null}
+                </Panel>
+
+                <Panel
+                  title="Project context"
+                  subtitle="같은 프로젝트에서 관리회계와 재무평가를 오갈 때 잃지 말아야 하는 공통 맥락입니다."
+                >
+                  <div className="insight-card">
+                    <p className="insight-card__headline">{selectedInsight.headline}</p>
+                    <p className="insight-card__summary">{selectedInsight.summary}</p>
+                    <dl className="insight-grid">
+                      <div>
+                        <dt>검토 초점</dt>
+                        <dd>{selectedInsight.decisionFocus}</dd>
+                      </div>
+                      <div>
+                        <dt>리스크</dt>
+                        <dd>{selectedInsight.riskWatch}</dd>
+                      </div>
+                      <div>
+                        <dt>다음 행동</dt>
+                        <dd>{selectedInsight.nextAction}</dd>
+                      </div>
+                      <div>
+                        <dt>워크플로우 단계</dt>
+                        <dd>{selectedDetail?.workflow.currentStage}</dd>
+                      </div>
+                    </dl>
+                  </div>
+                </Panel>
+              </div>
+            </section>
+          ) : null}
+
+          {activeView === 'reviews' ? (
+            <section className="reviews-grid">
+              <Panel title="Assumptions" subtitle="검토 레이어에서 가정값과 전제 조건을 따로 읽습니다.">
                 <div className="assumption-list">
                   {portfolio.assumptions.map((item) => (
                     <div key={item.label} className="assumption-list__item">
@@ -810,21 +500,41 @@ export function App() {
                     </div>
                   ))}
                 </div>
-                <div className="audit-inline">
-                  {portfolio.auditEvents.slice(-2).map((item) => (
-                    <div
-                      key={`${item.actor}-${item.at}`}
-                      className="audit-inline__item"
-                    >
+              </Panel>
+
+              <Panel title="Audit trail" subtitle="운영 이력은 포트폴리오/워크스페이스 화면과 분리된 리뷰 레이어에 둡니다.">
+                <ol className="audit-list audit-list--wide">
+                  {portfolio.auditEvents.map((item) => (
+                    <li key={`${item.actor}-${item.at}`}>
                       <strong>{item.actor}</strong>
                       <span>{item.action}</span>
-                      <small>{formatDateTime(item.at)}</small>
-                    </div>
+                      <small>
+                        {item.domain} · {formatDateTime(item.at)}
+                      </small>
+                    </li>
                   ))}
+                </ol>
+              </Panel>
+            </section>
+          ) : null}
+
+          {activeView === 'settings' ? (
+            <section className="settings-grid">
+              <Panel title="Role context" subtitle="역할 전환은 탐색 계층과 분리된 설정/선호 영역에 둡니다.">
+                <div className="preference-stack">
+                  <InfoTile label="현재 역할" value={selectedRole} />
+                  <InfoTile label="기본 진입" value="Portfolio overview" />
+                  <InfoTile label="선호 워크스페이스" value="Management Accounting / Financial Evaluation" />
                 </div>
               </Panel>
-            </aside>
-          </section>
+              <Panel title="Role guidance" subtitle="현재 역할이 주로 봐야 할 신호를 설정 영역에서 요약합니다.">
+                <div className="insight-card">
+                  <p className="insight-card__headline">{selectedInsight.headline}</p>
+                  <p className="insight-card__summary">{selectedInsight.summary}</p>
+                </div>
+              </Panel>
+            </section>
+          ) : null}
         </main>
       </div>
     </div>
