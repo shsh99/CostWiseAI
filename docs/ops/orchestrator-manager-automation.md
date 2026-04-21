@@ -88,6 +88,6 @@ Specifically:
 ## Notes
 
 - Requires `gh` CLI authentication.
-- Requires `npx` to run `tsx` (the `.mjs` wrapper forwards to the TypeScript entrypoint).
+- Requires `npx` to run `tsx`.
 - Branch naming uses `feat/<issue>-<slug>`.
 - For non-trivial PRs, keep dev-log rules unchanged.
