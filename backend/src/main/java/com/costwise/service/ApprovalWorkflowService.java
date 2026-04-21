@@ -7,6 +7,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -44,7 +45,7 @@ public class ApprovalWorkflowService {
         WorkflowRole workflowRole = WorkflowRole.valueOf(role.toUpperCase(Locale.ROOT));
 
         if (!workflowAction.allowedRoles.contains(workflowRole)) {
-            throw new IllegalArgumentException("Role " + role + " cannot perform action " + action);
+            throw new AccessDeniedException("Role " + role + " cannot perform action " + action);
         }
 
         if (state.status.equals("APPROVED") || state.status.equals("REJECTED")) {
@@ -57,7 +58,7 @@ public class ApprovalWorkflowService {
 
         if ((workflowAction == WorkflowAction.APPROVE || workflowAction == WorkflowAction.REJECT)
                 && !"REVIEW".equals(state.status)) {
-                throw new IllegalArgumentException("Only review projects can be approved or rejected");
+            throw new IllegalArgumentException("Only review projects can be approved or rejected");
         }
 
         String nextStatus = workflowAction == WorkflowAction.COMMENT ? state.status : workflowAction.nextStatus;
@@ -110,17 +111,15 @@ public class ApprovalWorkflowService {
 
     private enum WorkflowRole {
         PLANNER,
-        COST_MANAGER,
         FINANCE_REVIEWER,
-        DIVISION_HEAD,
         EXECUTIVE
     }
 
     private enum WorkflowAction {
-        SUBMIT("REVIEW", List.of(WorkflowRole.PLANNER, WorkflowRole.COST_MANAGER), "기획서를 검토 단계로 보냈습니다."),
+        SUBMIT("REVIEW", List.of(WorkflowRole.PLANNER), "기획서를 검토 단계로 보냈습니다."),
         APPROVE("APPROVED", List.of(WorkflowRole.FINANCE_REVIEWER, WorkflowRole.EXECUTIVE), "승인했습니다."),
         REJECT("REJECTED", List.of(WorkflowRole.FINANCE_REVIEWER, WorkflowRole.EXECUTIVE), "반려했습니다."),
-        COMMENT("REVIEW", List.of(WorkflowRole.DIVISION_HEAD, WorkflowRole.FINANCE_REVIEWER, WorkflowRole.EXECUTIVE), "코멘트를 남겼습니다.");
+        COMMENT("REVIEW", List.of(WorkflowRole.FINANCE_REVIEWER, WorkflowRole.EXECUTIVE), "코멘트를 남겼습니다.");
 
         private final String nextStatus;
         private final List<WorkflowRole> allowedRoles;

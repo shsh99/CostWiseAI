@@ -5,6 +5,14 @@ spring:
 server:
   port: 8080
 
+app:
+  security:
+    jwt:
+      # Defaults are placeholders for local bootstrapping; production should override them with Supabase values.
+      issuer-uri: ${SUPABASE_JWT_ISSUER_URI:https://example.supabase.co/auth/v1}
+      audience: ${SUPABASE_JWT_AUDIENCE:authenticated}
+      secret-base64: ${SUPABASE_JWT_SECRET_BASE64:ZmFrZS1zdXBhYmFzZS1zZWNyZXQtbXVzdC1iZS1vdmVycmlkZQ==}
+
 management:
   endpoints:
     web:
