@@ -6,15 +6,23 @@ import com.costwise.api.dto.PortfolioSummaryResponse.Assumption;
 import com.costwise.api.dto.PortfolioSummaryResponse.HeadquarterSummary;
 import com.costwise.api.dto.PortfolioSummaryResponse.Overview;
 import com.costwise.api.dto.PortfolioSummaryResponse.ProjectSummary;
+import com.costwise.persistence.ProjectPersistenceRepository;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
 public class PortfolioSummaryService {
+    private static final String PORTFOLIO_NAME = "보험사/금융사 전사 포트폴리오 의사결정 플랫폼";
+    private static final String PORTFOLIO_OWNER = "전략기획실";
+
+    private final ProjectPersistenceRepository projectRepository;
 
     private static final List<ProjectSeed> PROJECTS = List.of(
             new ProjectSeed(1, "암보험 신상품 출시", "언더라이팅본부", "UND", 6_500_000_000L, 11_200_000_000L, 2_100_000_000L, 0.182, 2.8, "승인", "중간"),
@@ -38,7 +46,101 @@ public class PortfolioSummaryService {
             new ProjectSeed(19, "성과관리 대시보드", "경영지원본부", "CORP", 3_200_000_000L, 5_100_000_000L, -300_000_000L, 0.097, 4.4, "검토중", "중간"),
             new ProjectSeed(20, "권한통제 재설계", "경영지원본부", "CORP", 2_100_000_000L, 3_700_000_000L, -1_200_000_000L, 0.074, 5.6, "보류", "높음"));
 
+    @Autowired
+    public PortfolioSummaryService(ProjectPersistenceRepository projectRepository) {
+        this.projectRepository = projectRepository;
+    }
+
+    public PortfolioSummaryService() {
+        this.projectRepository = null;
+    }
+
     public PortfolioSummaryResponse loadPortfolioSummary() {
+        PortfolioSummaryResponse dbSummary = loadDbBackedSummary();
+        if (dbSummary != null) {
+            return dbSummary;
+        }
+
+        return loadSeedSummary();
+    }
+
+    private PortfolioSummaryResponse loadDbBackedSummary() {
+        if (projectRepository == null) {
+            return null;
+        }
+
+        try {
+            List<ProjectPersistenceRepository.ProjectRecord> projects = projectRepository.listProjects();
+            if (projects.isEmpty()) {
+                return null;
+            }
+
+            List<ProjectProjection> projectViews = projects.stream()
+                    .map(this::projectProjection)
+                    .toList();
+            List<ProjectProjection> rankedProjects = projectViews.stream()
+                    .sorted(Comparator.comparingLong(ProjectProjection::npvKrw).reversed())
+                    .toList();
+            List<ProjectSummary> projectSummaries = java.util.stream.IntStream.range(0, rankedProjects.size())
+                    .mapToObj(index -> rankedProjects.get(index).toSummary(index + 1))
+                    .toList();
+
+            Map<String, List<ProjectProjection>> projectsByHeadquarter = projectViews.stream()
+                    .collect(Collectors.groupingBy(ProjectProjection::headquarter));
+            List<HeadquarterSummary> headquarters = projectsByHeadquarter.entrySet().stream()
+                    .map(entry -> summarizeProjectedHeadquarter(
+                            headquarterCode(entry.getKey()),
+                            entry.getKey(),
+                            headquarterRisk(entry.getValue()),
+                            entry.getValue()))
+                    .sorted(Comparator.comparing(HeadquarterSummary::code))
+                    .toList();
+
+            long totalInvestment = projectViews.stream().mapToLong(ProjectProjection::investmentKrw).sum();
+            long totalExpectedRevenue = projectViews.stream().mapToLong(ProjectProjection::expectedRevenueKrw).sum();
+            long averageNpv = averageLong(projectViews.stream().map(ProjectProjection::npvKrw).toList());
+            double averageIrr = averageDouble(projectViews.stream().map(ProjectProjection::irr).toList());
+            double averagePayback = averageDouble(projectViews.stream().map(ProjectProjection::paybackYears).toList());
+            int approvedCount = (int) projectViews.stream().filter(project -> "승인".equals(project.status())).count();
+            int conditionalCount = (int) projectViews.stream().filter(project -> "조건부 진행".equals(project.status())).count();
+
+            List<Assumption> assumptions = List.of(
+                    new Assumption("할인율", displayRate(projectViews)),
+                    new Assumption("평가기간", displayPeriod(projectViews)),
+                    new Assumption("데이터 소스", "DB 프로젝트 " + projectViews.size() + "건"),
+                    new Assumption("ABC 적용 본부", headquarters.size() + "개"));
+
+            List<AuditEvent> auditEvents = projectViews.stream()
+                    .flatMap(project -> project.auditEvents().stream())
+                    .sorted(Comparator.comparing(AuditEvent::at).reversed())
+                    .limit(12)
+                    .toList();
+
+            return new PortfolioSummaryResponse(
+                    PORTFOLIO_NAME,
+                    PORTFOLIO_OWNER,
+                    portfolioStatus(projectViews),
+                    portfolioRisk(projectViews),
+                    new Overview(
+                            headquarters.size(),
+                            projectViews.size(),
+                            totalInvestment,
+                            totalExpectedRevenue,
+                            averageNpv,
+                            averageIrr,
+                            averagePayback,
+                            approvedCount,
+                            conditionalCount),
+                    headquarters,
+                    projectSummaries,
+                    assumptions,
+                    auditEvents);
+        } catch (RuntimeException exception) {
+            return null;
+        }
+    }
+
+    private PortfolioSummaryResponse loadSeedSummary() {
         List<ProjectSeed> rankedProjects = PROJECTS.stream()
                 .sorted(Comparator.comparingLong(ProjectSeed::npvKrw).reversed())
                 .toList();
@@ -66,11 +168,11 @@ public class PortfolioSummaryService {
                 .collect(Collectors.groupingBy(ProjectSeed::headquarter));
 
         List<HeadquarterSummary> headquarters = List.of(
-                summarizeHeadquarter("UND", "언더라이팅본부", "중간", projectsByHeadquarter.get("언더라이팅본부")),
-                summarizeHeadquarter("PROD", "상품개발본부", "중간", projectsByHeadquarter.get("상품개발본부")),
-                summarizeHeadquarter("SALES", "영업본부", "중간", projectsByHeadquarter.get("영업본부")),
-                summarizeHeadquarter("IT", "IT본부", "높음", projectsByHeadquarter.get("IT본부")),
-                summarizeHeadquarter("CORP", "경영지원본부", "낮음", projectsByHeadquarter.get("경영지원본부")));
+                summarizeSeedHeadquarter("UND", "언더라이팅본부", "중간", projectsByHeadquarter.get("언더라이팅본부")),
+                summarizeSeedHeadquarter("PROD", "상품개발본부", "중간", projectsByHeadquarter.get("상품개발본부")),
+                summarizeSeedHeadquarter("SALES", "영업본부", "중간", projectsByHeadquarter.get("영업본부")),
+                summarizeSeedHeadquarter("IT", "IT본부", "높음", projectsByHeadquarter.get("IT본부")),
+                summarizeSeedHeadquarter("CORP", "경영지원본부", "낮음", projectsByHeadquarter.get("경영지원본부")));
 
         long totalInvestment = PROJECTS.stream().mapToLong(ProjectSeed::investmentKrw).sum();
         long totalExpectedRevenue = PROJECTS.stream().mapToLong(ProjectSeed::expectedRevenueKrw).sum();
@@ -82,8 +184,8 @@ public class PortfolioSummaryService {
         int conditionalCount = (int) PROJECTS.stream().filter(project -> "조건부 진행".equals(project.status())).count();
 
         return new PortfolioSummaryResponse(
-                "보험사/금융사 전사 포트폴리오 의사결정 플랫폼",
-                "전략기획실",
+                PORTFOLIO_NAME,
+                PORTFOLIO_OWNER,
                 "검토중",
                 "중간",
                 new Overview(
@@ -110,7 +212,7 @@ public class PortfolioSummaryService {
                         new AuditEvent("보안운영팀", "권한 및 감사 로그 정책을 승인했습니다.", "ACCESS", LocalDateTime.parse("2026-04-20T11:42:00"))));
     }
 
-    private HeadquarterSummary summarizeHeadquarter(
+    private HeadquarterSummary summarizeSeedHeadquarter(
             String code, String name, String risk, List<ProjectSeed> seeds) {
         long totalInvestment = seeds.stream().mapToLong(ProjectSeed::investmentKrw).sum();
         long totalExpectedRevenue = seeds.stream().mapToLong(ProjectSeed::expectedRevenueKrw).sum();
@@ -129,6 +231,275 @@ public class PortfolioSummaryService {
                 averageNpv,
                 risk,
                 topProject);
+    }
+
+    private HeadquarterSummary summarizeProjectedHeadquarter(
+            String code, String name, String risk, List<ProjectProjection> projects) {
+        long totalInvestment = projects.stream().mapToLong(ProjectProjection::investmentKrw).sum();
+        long totalExpectedRevenue = projects.stream().mapToLong(ProjectProjection::expectedRevenueKrw).sum();
+        long averageNpv = averageLong(projects.stream().map(ProjectProjection::npvKrw).toList());
+        String topProject = projects.stream()
+                .max(Comparator.comparingLong(ProjectProjection::npvKrw))
+                .map(ProjectProjection::name)
+                .orElse("프로젝트 없음");
+
+        return new HeadquarterSummary(
+                code,
+                name,
+                projects.size(),
+                totalInvestment,
+                totalExpectedRevenue,
+                averageNpv,
+                risk,
+                topProject);
+    }
+
+    private ProjectProjection projectProjection(ProjectPersistenceRepository.ProjectRecord project) {
+        List<ProjectPersistenceRepository.ScenarioRecord> scenarios = projectRepository.listScenarios(project.id());
+        ProjectPersistenceRepository.ScenarioRecord selectedScenario = selectScenario(scenarios);
+        ProjectPersistenceRepository.AnalysisRecord analysis = selectedScenario == null
+                ? new ProjectPersistenceRepository.AnalysisRecord(List.of(), List.of(), null)
+                : projectRepository.findAnalysis(project.id(), selectedScenario.id());
+
+        long investmentKrw = estimateInvestment(analysis.cashFlows());
+        long expectedRevenueKrw = estimateExpectedRevenue(analysis.cashFlows());
+        long npvKrw = decimalToLong(analysis.valuation() == null ? null : analysis.valuation().npv());
+        double irr = decimalToDouble(analysis.valuation() == null ? null : analysis.valuation().irr());
+        double paybackYears = decimalToDouble(analysis.valuation() == null ? null : analysis.valuation().paybackPeriod());
+
+        String headquarter = headquarterName(project.code(), analysis);
+        String status = displayStatus(project.status(), analysis);
+        String risk = displayRisk(analysis, npvKrw);
+
+        List<AuditEvent> auditEvents = projectRepository.listApprovalLogs(project.id()).stream()
+                .map(log -> new AuditEvent(
+                        log.actorName(),
+                        log.comment(),
+                        auditDomain(log.action()),
+                        log.createdAt()))
+                .toList();
+
+        return new ProjectProjection(
+                project.id(),
+                project.code(),
+                project.name(),
+                headquarter,
+                investmentKrw,
+                expectedRevenueKrw,
+                npvKrw,
+                irr,
+                paybackYears,
+                status,
+                risk,
+                analysis.valuation() == null ? null : analysis.valuation().discountRate(),
+                analysis.cashFlows().stream().mapToInt(ProjectPersistenceRepository.CashFlowRecord::periodNo).max().orElse(0),
+                auditEvents);
+    }
+
+    private ProjectPersistenceRepository.ScenarioRecord selectScenario(
+            List<ProjectPersistenceRepository.ScenarioRecord> scenarios) {
+        return scenarios.stream()
+                .filter(ProjectPersistenceRepository.ScenarioRecord::isActive)
+                .filter(ProjectPersistenceRepository.ScenarioRecord::isBaseline)
+                .findFirst()
+                .orElseGet(() -> scenarios.stream()
+                        .filter(ProjectPersistenceRepository.ScenarioRecord::isBaseline)
+                        .findFirst()
+                        .orElseGet(() -> scenarios.stream()
+                                .filter(ProjectPersistenceRepository.ScenarioRecord::isActive)
+                                .findFirst()
+                                .orElse(scenarios.isEmpty() ? null : scenarios.getFirst())));
+    }
+
+    private String headquarterName(String projectCode, ProjectPersistenceRepository.AnalysisRecord analysis) {
+        String ownerDepartment = null;
+        if (analysis.valuation() != null && analysis.valuation().assumptions() != null) {
+            ownerDepartment = analysis.valuation().assumptions().path("ownerDepartment").asText(null);
+        }
+        String code = ownerDepartment != null && !ownerDepartment.isBlank() ? ownerDepartment : codePrefix(projectCode);
+        return switch (code) {
+            case "UND" -> "언더라이팅본부";
+            case "PROD" -> "상품개발본부";
+            case "SALES" -> "영업본부";
+            case "IT" -> "IT본부";
+            case "CORP" -> "경영지원본부";
+            default -> "경영지원본부";
+        };
+    }
+
+    private String displayStatus(String rawStatus, ProjectPersistenceRepository.AnalysisRecord analysis) {
+        if (analysis.valuation() != null && analysis.valuation().assumptions() != null) {
+            String display = analysis.valuation().assumptions().path("displayStatus").asText(null);
+            if (display != null && !display.isBlank()) {
+                return display;
+            }
+        }
+        return switch (rawStatus) {
+            case "approved" -> "승인";
+            case "rejected", "archived" -> "보류";
+            case "in_review" -> "조건부 진행";
+            default -> "검토중";
+        };
+    }
+
+    private String displayRisk(ProjectPersistenceRepository.AnalysisRecord analysis, long npvKrw) {
+        if (analysis.valuation() != null && analysis.valuation().assumptions() != null) {
+            String risk = analysis.valuation().assumptions().path("riskLevel").asText(null);
+            if (risk != null && !risk.isBlank()) {
+                return risk;
+            }
+        }
+        return npvKrw < 0 ? "높음" : "중간";
+    }
+
+    private String auditDomain(String action) {
+        return switch (action) {
+            case "allocated" -> "ABC";
+            case "evaluated" -> "DCF";
+            case "approved", "rejected" -> "ACCESS";
+            default -> "PORTFOLIO";
+        };
+    }
+
+    private long estimateInvestment(List<ProjectPersistenceRepository.CashFlowRecord> cashFlows) {
+        return cashFlows.stream()
+                .filter(cashFlow -> cashFlow.periodNo() == 0)
+                .map(ProjectPersistenceRepository.CashFlowRecord::investmentCashFlow)
+                .findFirst()
+                .map(value -> value.abs().setScale(0, RoundingMode.HALF_UP).longValue())
+                .orElse(0L);
+    }
+
+    private long estimateExpectedRevenue(List<ProjectPersistenceRepository.CashFlowRecord> cashFlows) {
+        BigDecimal total = cashFlows.stream()
+                .filter(cashFlow -> cashFlow.periodNo() > 0)
+                .map(ProjectPersistenceRepository.CashFlowRecord::operatingCashFlow)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return total.setScale(0, RoundingMode.HALF_UP).longValue();
+    }
+
+    private long decimalToLong(BigDecimal value) {
+        if (value == null) {
+            return 0L;
+        }
+        return value.setScale(0, RoundingMode.HALF_UP).longValue();
+    }
+
+    private double decimalToDouble(BigDecimal value) {
+        if (value == null) {
+            return 0.0;
+        }
+        return value.doubleValue();
+    }
+
+    private long averageLong(List<Long> values) {
+        return values.isEmpty() ? 0L : Math.round(values.stream().mapToLong(Long::longValue).average().orElse(0.0));
+    }
+
+    private double averageDouble(List<Double> values) {
+        return values.isEmpty() ? 0.0 : values.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
+    }
+
+    private String portfolioStatus(List<ProjectProjection> projects) {
+        if (projects.stream().anyMatch(project -> "검토중".equals(project.status()))) {
+            return "검토중";
+        }
+        if (projects.stream().anyMatch(project -> "조건부 진행".equals(project.status()))) {
+            return "조건부 진행";
+        }
+        if (projects.stream().allMatch(project -> "승인".equals(project.status()))) {
+            return "승인";
+        }
+        return "검토중";
+    }
+
+    private String portfolioRisk(List<ProjectProjection> projects) {
+        long highRisk = projects.stream().filter(project -> "높음".equals(project.risk())).count();
+        if (highRisk > Math.max(1, projects.size() / 3)) {
+            return "높음";
+        }
+        if (projects.stream().anyMatch(project -> "중간".equals(project.risk()))) {
+            return "중간";
+        }
+        return "낮음";
+    }
+
+    private String headquarterCode(String headquarterName) {
+        return switch (headquarterName) {
+            case "언더라이팅본부" -> "UND";
+            case "상품개발본부" -> "PROD";
+            case "영업본부" -> "SALES";
+            case "IT본부" -> "IT";
+            case "경영지원본부" -> "CORP";
+            default -> "CORP";
+        };
+    }
+
+    private String headquarterRisk(List<ProjectProjection> projects) {
+        long highRisk = projects.stream().filter(project -> "높음".equals(project.risk())).count();
+        if (highRisk > Math.max(1, projects.size() / 2)) {
+            return "높음";
+        }
+        if (projects.stream().anyMatch(project -> "중간".equals(project.risk()))) {
+            return "중간";
+        }
+        return "낮음";
+    }
+
+    private String displayRate(List<ProjectProjection> projects) {
+        List<BigDecimal> rates = projects.stream()
+                .map(ProjectProjection::discountRate)
+                .filter(value -> value != null)
+                .toList();
+        if (rates.isEmpty()) {
+            return "11.5%";
+        }
+        BigDecimal average = rates.stream().reduce(BigDecimal.ZERO, BigDecimal::add)
+                .divide(BigDecimal.valueOf(rates.size()), 4, RoundingMode.HALF_UP);
+        return average.multiply(BigDecimal.valueOf(100)).setScale(2, RoundingMode.HALF_UP) + "%";
+    }
+
+    private String displayPeriod(List<ProjectProjection> projects) {
+        int maxPeriod = projects.stream().mapToInt(ProjectProjection::maxPeriodNo).max().orElse(0);
+        return maxPeriod + "개년";
+    }
+
+    private String codePrefix(String code) {
+        int delimiter = code.indexOf('-');
+        return delimiter > 0 ? code.substring(0, delimiter) : code;
+    }
+
+    private record ProjectProjection(
+            String projectId,
+            String code,
+            String name,
+            String headquarter,
+            long investmentKrw,
+            long expectedRevenueKrw,
+            long npvKrw,
+            double irr,
+            double paybackYears,
+            String status,
+            String risk,
+            BigDecimal discountRate,
+            int maxPeriodNo,
+            List<AuditEvent> auditEvents) {
+
+        private ProjectSummary toSummary(int rank) {
+            return new ProjectSummary(
+                    projectId,
+                    rank,
+                    code,
+                    name,
+                    headquarter,
+                    investmentKrw,
+                    expectedRevenueKrw,
+                    npvKrw,
+                    irr,
+                    paybackYears,
+                    status,
+                    risk);
+        }
     }
 
     private record ProjectSeed(
