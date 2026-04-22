@@ -107,6 +107,7 @@ class ValuationRiskServiceTest {
         assertEquals("13", result.projectId());
         assertEquals("디지털 플랫폼 구축", result.projectName());
         assertNotNull(result.projectValuation());
+        assertNotNull(result.valuationBasis());
         assertNotNull(result.stockValuation());
         assertNotNull(result.bondValuation());
         assertNotNull(result.derivativeValuation());
@@ -114,6 +115,9 @@ class ValuationRiskServiceTest {
         assertNotNull(result.creditRisk());
         assertTrue(result.projectValuation().npv().compareTo(BigDecimal.ZERO) > 0);
         assertEquals(5, result.riskMetrics().scenarioValues().size());
+        assertEquals(5, result.valuationBasis().scenarioAssumptions().size());
+        assertNotNull(result.valuationBasis().discountRate());
+        assertNotNull(result.valuationBasis().riskPremium());
     }
 
     @Test
