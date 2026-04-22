@@ -130,10 +130,10 @@ class AuditLogControllerTest {
     @Test
     void appendAndQuerySupportsFilteringCursorAndSecretMasking() throws Exception {
         Instant now = Instant.now();
-        String plannerAuth = bearerToken(token("planner", ISSUER, AUDIENCE, now, now.plusSeconds(3600)));
+        String executiveAuth = bearerToken(token("executive", ISSUER, AUDIENCE, now, now.plusSeconds(3600)));
 
         mockMvc.perform(post("/api/audit-logs")
-                        .header("Authorization", plannerAuth)
+                        .header("Authorization", executiveAuth)
                         .header("X-Request-Id", "req-1")
                         .contentType(APPLICATION_JSON)
                         .content("""
@@ -151,15 +151,15 @@ class AuditLogControllerTest {
                                   },
                                   "occurredAt": "2026-04-20T10:00:00Z"
                                 }
-                                """))
+                """))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.actorRole").value("PLANNER"))
-                .andExpect(jsonPath("$.actorId").value("planner@example.com"))
+                .andExpect(jsonPath("$.actorRole").value("EXECUTIVE"))
+                .andExpect(jsonPath("$.actorId").value("executive@example.com"))
                 .andExpect(jsonPath("$.metadata.token").value("***"))
                 .andExpect(jsonPath("$.requestContext.authorization").doesNotExist());
 
         mockMvc.perform(post("/api/audit-logs")
-                        .header("Authorization", plannerAuth)
+                        .header("Authorization", executiveAuth)
                         .header("X-Request-Id", "req-2")
                         .contentType(APPLICATION_JSON)
                         .content("""
@@ -182,7 +182,7 @@ class AuditLogControllerTest {
                 .andExpect(jsonPath("$.metadata.authorization").value("***"));
 
         mockMvc.perform(post("/api/audit-logs")
-                        .header("Authorization", plannerAuth)
+                        .header("Authorization", executiveAuth)
                         .contentType(APPLICATION_JSON)
                         .content("""
                                 {
@@ -202,7 +202,7 @@ class AuditLogControllerTest {
                 .andExpect(status().isCreated());
 
         MvcResult firstPage = mockMvc.perform(get("/api/audit-logs")
-                        .header("Authorization", plannerAuth)
+                        .header("Authorization", executiveAuth)
                         .queryParam("projectId", "PJT-001")
                         .queryParam("limit", "1"))
                 .andExpect(status().isOk())
@@ -214,7 +214,7 @@ class AuditLogControllerTest {
         String cursor = JsonFieldReader.read(firstPage.getResponse().getContentAsString(), "nextCursor");
 
         mockMvc.perform(get("/api/audit-logs")
-                        .header("Authorization", plannerAuth)
+                        .header("Authorization", executiveAuth)
                         .queryParam("projectId", "PJT-001")
                         .queryParam("cursor", cursor))
                 .andExpect(status().isOk())
@@ -223,7 +223,7 @@ class AuditLogControllerTest {
                 .andExpect(jsonPath("$.nextCursor").value(nullValue()));
 
         mockMvc.perform(get("/api/audit-logs")
-                        .header("Authorization", plannerAuth)
+                        .header("Authorization", executiveAuth)
                         .queryParam("projectId", "PJT-001")
                         .queryParam("eventType", "review"))
                 .andExpect(status().isOk())
@@ -231,7 +231,7 @@ class AuditLogControllerTest {
                 .andExpect(jsonPath("$.items[0].eventType").value("REVIEW"));
 
         mockMvc.perform(get("/api/audit-logs")
-                        .header("Authorization", plannerAuth)
+                        .header("Authorization", executiveAuth)
                         .queryParam("projectId", "PJT-001")
                         .queryParam("from", "2026-04-20T10:30:00Z")
                         .queryParam("to", "2026-04-20T11:30:00Z"))

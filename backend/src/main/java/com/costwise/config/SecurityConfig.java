@@ -89,20 +89,21 @@ public class SecurityConfig {
                         .jwtAuthenticationConverter(jwtAuthenticationConverter)));
         http.authorizeHttpRequests(
                 auth -> auth
-                        .requestMatchers("/api/health",
-                                "/api/dashboard",
+                        .requestMatchers("/api/health")
+                        .permitAll()
+                        .requestMatchers("/api/dashboard",
                                 "/api/portfolio/summary",
                                 "/api/cost-accounting/summary",
                                 "/api/valuation-risk/projects/**",
                                 "/api/compute")
-                        .permitAll()
+                        .hasAnyRole("PLANNER", "FINANCE_REVIEWER", "EXECUTIVE")
                         .requestMatchers("/actuator/health", "/actuator/info")
                         .permitAll()
                         .requestMatchers("/actuator/**")
                         .access((authentication, context) ->
                                 new AuthorizationDecision(securityPolicyProperties.actuatorAllPublic()))
                         .requestMatchers("/api/projects/*/workflow", "/api/projects/*/review").authenticated()
-                        .requestMatchers("/api/audit-logs").authenticated()
+                        .requestMatchers("/api/audit-logs").hasRole("EXECUTIVE")
                         .requestMatchers(HttpMethod.OPTIONS, "/**")
                         .permitAll()
                         .requestMatchers("/v3/api-docs",

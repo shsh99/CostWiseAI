@@ -124,17 +124,63 @@ class WorkflowControllerSecurityTest {
     void auditLogsRequireProjectId() throws Exception {
         Instant now = Instant.now();
         mockMvc.perform(get("/api/audit-logs")
-                        .header("Authorization", bearerToken(token("planner", ISSUER, AUDIENCE, now, now.plusSeconds(3600)))))
+                        .header("Authorization", bearerToken(token("executive", ISSUER, AUDIENCE, now, now.plusSeconds(3600)))))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
-    void auditLogsAllowPlannerRole() throws Exception {
+    void auditLogsRejectPlannerRole() throws Exception {
         Instant now = Instant.now();
         mockMvc.perform(get("/api/audit-logs?projectId=P-100")
                         .header("Authorization", bearerToken(token("planner", ISSUER, AUDIENCE, now, now.plusSeconds(3600)))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void auditLogsAllowExecutiveRole() throws Exception {
+        Instant now = Instant.now();
+        mockMvc.perform(get("/api/audit-logs?projectId=P-100")
+                        .header("Authorization", bearerToken(token("executive", ISSUER, AUDIENCE, now, now.plusSeconds(3600)))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items").isArray());
+    }
+
+    @Test
+    void coreBusinessApisRejectAnonymousRequests() throws Exception {
+        mockMvc.perform(get("/api/dashboard"))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/portfolio/summary"))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/cost-accounting/summary"))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/valuation-risk/projects/14"))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(post("/api/compute")
+                        .contentType(APPLICATION_JSON)
+                        .content(validComputeRequest()))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void coreBusinessApisAllowAuthenticatedBusinessRoles() throws Exception {
+        Instant now = Instant.now();
+        for (String role : List.of("planner", "finance_reviewer", "executive")) {
+            String authHeader = bearerToken(token(role, ISSUER, AUDIENCE, now, now.plusSeconds(3600)));
+
+            mockMvc.perform(get("/api/dashboard").header("Authorization", authHeader))
+                    .andExpect(status().isOk());
+            mockMvc.perform(get("/api/portfolio/summary").header("Authorization", authHeader))
+                    .andExpect(status().isOk());
+            mockMvc.perform(get("/api/cost-accounting/summary").header("Authorization", authHeader))
+                    .andExpect(status().isOk());
+            mockMvc.perform(get("/api/valuation-risk/projects/14").header("Authorization", authHeader))
+                    .andExpect(status().isOk());
+            mockMvc.perform(post("/api/compute")
+                            .header("Authorization", authHeader)
+                            .contentType(APPLICATION_JSON)
+                            .content(validComputeRequest()))
+                    .andExpect(status().isOk());
+        }
     }
 
     @Test
@@ -167,5 +213,30 @@ class WorkflowControllerSecurityTest {
                 .build();
         return encoder.encode(JwtEncoderParameters.from(JwsHeader.with(MacAlgorithm.HS256).build(), claims))
                 .getTokenValue();
+    }
+
+    private String validComputeRequest() {
+        return """
+                {
+                  "projectName": "테스트 프로젝트",
+                  "discountRate": 0.08,
+                  "departments": [
+                    {"id": "HQ-1", "name": "기획본부"}
+                  ],
+                  "costPools": [
+                    {
+                      "name": "공통 인건비",
+                      "amount": 1000000,
+                      "allocationTargets": [
+                        {"departmentId": "HQ-1", "departmentName": "기획본부", "weight": 1}
+                      ]
+                    }
+                  ],
+                  "cashFlows": [
+                    {"periodNo": 0, "periodLabel": "초기", "yearLabel": "Y0", "netCashFlow": -1000000},
+                    {"periodNo": 1, "periodLabel": "1년차", "yearLabel": "Y1", "netCashFlow": 1200000}
+                  ]
+                }
+                """;
     }
 }
