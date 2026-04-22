@@ -31,13 +31,16 @@ public record CostAccountingSummaryResponse(
             String projectId,
             String projectName,
             String headquarter,
+            String allocationBasis,
+            long driverVolume,
             long personnelCostKrw,
             long projectDirectCostKrw,
             long standardAllocatedCostKrw,
             long standardCostKrw,
             long actualCostKrw,
             long costVarianceKrw,
-            long internalTransferNetKrw) {}
+            long internalTransferNetKrw,
+            String calculationTrace) {}
 
     public record FactorAnalysis(String factor, long varianceImpactKrw, String note) {}
 }

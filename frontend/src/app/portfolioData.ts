@@ -50,6 +50,23 @@ export type ProjectDetail = {
     allocatedCostKrw: number;
     efficiencyGapKrw: number;
     performanceGapKrw: number;
+    allocationBasis: string;
+    calculationTrace: string;
+    rules: Array<{
+      departmentCode: string;
+      basis: string;
+      allocationRate: number;
+      costPoolName: string;
+      costPoolCategory: string;
+      costPoolAmount: number;
+      allocatedAmount: number;
+    }>;
+    changeHistory: Array<{
+      actor: string;
+      action: string;
+      comment: string;
+      at: string;
+    }>;
   };
   valuation: {
     fairValueKrw: number;
@@ -876,6 +893,21 @@ function adaptProjectDetail(
   const approvalStage = approvalStageFromStatus(
     persistedDetail.approval?.status ?? persistedDetail.status
   );
+  const allocationRules = scenario.allocationRules.map((rule) => ({
+    departmentCode: rule.departmentCode ?? '-',
+    basis: rule.basis ?? '-',
+    allocationRate: toNumber(rule.allocationRate, 0),
+    costPoolName: rule.costPoolName ?? '-',
+    costPoolCategory: rule.costPoolCategory ?? '-',
+    costPoolAmount: toNumber(rule.costPoolAmount, 0),
+    allocatedAmount: toNumber(rule.allocatedAmount, 0)
+  }));
+  const changeHistory = (persistedDetail.approval?.logs ?? []).map((log) => ({
+    actor: log.actorName ?? '담당자',
+    action: log.action ?? 'updated',
+    comment: log.comment ?? '',
+    at: log.createdAt ?? new Date().toISOString()
+  }));
 
   return {
     code: persistedDetail.code || project.code,
@@ -908,7 +940,16 @@ function adaptProjectDetail(
         standardCostKrw,
       performanceGapKrw:
         operatingCashFlow -
-        (allocationTotal || defaults.allocation.allocatedCostKrw)
+        (allocationTotal || defaults.allocation.allocatedCostKrw),
+      allocationBasis:
+        allocationRules.length > 0
+          ? '시나리오 배부 규칙 기반(부서/비용풀/배부율)'
+          : defaults.allocation.allocationBasis,
+      calculationTrace:
+        '표준원가=인력+직접비+표준배부, 실제원가=배부원가+내부대체가액, 성과갭=영업현금흐름-배부원가',
+      rules: allocationRules.length > 0 ? allocationRules : defaults.allocation.rules,
+      changeHistory:
+        changeHistory.length > 0 ? changeHistory : defaults.allocation.changeHistory
     },
     valuation: {
       fairValueKrw: toNumber(
@@ -1055,7 +1096,12 @@ function buildDetailDefaultsFromProject(
       standardCostKrw,
       allocatedCostKrw,
       efficiencyGapKrw: allocatedCostKrw - standardCostKrw,
-      performanceGapKrw: project.expectedRevenueKrw - allocatedCostKrw
+      performanceGapKrw: project.expectedRevenueKrw - allocatedCostKrw,
+      allocationBasis: '프로젝트 투자구조 기반 기본 배부식',
+      calculationTrace:
+        '표준원가=인력+직접비+표준배부, 실제원가=배부원가+내부대체가액, 성과갭=예상수익-배부원가',
+      rules: [],
+      changeHistory: []
     },
     valuation: {
       fairValueKrw: Math.round(project.expectedRevenueKrw * 0.82),
@@ -1159,7 +1205,12 @@ export function buildProjectDetail(projectCode: string): ProjectDetail {
       standardCostKrw,
       allocatedCostKrw,
       efficiencyGapKrw,
-      performanceGapKrw
+      performanceGapKrw,
+      allocationBasis: 'seed 기준 배부식',
+      calculationTrace:
+        '표준원가=인력+직접비+표준배부, 실제원가=배부원가+내부대체가액, 성과갭=예상수익-배부원가',
+      rules: [],
+      changeHistory: []
     },
     valuation: {
       fairValueKrw: Math.round(seed.expectedRevenueKrw * 0.82),

@@ -47,6 +47,8 @@ public class CostAccountingService {
             long actualCost = personnelCost + projectDirectCost + enterpriseAllocatedCost + round(project.investmentKrw() * plan.transferShare());
             long transferNet = round(project.investmentKrw() * plan.transferShare());
             long variance = actualCost - standardCost;
+            String allocationBasis = "활동기준(인력55%+직접비45%)";
+            String calculationTrace = "표준원가=인력원가+프로젝트직접비+표준배부액, 실제원가=표준원가+전사배부액+내부대체가액";
 
             projectCostViews.add(
                     new ProjectCostView(
@@ -54,6 +56,8 @@ public class CostAccountingService {
                             project.code(),
                             project.name(),
                             project.headquarter(),
+                            allocationBasis,
+                            driverVolume,
                             personnelCost,
                             projectDirectCost,
                             standardAllocatedCost,
@@ -61,7 +65,8 @@ public class CostAccountingService {
                             standardCost,
                             actualCost,
                             variance,
-                            transferNet));
+                            transferNet,
+                            calculationTrace));
         }
 
         Map<String, List<ProjectCostView>> byHeadquarter = new LinkedHashMap<>();
@@ -144,13 +149,16 @@ public class CostAccountingService {
                 project.projectId(),
                 project.projectName(),
                 project.headquarter(),
+                project.allocationBasis(),
+                project.driverVolume(),
                 project.personnelCostKrw(),
                 project.projectDirectCostKrw(),
                 project.standardAllocatedCostKrw(),
                 project.standardCostKrw(),
                 project.actualCostKrw(),
                 project.costVarianceKrw(),
-                project.internalTransferNetKrw());
+                project.internalTransferNetKrw(),
+                project.calculationTrace());
     }
 
     private HeadquarterPlan planFor(String headquarter) {
@@ -190,6 +198,8 @@ public class CostAccountingService {
             String projectId,
             String projectName,
             String headquarter,
+            String allocationBasis,
+            long driverVolume,
             long personnelCostKrw,
             long projectDirectCostKrw,
             long standardAllocatedCostKrw,
@@ -197,5 +207,6 @@ public class CostAccountingService {
             long standardCostKrw,
             long actualCostKrw,
             long costVarianceKrw,
-            long internalTransferNetKrw) {}
+            long internalTransferNetKrw,
+            String calculationTrace) {}
 }

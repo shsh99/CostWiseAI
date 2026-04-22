@@ -48,6 +48,9 @@ class CostAccountingServiceTest {
         assertThat(project.actualCostKrw()).isPositive();
         assertThat(project.costVarianceKrw()).isNotZero();
         assertThat(project.internalTransferNetKrw()).isPositive();
+        assertThat(project.allocationBasis()).isNotBlank();
+        assertThat(project.driverVolume()).isPositive();
+        assertThat(project.calculationTrace()).isNotBlank();
         assertThat(summary.factorAnalysis())
                 .extracting(CostAccountingSummaryResponse.FactorAnalysis::factor)
                 .contains("인력 원가", "프로젝트 직접비", "내부대체가액", "표준원가 배분", "원가/성과 요인");
