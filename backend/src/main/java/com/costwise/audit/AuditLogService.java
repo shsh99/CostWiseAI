@@ -48,7 +48,7 @@ public class AuditLogService {
                 command.target().trim(),
                 command.result().trim(),
                 sanitize(command.metadata()),
-                sanitize(command.requestContext()),
+                sanitizeRequestContext(command.requestContext()),
                 command.occurredAt(),
                 createdAt));
         return toResponse(entry);
@@ -142,6 +142,21 @@ public class AuditLogService {
     private JsonNode sanitize(JsonNode input) {
         JsonNode node = input == null ? JsonNodeFactory.instance.objectNode() : input.deepCopy();
         return sanitizeNode(node, null);
+    }
+
+    private JsonNode sanitizeRequestContext(JsonNode input) {
+        JsonNode node = sanitize(input);
+        if (node.isObject()) {
+            ObjectNode object = (ObjectNode) node;
+            List<String> fieldNames = new ArrayList<>();
+            object.fieldNames().forEachRemaining(fieldNames::add);
+            for (String name : fieldNames) {
+                if (isSensitiveKey(name)) {
+                    object.remove(name);
+                }
+            }
+        }
+        return node;
     }
 
     private JsonNode sanitizeNode(JsonNode node, String fieldName) {

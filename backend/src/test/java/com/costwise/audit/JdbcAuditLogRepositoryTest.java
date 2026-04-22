@@ -44,7 +44,7 @@ class JdbcAuditLogRepositoryTest {
 
         assertThat(response.items()).hasSize(1);
         assertThat(response.items().getFirst().metadata().path("token").asText()).isEqualTo("***");
-        assertThat(response.items().getFirst().requestContext().path("authorization").asText()).isEqualTo("***");
+        assertThat(response.items().getFirst().requestContext().has("authorization")).isFalse();
     }
 
     private void createSchema(String jdbcUrl) throws Exception {

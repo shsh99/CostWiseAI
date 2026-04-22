@@ -8,7 +8,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.hamcrest.Matchers.nullValue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
+import com.costwise.api.dto.audit.CreateAuditLogRequest;
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import java.time.Instant;
 import java.sql.Connection;
@@ -18,12 +21,19 @@ import java.util.Base64;
 import java.util.List;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
+import com.costwise.audit.AuditLogService;
 import com.costwise.api.support.JsonFieldReader;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
@@ -50,6 +60,42 @@ class AuditLogControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Test
+    void appendDoesNotCollectAuthorizationHeaderInRequestContext() {
+        AuditLogService auditLogService = mock(AuditLogService.class);
+        AuditLogController controller = new AuditLogController(auditLogService);
+        MockHttpServletRequest httpRequest = new MockHttpServletRequest();
+        httpRequest.addHeader("Authorization", "Bearer raw-header-value");
+        httpRequest.addHeader("X-Request-Id", "req-unit");
+        httpRequest.addHeader("User-Agent", "unit-test");
+        TestingAuthenticationToken authentication = new TestingAuthenticationToken(
+                "controller-user",
+                "credentials",
+                List.of(new SimpleGrantedAuthority("ROLE_PLANNER")));
+
+        controller.append(
+                new CreateAuditLogRequest(
+                        "PJT-UNIT",
+                        "REVIEW",
+                        "system",
+                        "fallback-user",
+                        "submit",
+                        "project",
+                        "success",
+                        JsonNodeFactory.instance.objectNode(),
+                        Instant.parse("2026-04-20T10:00:00Z")),
+                authentication,
+                httpRequest);
+
+        ArgumentCaptor<AuditLogService.AppendCommand> commandCaptor =
+                ArgumentCaptor.forClass(AuditLogService.AppendCommand.class);
+        verify(auditLogService).append(commandCaptor.capture());
+
+        Assertions.assertFalse(commandCaptor.getValue().requestContext().has("authorization"));
+        Assertions.assertEquals("req-unit", commandCaptor.getValue().requestContext().path("requestId").asText());
+        Assertions.assertEquals("unit-test", commandCaptor.getValue().requestContext().path("userAgent").asText());
+    }
 
     @BeforeEach
     void createSchema() throws Exception {
@@ -110,7 +156,7 @@ class AuditLogControllerTest {
                 .andExpect(jsonPath("$.actorRole").value("PLANNER"))
                 .andExpect(jsonPath("$.actorId").value("planner@example.com"))
                 .andExpect(jsonPath("$.metadata.token").value("***"))
-                .andExpect(jsonPath("$.requestContext.authorization").value("***"));
+                .andExpect(jsonPath("$.requestContext.authorization").doesNotExist());
 
         mockMvc.perform(post("/api/audit-logs")
                         .header("Authorization", plannerAuth)
