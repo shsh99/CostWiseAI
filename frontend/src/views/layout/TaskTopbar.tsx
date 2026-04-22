@@ -1,10 +1,15 @@
 /* eslint-disable no-unused-vars */
-import { roleInsights, type ProjectSummary, type Role } from '../../app/portfolioData';
+import {
+  roleInsights,
+  type DataSource,
+  type ProjectSummary,
+  type Role
+} from '../../app/portfolioData';
 
 type TaskTopbarProps = {
   selectedRole: Role;
   onChangeRole(role: Role): void;
-  source: 'api' | 'local';
+  source: DataSource;
   projectCount: number;
   conditionalCount: number;
   selectedProject: ProjectSummary | null;
@@ -32,7 +37,9 @@ export function TaskTopbar({
         <div className="breadcrumb" aria-label="현재 위치">
           {meta.breadcrumb.map((item, index) => (
             <span key={item} className="breadcrumb__item">
-              {index > 0 ? <span className="breadcrumb__divider">/</span> : null}
+              {index > 0 ? (
+                <span className="breadcrumb__divider">/</span>
+              ) : null}
               {item}
             </span>
           ))}
@@ -43,11 +50,15 @@ export function TaskTopbar({
 
       <div className="topbar__cluster">
         <div className="context-pills" aria-label="운영 컨텍스트">
-          <span className="context-pill">{source === 'api' ? '백엔드 연동' : '로컬 시드'}</span>
+          <span className="context-pill">{dataSourceLabel(source)}</span>
           <span className="context-pill">{projectCount}개 프로젝트</span>
           <span className="context-pill">{conditionalCount}개 승인 대기</span>
         </div>
-        <div className="role-switcher" role="tablist" aria-label="역할 컨텍스트">
+        <div
+          className="role-switcher"
+          role="tablist"
+          aria-label="역할 컨텍스트"
+        >
           {(Object.keys(roleInsights) as Role[]).map((role) => (
             <button
               key={role}
@@ -65,11 +76,24 @@ export function TaskTopbar({
             <span>Selected project</span>
             <strong>{selectedProject.name}</strong>
             <small>
-              {selectedProject.code} · {selectedProject.headquarter} · {selectedProject.status}
+              {selectedProject.code} · {selectedProject.headquarter} ·{' '}
+              {selectedProject.status}
             </small>
           </div>
         ) : null}
       </div>
     </header>
   );
+}
+
+function dataSourceLabel(source: DataSource) {
+  if (source === 'api') {
+    return '백엔드 연동';
+  }
+
+  if (source === 'mixed') {
+    return 'API/로컬 혼합';
+  }
+
+  return '로컬 시드';
 }
