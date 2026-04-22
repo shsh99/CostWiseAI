@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState, type KeyboardEvent } from 'react';
 import {
   buildDecisionSignals,
-  buildProjectDetail,
   detailTabs,
   defaultPortfolioSummary,
+  loadProjectDetail,
   loadPortfolioSummary,
   roleInsights,
+  type DataSource,
+  type ProjectDetail,
   type PortfolioSummary,
   type Role
 } from './app/portfolioData';
@@ -18,9 +20,7 @@ import {
   type ExplorerSortKey,
   type NavigationKey
 } from './features/portfolio/explorerState';
-import {
-  filterAndSortProjects
-} from './features/portfolio/explorerFilters';
+import { filterAndSortProjects } from './features/portfolio/explorerFilters';
 import { buildDecisionBars } from './features/workspace/decisionVisuals';
 import { DashboardView } from './views/dashboard/DashboardView';
 import { TaskSidebar } from './views/layout/TaskSidebar';
@@ -34,19 +34,37 @@ import { WorkspaceView } from './views/workspace/WorkspaceView';
 type WorkspaceTabKey = (typeof detailTabs)[number]['key'];
 
 export function App() {
-  const initialExplorerState = useMemo(() => parseExplorerState(window.location.search), []);
-  const [selectedRole, setSelectedRole] = useState<Role>('임원');
-  const [activeView, setActiveView] = useState<NavigationKey>(initialExplorerState.view);
-  const [portfolio, setPortfolio] = useState<PortfolioSummary>(defaultPortfolioSummary);
-  const [source, setSource] = useState<'api' | 'local'>('local');
-  const [searchTerm, setSearchTerm] = useState(initialExplorerState.search);
-  const [explorerSort, setExplorerSort] = useState<ExplorerSortKey>(initialExplorerState.sort);
-  const [explorerQuickFilter, setExplorerQuickFilter] = useState<ExplorerQuickFilterKey>(
-    initialExplorerState.quickFilter
+  const initialExplorerState = useMemo(
+    () => parseExplorerState(window.location.search),
+    []
   );
-  const [headquarterFilter, setHeadquarterFilter] = useState<string>(initialExplorerState.headquarter);
-  const [selectedProjectCode, setSelectedProjectCode] = useState(initialExplorerState.projectCode);
-  const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<WorkspaceTabKey>('allocation');
+  const [selectedRole, setSelectedRole] = useState<Role>('임원');
+  const [activeView, setActiveView] = useState<NavigationKey>(
+    initialExplorerState.view
+  );
+  const [portfolio, setPortfolio] = useState<PortfolioSummary>(
+    defaultPortfolioSummary
+  );
+  const [portfolioSource, setPortfolioSource] = useState<DataSource>('local');
+  const [selectedDetail, setSelectedDetail] = useState<ProjectDetail | null>(
+    null
+  );
+  const [selectedDetailSource, setSelectedDetailSource] =
+    useState<DataSource>('local');
+  const [searchTerm, setSearchTerm] = useState(initialExplorerState.search);
+  const [explorerSort, setExplorerSort] = useState<ExplorerSortKey>(
+    initialExplorerState.sort
+  );
+  const [explorerQuickFilter, setExplorerQuickFilter] =
+    useState<ExplorerQuickFilterKey>(initialExplorerState.quickFilter);
+  const [headquarterFilter, setHeadquarterFilter] = useState<string>(
+    initialExplorerState.headquarter
+  );
+  const [selectedProjectCode, setSelectedProjectCode] = useState(
+    initialExplorerState.projectCode
+  );
+  const [activeWorkspaceTab, setActiveWorkspaceTab] =
+    useState<WorkspaceTabKey>('allocation');
 
   useEffect(() => {
     let cancelled = false;
@@ -54,7 +72,7 @@ export function App() {
     void loadPortfolioSummary().then(({ summary, source: loadedSource }) => {
       if (!cancelled) {
         setPortfolio(summary);
-        setSource(loadedSource);
+        setPortfolioSource(loadedSource);
       }
     });
 
@@ -64,16 +82,54 @@ export function App() {
   }, []);
 
   const selectedProject = useMemo(
-    () => portfolio.projects.find((project) => project.code === selectedProjectCode) ?? null,
+    () =>
+      portfolio.projects.find(
+        (project) => project.code === selectedProjectCode
+      ) ?? null,
     [portfolio.projects, selectedProjectCode]
   );
-  const selectedDetail = selectedProject ? buildProjectDetail(selectedProject.code) : null;
+  useEffect(() => {
+    if (!selectedProject) {
+      setSelectedDetail(null);
+      setSelectedDetailSource('local');
+      return;
+    }
+
+    let cancelled = false;
+    setSelectedDetail(null);
+
+    void loadProjectDetail(selectedProject).then(({ detail, source }) => {
+      if (!cancelled) {
+        setSelectedDetail(detail);
+        setSelectedDetailSource(source);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedProject]);
+
+  const source: DataSource =
+    portfolioSource === 'api' && selectedDetailSource === 'api'
+      ? 'api'
+      : portfolioSource === 'local' && selectedDetailSource === 'local'
+        ? 'local'
+        : 'mixed';
   const selectedInsight = roleInsights[selectedRole];
   const decisionSignals = buildDecisionSignals(portfolio);
   const currentViewMeta = viewMeta[activeView];
-  const priorityProjects = useMemo(() => portfolio.projects.slice(0, 6), [portfolio.projects]);
+  const priorityProjects = useMemo(
+    () => portfolio.projects.slice(0, 6),
+    [portfolio.projects]
+  );
   const maxHeadquarterInvestment = useMemo(
-    () => Math.max(...portfolio.headquarters.map((headquarter) => headquarter.totalInvestmentKrw)),
+    () =>
+      Math.max(
+        ...portfolio.headquarters.map(
+          (headquarter) => headquarter.totalInvestmentKrw
+        )
+      ),
     [portfolio.headquarters]
   );
 
@@ -86,9 +142,15 @@ export function App() {
     : [];
 
   const cockpitMetaItems = [
-    { label: '우선순위', value: selectedProject ? `${selectedProject.rank}위` : '-' },
+    {
+      label: '우선순위',
+      value: selectedProject ? `${selectedProject.rank}위` : '-'
+    },
     { label: 'Owner', value: selectedDetail?.manager ?? '-' },
-    { label: 'Current Stage', value: selectedDetail?.workflow.currentStage ?? '-' },
+    {
+      label: 'Current Stage',
+      value: selectedDetail?.workflow.currentStage ?? '-'
+    },
     { label: '리스크 상태', value: selectedProject?.risk ?? '-' }
   ];
 
@@ -102,14 +164,22 @@ export function App() {
           : selectedInsight.nextAction;
 
   const valuationExpectedCase =
-    selectedDetail?.scenarioReturns.find((scenario) => scenario.label === '기준') ?? null;
+    selectedDetail?.scenarioReturns.find(
+      (scenario) => scenario.label === '기준'
+    ) ?? null;
   const riskDownsideScenario =
-    selectedDetail?.scenarioReturns.find((scenario) => scenario.label === '비관') ?? null;
+    selectedDetail?.scenarioReturns.find(
+      (scenario) => scenario.label === '비관'
+    ) ?? null;
   const riskGuardrailGap =
     selectedDetail && riskDownsideScenario
-      ? Math.abs(selectedDetail.valuation.var95Krw - riskDownsideScenario.npvKrw)
+      ? Math.abs(
+          selectedDetail.valuation.var95Krw - riskDownsideScenario.npvKrw
+        )
       : 0;
-  const valuationGap = Math.abs((valuationExpectedCase?.npvKrw ?? 0) - (riskDownsideScenario?.npvKrw ?? 0));
+  const valuationGap = Math.abs(
+    (valuationExpectedCase?.npvKrw ?? 0) - (riskDownsideScenario?.npvKrw ?? 0)
+  );
 
   const allocationDecisionBars = selectedDetail
     ? buildDecisionBars([
@@ -117,7 +187,9 @@ export function App() {
           key: 'project',
           label: '프로젝트 직접원가',
           value: selectedDetail.allocation.projectCostKrw,
-          formattedValue: formatKrwCompact(selectedDetail.allocation.projectCostKrw),
+          formattedValue: formatKrwCompact(
+            selectedDetail.allocation.projectCostKrw
+          ),
           cue: 'solid',
           annotation: '투입 원가의 기준점'
         },
@@ -125,7 +197,9 @@ export function App() {
           key: 'personnel',
           label: '인력원가',
           value: selectedDetail.allocation.personnelCostKrw,
-          formattedValue: formatKrwCompact(selectedDetail.allocation.personnelCostKrw),
+          formattedValue: formatKrwCompact(
+            selectedDetail.allocation.personnelCostKrw
+          ),
           cue: 'stripe',
           annotation: '배부 기준 재조정 우선 후보'
         },
@@ -133,7 +207,9 @@ export function App() {
           key: 'hq',
           label: '본부 공통원가',
           value: selectedDetail.allocation.headquarterCostKrw,
-          formattedValue: formatKrwCompact(selectedDetail.allocation.headquarterCostKrw),
+          formattedValue: formatKrwCompact(
+            selectedDetail.allocation.headquarterCostKrw
+          ),
           cue: 'dot',
           annotation: '공통비 배분 근거 확인 필요'
         }
@@ -147,7 +223,12 @@ export function App() {
           label: `${scenario.label} 시나리오`,
           value: scenario.npvKrw,
           formattedValue: formatKrwCompact(scenario.npvKrw),
-          cue: scenario.label === '기준' ? 'solid' : scenario.label === '낙관' ? 'stripe' : 'dot',
+          cue:
+            scenario.label === '기준'
+              ? 'solid'
+              : scenario.label === '낙관'
+                ? 'stripe'
+                : 'dot',
           annotation: `발생 확률 ${formatPercent(scenario.probability)}`
         }))
       )
@@ -183,7 +264,10 @@ export function App() {
     : [];
 
   const headquarterOptions = useMemo(
-    () => ['all', ...portfolio.headquarters.map((headquarter) => headquarter.name)],
+    () => [
+      'all',
+      ...portfolio.headquarters.map((headquarter) => headquarter.name)
+    ],
     [portfolio.headquarters]
   );
 
@@ -195,11 +279,20 @@ export function App() {
         quickFilter: explorerQuickFilter,
         sort: explorerSort
       }),
-    [portfolio.projects, headquarterFilter, searchTerm, explorerQuickFilter, explorerSort]
+    [
+      portfolio.projects,
+      headquarterFilter,
+      searchTerm,
+      explorerQuickFilter,
+      explorerSort
+    ]
   );
 
   useEffect(() => {
-    if (headquarterFilter !== 'all' && !headquarterOptions.includes(headquarterFilter)) {
+    if (
+      headquarterFilter !== 'all' &&
+      !headquarterOptions.includes(headquarterFilter)
+    ) {
       setHeadquarterFilter('all');
     }
   }, [headquarterFilter, headquarterOptions]);
@@ -212,7 +305,9 @@ export function App() {
       return;
     }
 
-    const isSelectedProjectVisible = filteredProjects.some((project) => project.code === selectedProjectCode);
+    const isSelectedProjectVisible = filteredProjects.some(
+      (project) => project.code === selectedProjectCode
+    );
     if (!isSelectedProjectVisible) {
       setSelectedProjectCode('');
     }
@@ -246,7 +341,14 @@ export function App() {
     if (nextUrl !== currentUrl) {
       window.history.replaceState(null, '', nextUrl);
     }
-  }, [activeView, searchTerm, explorerSort, explorerQuickFilter, headquarterFilter, selectedProjectCode]);
+  }, [
+    activeView,
+    searchTerm,
+    explorerSort,
+    explorerQuickFilter,
+    headquarterFilter,
+    selectedProjectCode
+  ]);
 
   useEffect(() => {
     if (activeView === 'accounting') {
@@ -276,7 +378,10 @@ export function App() {
     };
   }, []);
 
-  function openWorkspace(target: 'accounting' | 'valuation', projectCode: string) {
+  function openWorkspace(
+    target: 'accounting' | 'valuation',
+    projectCode: string
+  ) {
     setSelectedProjectCode(projectCode);
     setActiveView(target);
   }
@@ -288,7 +393,10 @@ export function App() {
     setHeadquarterFilter('all');
   }
 
-  function handleWorkspaceTabKeydown(event: KeyboardEvent<HTMLButtonElement>, index: number) {
+  function handleWorkspaceTabKeydown(
+    event: KeyboardEvent<HTMLButtonElement>,
+    index: number
+  ) {
     const tabCount = detailTabs.length;
 
     if (event.key === 'ArrowRight') {
@@ -321,7 +429,11 @@ export function App() {
         본문으로 건너뛰기
       </a>
 
-      <TaskSidebar activeView={activeView} selectedRole={selectedRole} onChangeView={setActiveView} />
+      <TaskSidebar
+        activeView={activeView}
+        selectedRole={selectedRole}
+        onChangeView={setActiveView}
+      />
 
       <div className="workspace workspace--task-first">
         <TaskTopbar
@@ -387,10 +499,15 @@ export function App() {
             />
           ) : null}
 
-          {activeView === 'reviews' ? <ReviewsView portfolio={portfolio} /> : null}
+          {activeView === 'reviews' ? (
+            <ReviewsView portfolio={portfolio} />
+          ) : null}
 
           {activeView === 'settings' ? (
-            <SettingsView selectedRole={selectedRole} selectedInsight={selectedInsight} />
+            <SettingsView
+              selectedRole={selectedRole}
+              selectedInsight={selectedInsight}
+            />
           ) : null}
         </main>
       </div>
