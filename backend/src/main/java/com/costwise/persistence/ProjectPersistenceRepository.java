@@ -16,6 +16,8 @@ public interface ProjectPersistenceRepository {
 
     Optional<ProjectRecord> findProject(String projectId);
 
+    List<ProjectRecord> listProjects();
+
     boolean existsProjectCode(String code);
 
     ScenarioRecord createScenario(String projectId, NewScenario scenario);

@@ -120,6 +120,26 @@ public class JdbcProjectPersistenceRepository implements ProjectPersistenceRepos
     }
 
     @Override
+    public List<ProjectRecord> listProjects() {
+        String sql = """
+                select id, code, name, business_type, status, description, created_at
+                  from projects
+                 order by created_at asc, code asc
+                """;
+        try (Connection connection = openConnection();
+                PreparedStatement statement = connection.prepareStatement(sql);
+                ResultSet resultSet = statement.executeQuery()) {
+            List<ProjectRecord> projects = new ArrayList<>();
+            while (resultSet.next()) {
+                projects.add(toProject(resultSet));
+            }
+            return projects;
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to list projects", exception);
+        }
+    }
+
+    @Override
     public boolean existsProjectCode(String code) {
         try (Connection connection = openConnection();
                 PreparedStatement statement = connection.prepareStatement("select 1 from projects where code = ?")) {
