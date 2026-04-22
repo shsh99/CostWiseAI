@@ -9,12 +9,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.Statement;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.List;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import com.costwise.api.support.JsonFieldReader;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -31,7 +35,10 @@ import org.springframework.test.web.servlet.MvcResult;
 @SpringBootTest(properties = {
     "app.security.jwt.issuer-uri=https://example.supabase.co/auth/v1",
     "app.security.jwt.audience=authenticated",
-    "app.security.jwt.secret-base64=c3VwYWJhc2UtYmVhcmVyLXRlc3Qtc2VjcmV0LXN1cHBvcnQ="
+    "app.security.jwt.secret-base64=c3VwYWJhc2UtYmVhcmVyLXRlc3Qtc2VjcmV0LXN1cHBvcnQ=",
+    "app.persistence.jdbc-url=jdbc:h2:mem:persistence-controller;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE",
+    "app.persistence.username=sa",
+    "app.persistence.password="
 })
 @AutoConfigureMockMvc
 class PersistenceControllerTest {
@@ -42,6 +49,41 @@ class PersistenceControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @BeforeEach
+    void createSchema() throws Exception {
+        try (Connection connection = DriverManager.getConnection(
+                        "jdbc:h2:mem:persistence-controller;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE",
+                        "sa",
+                        "");
+                Statement statement = connection.createStatement()) {
+            statement.execute("drop table if exists scenarios");
+            statement.execute("drop table if exists projects");
+            statement.execute("""
+                    create table projects (
+                      id uuid default random_uuid() primary key,
+                      code text not null unique,
+                      name text not null,
+                      business_type text not null default 'new_business',
+                      status text not null default 'draft',
+                      description text,
+                      created_at timestamp not null default current_timestamp
+                    )
+                    """);
+            statement.execute("""
+                    create table scenarios (
+                      id uuid default random_uuid() primary key,
+                      project_id uuid not null references projects (id) on delete cascade,
+                      name text not null,
+                      description text,
+                      is_baseline boolean not null default false,
+                      is_active boolean not null default true,
+                      created_at timestamp not null default current_timestamp,
+                      unique (project_id, name)
+                    )
+                    """);
+        }
+    }
 
     @Test
     void projectScenarioCrudAndAnalysisPersistenceFlow() throws Exception {

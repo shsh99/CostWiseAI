@@ -14,12 +14,10 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.stereotype.Service;
 
@@ -39,143 +37,188 @@ public class PersistenceService {
     private static final Set<String> VALUATION_DECISIONS =
             Set.of("recommend", "review", "reject");
 
-    private final Map<String, ProjectState> projects = new ConcurrentHashMap<>();
-    private final Map<String, String> codeToProjectId = new ConcurrentHashMap<>();
+    private final ProjectPersistenceRepository projectRepository;
+    private final Map<String, ScenarioAnalysisState> scenarioAnalyses = new ConcurrentHashMap<>();
+    private final Map<String, ApprovalSummaryState> approvalSummaries = new ConcurrentHashMap<>();
+    private final Map<String, List<ApprovalLog>> approvalLogs = new ConcurrentHashMap<>();
+
+    public PersistenceService(ProjectPersistenceRepository projectRepository) {
+        this.projectRepository = projectRepository;
+    }
 
     public ProjectSummaryResponse createProject(CreateProjectRequest request) {
         String code = request.code().trim();
-        if (codeToProjectId.containsKey(code)) {
+        if (projectRepository.existsProjectCode(code)) {
             throw new IllegalArgumentException("Project code already exists: " + code);
         }
-        String id = UUID.randomUUID().toString();
-        LocalDateTime now = LocalDateTime.now();
-        ProjectState project = new ProjectState(
-                id, code, request.name().trim(), request.businessType().trim(), "draft", request.description(), now);
-        projects.put(id, project);
-        codeToProjectId.put(code, id);
+        ProjectPersistenceRepository.ProjectRecord project = projectRepository.createProject(
+                new ProjectPersistenceRepository.NewProject(
+                        code,
+                        request.name().trim(),
+                        request.businessType().trim(),
+                        "draft",
+                        request.description()));
+        approvalSummaries.put(project.id(), createdApprovalSummary(project.status(), project.createdAt()));
         return toProjectSummary(project);
     }
 
     public ProjectSummaryResponse updateProject(String projectId, UpdateProjectRequest request) {
-        ProjectState project = getProjectState(projectId);
+        ProjectPersistenceRepository.ProjectRecord currentProject = getProjectState(projectId);
         String status = normalizeEnum(request.status(), PROJECT_STATUSES, "project status");
-        project.name = request.name().trim();
-        project.businessType = request.businessType().trim();
-        project.description = request.description();
-        project.status = status;
-        project.approvalSummary.status = status;
-        project.approvalSummary.updatedAt = LocalDateTime.now();
+        ProjectPersistenceRepository.ProjectRecord project = projectRepository.updateProject(
+                new ProjectPersistenceRepository.ProjectUpdate(
+                        projectId,
+                        request.name().trim(),
+                        request.businessType().trim(),
+                        status,
+                        request.description()));
+        ApprovalSummaryState approvalSummary = approvalSummaries.computeIfAbsent(
+                projectId,
+                ignored -> createdApprovalSummary(currentProject.status(), currentProject.createdAt()));
+        approvalSummary.status = status;
+        approvalSummary.updatedAt = LocalDateTime.now();
         return toProjectSummary(project);
     }
 
     public void deleteProject(String projectId) {
-        ProjectState removed = projects.remove(projectId);
-        if (removed == null) {
-            throw new IllegalArgumentException("Unknown project id: " + projectId);
-        }
-        codeToProjectId.remove(removed.code);
+        projectRepository.deleteProject(projectId);
+        approvalSummaries.remove(projectId);
+        approvalLogs.remove(projectId);
+        scenarioAnalyses.keySet().removeIf(key -> key.startsWith(projectId + ":"));
     }
 
     public ScenarioResponse createScenario(String projectId, CreateScenarioRequest request) {
-        ProjectState project = getProjectState(projectId);
-        ensureScenarioNameUnique(project, request.name(), null);
-        ScenarioState scenario = new ScenarioState(
-                UUID.randomUUID().toString(),
-                request.name().trim(),
-                request.description(),
-                request.isBaseline(),
-                request.isActive(),
-                LocalDateTime.now());
-        project.scenarios.put(scenario.id, scenario);
+        getProjectState(projectId);
+        ensureScenarioNameUnique(projectId, request.name(), null);
+        ProjectPersistenceRepository.ScenarioRecord scenario = projectRepository.createScenario(
+                projectId,
+                new ProjectPersistenceRepository.NewScenario(
+                        request.name().trim(),
+                        request.description(),
+                        request.isBaseline(),
+                        request.isActive()));
         return toScenarioResponse(scenario);
     }
 
     public ScenarioResponse updateScenario(
             String projectId, String scenarioId, UpdateScenarioRequest request) {
-        ProjectState project = getProjectState(projectId);
-        ScenarioState scenario = getScenarioState(project, scenarioId);
-        ensureScenarioNameUnique(project, request.name(), scenarioId);
-        scenario.name = request.name().trim();
-        scenario.description = request.description();
-        scenario.isBaseline = request.isBaseline();
-        scenario.isActive = request.isActive();
+        getProjectState(projectId);
+        getScenarioState(projectId, scenarioId);
+        ensureScenarioNameUnique(projectId, request.name(), scenarioId);
+        ProjectPersistenceRepository.ScenarioRecord scenario = projectRepository.updateScenario(
+                projectId,
+                new ProjectPersistenceRepository.ScenarioUpdate(
+                        scenarioId,
+                        request.name().trim(),
+                        request.description(),
+                        request.isBaseline(),
+                        request.isActive()));
         return toScenarioResponse(scenario);
     }
 
     public void deleteScenario(String projectId, String scenarioId) {
-        ProjectState project = getProjectState(projectId);
-        ScenarioState removed = project.scenarios.remove(scenarioId);
-        if (removed == null) {
-            throw new IllegalArgumentException("Unknown scenario id: " + scenarioId);
-        }
+        getProjectState(projectId);
+        projectRepository.deleteScenario(projectId, scenarioId);
+        scenarioAnalyses.remove(analysisKey(projectId, scenarioId));
     }
 
     public AnalysisUpdateResponse upsertAnalysis(
             String projectId, String scenarioId, AnalysisUpsertRequest request) {
-        ProjectState project = getProjectState(projectId);
-        ScenarioState scenario = getScenarioState(project, scenarioId);
+        ProjectPersistenceRepository.ProjectRecord project = getProjectState(projectId);
+        getScenarioState(projectId, scenarioId);
 
-        scenario.allocationRules = request.allocationRules().stream()
-                .map(this::toAllocationRule)
-                .toList();
-        scenario.cashFlows = request.cashFlows().stream()
-                .map(this::toCashFlow)
-                .toList();
-        scenario.valuation = toValuation(request.valuation());
+        ScenarioAnalysisState analysis = new ScenarioAnalysisState(
+                request.allocationRules().stream()
+                        .map(this::toAllocationRule)
+                        .toList(),
+                request.cashFlows().stream()
+                        .map(this::toCashFlow)
+                        .toList(),
+                toValuation(request.valuation()));
+        scenarioAnalyses.put(analysisKey(projectId, scenarioId), analysis);
 
         ApprovalLog approvalLog = toApprovalLog(request.approval());
-        project.approvalSummary.status = normalizeEnum(
+        String projectStatus = normalizeEnum(
                 request.approval().projectStatus(), PROJECT_STATUSES, "project status");
-        project.approvalSummary.lastAction = approvalLog.action;
-        project.approvalSummary.lastActor = approvalLog.actorName;
-        project.approvalSummary.lastComment = approvalLog.comment;
-        project.approvalSummary.updatedAt = approvalLog.createdAt;
-        project.approvalLogs.add(approvalLog);
-        project.status = project.approvalSummary.status;
+        projectRepository.updateProject(new ProjectPersistenceRepository.ProjectUpdate(
+                projectId,
+                project.name(),
+                project.businessType(),
+                projectStatus,
+                project.description()));
+        ApprovalSummaryState approvalSummary = approvalSummaries.computeIfAbsent(
+                projectId,
+                ignored -> createdApprovalSummary(project.status(), project.createdAt()));
+        approvalSummary.status = projectStatus;
+        approvalSummary.lastAction = approvalLog.action;
+        approvalSummary.lastActor = approvalLog.actorName;
+        approvalSummary.lastComment = approvalLog.comment;
+        approvalSummary.updatedAt = approvalLog.createdAt;
+        approvalLogs.computeIfAbsent(projectId, ignored -> new ArrayList<>()).add(approvalLog);
 
-        return new AnalysisUpdateResponse(projectId, scenarioId, scenario.allocationRules.size(), scenario.cashFlows.size());
+        return new AnalysisUpdateResponse(projectId, scenarioId, analysis.allocationRules.size(), analysis.cashFlows.size());
     }
 
     public ProjectDetailResponse getProjectDetail(String projectId) {
-        ProjectState project = getProjectState(projectId);
-        List<ProjectDetailResponse.ScenarioDetailResponse> scenarios = project.scenarios.values().stream()
-                .map(this::toScenarioDetailResponse)
+        ProjectPersistenceRepository.ProjectRecord project = getProjectState(projectId);
+        List<ProjectDetailResponse.ScenarioDetailResponse> scenarios = projectRepository.listScenarios(projectId).stream()
+                .map(scenario -> toScenarioDetailResponse(projectId, scenario))
                 .toList();
-        List<ProjectDetailResponse.ApprovalEvent> logs = project.approvalLogs.stream()
+        List<ProjectDetailResponse.ApprovalEvent> logs = approvalLogs
+                .getOrDefault(projectId, List.of())
+                .stream()
                 .map(log -> new ProjectDetailResponse.ApprovalEvent(
                         log.actorRole, log.actorName, log.action, log.comment, log.createdAt))
                 .toList();
+        ApprovalSummaryState approvalSummaryState = approvalSummaries.computeIfAbsent(
+                projectId,
+                ignored -> createdApprovalSummary(project.status(), project.createdAt()));
         ProjectDetailResponse.ApprovalSummary approvalSummary = new ProjectDetailResponse.ApprovalSummary(
-                project.approvalSummary.status,
-                project.approvalSummary.lastAction,
-                project.approvalSummary.lastActor,
-                project.approvalSummary.lastComment,
-                project.approvalSummary.updatedAt,
+                approvalSummaryState.status,
+                approvalSummaryState.lastAction,
+                approvalSummaryState.lastActor,
+                approvalSummaryState.lastComment,
+                approvalSummaryState.updatedAt,
                 logs);
         return new ProjectDetailResponse(
-                project.id,
-                project.code,
-                project.name,
-                project.businessType,
-                project.status,
-                project.description,
-                project.createdAt,
+                project.id(),
+                project.code(),
+                project.name(),
+                project.businessType(),
+                project.status(),
+                project.description(),
+                project.createdAt(),
                 scenarios,
                 approvalSummary);
     }
 
-    private ProjectSummaryResponse toProjectSummary(ProjectState project) {
+    private ProjectSummaryResponse toProjectSummary(ProjectPersistenceRepository.ProjectRecord project) {
         return new ProjectSummaryResponse(
-                project.id, project.code, project.name, project.businessType, project.status, project.description, project.createdAt);
+                project.id(),
+                project.code(),
+                project.name(),
+                project.businessType(),
+                project.status(),
+                project.description(),
+                project.createdAt());
     }
 
-    private ScenarioResponse toScenarioResponse(ScenarioState scenario) {
+    private ScenarioResponse toScenarioResponse(ProjectPersistenceRepository.ScenarioRecord scenario) {
         return new ScenarioResponse(
-                scenario.id, scenario.name, scenario.description, scenario.isBaseline, scenario.isActive, scenario.createdAt);
+                scenario.id(),
+                scenario.name(),
+                scenario.description(),
+                scenario.isBaseline(),
+                scenario.isActive(),
+                scenario.createdAt());
     }
 
-    private ProjectDetailResponse.ScenarioDetailResponse toScenarioDetailResponse(ScenarioState scenario) {
-        List<ProjectDetailResponse.AllocationRule> allocations = scenario.allocationRules.stream()
+    private ProjectDetailResponse.ScenarioDetailResponse toScenarioDetailResponse(
+            String projectId, ProjectPersistenceRepository.ScenarioRecord scenario) {
+        ScenarioAnalysisState analysis = scenarioAnalyses.getOrDefault(
+                analysisKey(projectId, scenario.id()),
+                ScenarioAnalysisState.empty());
+        List<ProjectDetailResponse.AllocationRule> allocations = analysis.allocationRules.stream()
                 .map(value -> new ProjectDetailResponse.AllocationRule(
                         value.departmentCode,
                         value.basis,
@@ -185,7 +228,7 @@ public class PersistenceService {
                         value.costPoolCategory,
                         value.costPoolAmount))
                 .toList();
-        List<ProjectDetailResponse.CashFlow> cashFlows = scenario.cashFlows.stream()
+        List<ProjectDetailResponse.CashFlow> cashFlows = analysis.cashFlows.stream()
                 .map(value -> new ProjectDetailResponse.CashFlow(
                         value.periodNo,
                         value.periodLabel,
@@ -196,22 +239,22 @@ public class PersistenceService {
                         value.netCashFlow,
                         value.discountRate))
                 .toList();
-        ProjectDetailResponse.Valuation valuation = scenario.valuation == null
+        ProjectDetailResponse.Valuation valuation = analysis.valuation == null
                 ? null
                 : new ProjectDetailResponse.Valuation(
-                        scenario.valuation.discountRate,
-                        scenario.valuation.npv,
-                        scenario.valuation.irr,
-                        scenario.valuation.paybackPeriod,
-                        scenario.valuation.decision,
-                        scenario.valuation.assumptions);
+                        analysis.valuation.discountRate,
+                        analysis.valuation.npv,
+                        analysis.valuation.irr,
+                        analysis.valuation.paybackPeriod,
+                        analysis.valuation.decision,
+                        analysis.valuation.assumptions);
         return new ProjectDetailResponse.ScenarioDetailResponse(
-                scenario.id,
-                scenario.name,
-                scenario.description,
-                scenario.isBaseline,
-                scenario.isActive,
-                scenario.createdAt,
+                scenario.id(),
+                scenario.name(),
+                scenario.description(),
+                scenario.isBaseline(),
+                scenario.isActive(),
+                scenario.createdAt(),
                 allocations,
                 cashFlows,
                 valuation);
@@ -278,27 +321,19 @@ public class PersistenceService {
         return new ApprovalLog(actorRole, input.actorName().trim(), action, input.comment(), LocalDateTime.now());
     }
 
-    private ProjectState getProjectState(String projectId) {
-        ProjectState project = projects.get(projectId);
-        if (project == null) {
-            throw new IllegalArgumentException("Unknown project id: " + projectId);
-        }
-        return project;
+    private ProjectPersistenceRepository.ProjectRecord getProjectState(String projectId) {
+        return projectRepository.findProject(projectId)
+                .orElseThrow(() -> new IllegalArgumentException("Unknown project id: " + projectId));
     }
 
-    private ScenarioState getScenarioState(ProjectState project, String scenarioId) {
-        ScenarioState scenario = project.scenarios.get(scenarioId);
-        if (scenario == null) {
-            throw new IllegalArgumentException("Unknown scenario id: " + scenarioId);
-        }
-        return scenario;
+    private ProjectPersistenceRepository.ScenarioRecord getScenarioState(String projectId, String scenarioId) {
+        return projectRepository.findScenario(projectId, scenarioId)
+                .orElseThrow(() -> new IllegalArgumentException("Unknown scenario id: " + scenarioId));
     }
 
-    private void ensureScenarioNameUnique(ProjectState project, String candidateName, String skipScenarioId) {
+    private void ensureScenarioNameUnique(String projectId, String candidateName, String skipScenarioId) {
         String normalized = candidateName.trim().toLowerCase(Locale.ROOT);
-        boolean duplicated = project.scenarios.values().stream()
-                .anyMatch(s -> !s.id.equals(skipScenarioId) && s.name.trim().toLowerCase(Locale.ROOT).equals(normalized));
-        if (duplicated) {
+        if (projectRepository.existsScenarioName(projectId, normalized, skipScenarioId)) {
             throw new IllegalArgumentException("Scenario name already exists in project: " + candidateName);
         }
     }
@@ -311,65 +346,27 @@ public class PersistenceService {
         return normalized;
     }
 
-    private static final class ProjectState {
-        private final String id;
-        private final String code;
-        private String name;
-        private String businessType;
-        private String status;
-        private String description;
-        private final LocalDateTime createdAt;
-        private final Map<String, ScenarioState> scenarios = new LinkedHashMap<>();
-        private final ApprovalSummaryState approvalSummary = new ApprovalSummaryState();
-        private final List<ApprovalLog> approvalLogs = new ArrayList<>();
-
-        private ProjectState(
-                String id,
-                String code,
-                String name,
-                String businessType,
-                String status,
-                String description,
-                LocalDateTime createdAt) {
-            this.id = id;
-            this.code = code;
-            this.name = name;
-            this.businessType = businessType;
-            this.status = status;
-            this.description = description;
-            this.createdAt = createdAt;
-            this.approvalSummary.status = status;
-            this.approvalSummary.lastAction = "created";
-            this.approvalSummary.lastActor = "system";
-            this.approvalSummary.lastComment = "project created";
-            this.approvalSummary.updatedAt = createdAt;
-        }
+    private ApprovalSummaryState createdApprovalSummary(String status, LocalDateTime createdAt) {
+        ApprovalSummaryState approvalSummary = new ApprovalSummaryState();
+        approvalSummary.status = status;
+        approvalSummary.lastAction = "created";
+        approvalSummary.lastActor = "system";
+        approvalSummary.lastComment = "project created";
+        approvalSummary.updatedAt = createdAt;
+        return approvalSummary;
     }
 
-    private static final class ScenarioState {
-        private final String id;
-        private String name;
-        private String description;
-        private boolean isBaseline;
-        private boolean isActive;
-        private final LocalDateTime createdAt;
-        private List<AllocationRuleState> allocationRules = List.of();
-        private List<CashFlowState> cashFlows = List.of();
-        private ValuationState valuation;
+    private String analysisKey(String projectId, String scenarioId) {
+        return projectId + ":" + scenarioId;
+    }
 
-        private ScenarioState(
-                String id,
-                String name,
-                String description,
-                boolean isBaseline,
-                boolean isActive,
-                LocalDateTime createdAt) {
-            this.id = id;
-            this.name = name;
-            this.description = description;
-            this.isBaseline = isBaseline;
-            this.isActive = isActive;
-            this.createdAt = createdAt;
+    private record ScenarioAnalysisState(
+            List<AllocationRuleState> allocationRules,
+            List<CashFlowState> cashFlows,
+            ValuationState valuation) {
+
+        private static ScenarioAnalysisState empty() {
+            return new ScenarioAnalysisState(List.of(), List.of(), null);
         }
     }
 
