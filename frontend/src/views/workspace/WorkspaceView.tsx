@@ -271,6 +271,73 @@ export function WorkspaceView({
                 ]}
               />
             </section>
+            <section className="cockpit-support-grid" aria-label="배부 기준과 변경 이력">
+              <article className="workflow-note">
+                <strong>계산 근거</strong>
+                <p>{selectedDetail.allocation.allocationBasis}</p>
+                <p>{selectedDetail.allocation.calculationTrace}</p>
+              </article>
+              <article className="workflow-note">
+                <strong>최근 변경 이력</strong>
+                {selectedDetail.allocation.changeHistory.length === 0 ? (
+                  <p>기록된 변경 이력이 없습니다.</p>
+                ) : (
+                  <ol className="audit-list">
+                    {selectedDetail.allocation.changeHistory
+                      .slice(0, 5)
+                      .map((history) => (
+                        <li
+                          key={`${history.at}-${history.actor}-${history.action}`}
+                        >
+                          <strong>{history.actor}</strong>
+                          <span>
+                            {history.action} · {history.comment || '-'}
+                          </span>
+                          <small>{new Date(history.at).toLocaleString()}</small>
+                        </li>
+                      ))}
+                  </ol>
+                )}
+              </article>
+            </section>
+            <section
+              className="cockpit-dominant-surface"
+              aria-label="배부 규칙 상세"
+            >
+              <h3>배부 규칙 상세</h3>
+              {selectedDetail.allocation.rules.length === 0 ? (
+                <p>배부 규칙 상세 데이터가 없습니다.</p>
+              ) : (
+                <div className="table-shell">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>부서</th>
+                        <th>비용풀</th>
+                        <th>카테고리</th>
+                        <th>배부 기준</th>
+                        <th>배부율</th>
+                        <th>배부원가</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedDetail.allocation.rules.map((rule) => (
+                        <tr
+                          key={`${rule.departmentCode}-${rule.costPoolName}-${rule.basis}`}
+                        >
+                          <td>{rule.departmentCode}</td>
+                          <td>{rule.costPoolName}</td>
+                          <td>{rule.costPoolCategory}</td>
+                          <td>{rule.basis}</td>
+                          <td>{formatPercent(rule.allocationRate)}</td>
+                          <td>{formatKrwCompact(rule.allocatedAmount)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
           </>
         ) : null}
 
