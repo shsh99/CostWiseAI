@@ -404,6 +404,36 @@ export function WorkspaceView({
                 value={`${selectedDetail.valuation.convexity}`}
               />
             </section>
+            <section className="cockpit-support-grid" aria-label="평가 근거와 시나리오 가정">
+              <article className="workflow-note">
+                <strong>평가 근거</strong>
+                <p>
+                  할인율 {formatPercent(selectedDetail.valuation.discountRate)} ·
+                  리스크 프리미엄{' '}
+                  {formatPercent(selectedDetail.valuation.riskPremium)}
+                </p>
+                <p>{selectedDetail.valuation.interpretation}</p>
+              </article>
+              <article className="workflow-note">
+                <strong>시나리오 가정</strong>
+                {selectedDetail.valuation.assumptions.length === 0 ? (
+                  <p>등록된 시나리오 가정이 없습니다.</p>
+                ) : (
+                  <ol className="audit-list">
+                    {selectedDetail.valuation.assumptions.map((item) => (
+                      <li key={`${item.label}-${item.note}`}>
+                        <strong>{item.label}</strong>
+                        <span>
+                          NPV {formatKrwCompact(item.npvKrw)} · 확률{' '}
+                          {formatPercent(item.probability)}
+                        </span>
+                        <small>{item.note || '-'}</small>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </article>
+            </section>
           </>
         ) : null}
 

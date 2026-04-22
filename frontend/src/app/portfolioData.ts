@@ -77,6 +77,15 @@ export type ProjectDetail = {
     convexity: number;
     creditRiskScore: number;
     creditGrade: string;
+    discountRate: number;
+    riskPremium: number;
+    interpretation: string;
+    assumptions: Array<{
+      label: string;
+      npvKrw: number;
+      probability: number;
+      note: string;
+    }>;
   };
   scenarioReturns: Array<{
     label: '낙관' | '기준' | '비관';
@@ -825,6 +834,18 @@ type ValuationRiskApiResponse = {
     score?: number | string;
     ratingBand?: string;
   };
+  valuationBasis?: {
+    discountRate?: number | string;
+    riskPremium?: number | string;
+    ownerDepartment?: string;
+    interpretation?: string;
+    scenarioAssumptions?: Array<{
+      label?: string;
+      npv?: number | string;
+      probability?: number | string;
+      note?: string;
+    }>;
+  };
 };
 
 type AuditLogListApiResponse = {
@@ -984,7 +1005,25 @@ function adaptProjectDetail(
       ),
       creditGrade:
         ratingLabel(valuationRisk.creditRisk?.ratingBand) ??
-        defaults.valuation.creditGrade
+        defaults.valuation.creditGrade,
+      discountRate: toNumber(
+        valuationRisk.valuationBasis?.discountRate,
+        defaults.valuation.discountRate
+      ),
+      riskPremium: toNumber(
+        valuationRisk.valuationBasis?.riskPremium,
+        defaults.valuation.riskPremium
+      ),
+      interpretation:
+        valuationRisk.valuationBasis?.interpretation ??
+        defaults.valuation.interpretation,
+      assumptions:
+        valuationRisk.valuationBasis?.scenarioAssumptions?.map((item) => ({
+          label: item.label ?? '-',
+          npvKrw: toNumber(item.npv, 0),
+          probability: toNumber(item.probability, 0),
+          note: item.note ?? ''
+        })) ?? defaults.valuation.assumptions
     },
     scenarioReturns: buildScenarioReturns(npvKrw, scenarioValues),
     workflow: {
@@ -1111,7 +1150,11 @@ function buildDetailDefaultsFromProject(
       duration: Number((1.5 + project.paybackYears * 0.5).toFixed(2)),
       convexity: Number((3 + project.paybackYears * 0.8).toFixed(2)),
       creditRiskScore: 72,
-      creditGrade: 'A'
+      creditGrade: 'A',
+      discountRate: 0.115,
+      riskPremium: 0.04,
+      interpretation: '기준 시나리오 중심으로 평가',
+      assumptions: []
     },
     scenarioReturns: buildScenarioReturns(project.npvKrw, []),
     workflow: {
@@ -1227,7 +1270,14 @@ export function buildProjectDetail(projectCode: string): ProjectDetail {
             ? 'A'
             : creditRiskScore >= 65
               ? 'BBB'
-              : 'BB'
+              : 'BB',
+      discountRate: 0.115,
+      riskPremium: seed.risk === '높음' ? 0.08 : seed.risk === '중간' ? 0.04 : 0.01,
+      interpretation:
+        seed.risk === '높음'
+          ? '보수적 할인율 기준 재검토 필요'
+          : '기준 시나리오 중심으로 평가',
+      assumptions: []
     },
     scenarioReturns: [
       {

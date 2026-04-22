@@ -161,7 +161,8 @@ public class ValuationRiskService {
         ProjectProfile profile = projectProfile(projectId);
 
         List<ComputeRequest.CashFlowInput> cashFlows = profile.cashFlows();
-        BigDecimal discountRate = BigDecimal.valueOf(0.115);
+        BigDecimal riskPremium = profile.riskPremium();
+        BigDecimal discountRate = BigDecimal.valueOf(0.085).add(riskPremium);
         DcfValuationService.DcfResult dcfResult = dcfValuationService.evaluate(cashFlows, discountRate);
 
         BigDecimal npv =
@@ -186,6 +187,32 @@ public class ValuationRiskService {
                 npv.multiply(BigDecimal.valueOf(0.75)),
                 npv.multiply(BigDecimal.valueOf(0.40)),
                 npv.multiply(BigDecimal.valueOf(-0.30)));
+        List<ValuationRiskResponse.ScenarioAssumption> scenarioAssumptions = List.of(
+                new ValuationRiskResponse.ScenarioAssumption(
+                        "낙관",
+                        scale(scenarioValues.get(0)),
+                        BigDecimal.valueOf(0.20),
+                        "시장 성장률과 전환율이 목표 대비 상회"),
+                new ValuationRiskResponse.ScenarioAssumption(
+                        "기준",
+                        scale(scenarioValues.get(1)),
+                        BigDecimal.valueOf(0.45),
+                        "현재 사업계획 기준 현금흐름 유지"),
+                new ValuationRiskResponse.ScenarioAssumption(
+                        "보수",
+                        scale(scenarioValues.get(2)),
+                        BigDecimal.valueOf(0.20),
+                        "비용 상승과 매출 지연을 반영"),
+                new ValuationRiskResponse.ScenarioAssumption(
+                        "스트레스",
+                        scale(scenarioValues.get(3)),
+                        BigDecimal.valueOf(0.10),
+                        "규제/시장 충격 시나리오"),
+                new ValuationRiskResponse.ScenarioAssumption(
+                        "최악",
+                        scale(scenarioValues.get(4)),
+                        BigDecimal.valueOf(0.05),
+                        "대체 투자안 전환 필요 구간"));
         RiskMetricsResult riskMetrics = calculateRiskMetrics(scenarioValues);
         CreditRiskResult creditRisk = assessCreditRisk(profile.creditRiskInput());
 
@@ -193,6 +220,12 @@ public class ValuationRiskService {
                 profile.projectId(),
                 profile.projectName(),
                 projectValuation,
+                new ValuationRiskResponse.ValuationBasis(
+                        scale(discountRate),
+                        scale(riskPremium),
+                        profile.headquarterCode(),
+                        profile.interpretation(),
+                        scenarioAssumptions),
                 new ValuationRiskResponse.StockValuation(
                         stockValuation.symbol(),
                         stockValuation.currentPrice(),
@@ -318,7 +351,7 @@ public class ValuationRiskService {
         private CreditRiskInput creditRiskInput() {
             double leverage = 2.8 + (baseInvestmentKrw / 1_000_000_000.0);
             double coverage = 4.0 + (baseInvestmentKrw / 2_000_000_000.0);
-            double volatility = 0.18 + (baseInvestmentKrw / 10_000_000_000.0) + riskPremium();
+            double volatility = 0.18 + (baseInvestmentKrw / 10_000_000_000.0) + riskPremium().doubleValue();
             double debtRatio = 10.0 + (baseInvestmentKrw / 50_000_000_000.0);
             return new CreditRiskInput(
                     BigDecimal.valueOf(leverage).setScale(2, RoundingMode.HALF_UP),
@@ -327,11 +360,29 @@ public class ValuationRiskService {
                     BigDecimal.valueOf(debtRatio).setScale(2, RoundingMode.HALF_UP));
         }
 
-        private double riskPremium() {
+        private BigDecimal riskPremium() {
             return switch (riskLevel) {
-                case "높음" -> 0.08;
-                case "중간" -> 0.04;
-                default -> 0.01;
+                case "높음" -> new BigDecimal("0.08");
+                case "중간" -> new BigDecimal("0.04");
+                default -> new BigDecimal("0.01");
+            };
+        }
+
+        private String headquarterCode() {
+            return switch (headquarter) {
+                case "언더라이팅본부" -> "UND";
+                case "상품개발본부" -> "PROD";
+                case "영업본부" -> "SALES";
+                case "IT본부" -> "IT";
+                default -> "CORP";
+            };
+        }
+
+        private String interpretation() {
+            return switch (riskLevel) {
+                case "높음" -> "현금흐름 변동성이 높아 보수적 할인율과 하방 시나리오를 우선 검토";
+                case "중간" -> "기준 시나리오 중심으로 승인 조건을 검토하되 하방 보호장치 필요";
+                default -> "현금흐름 안정 구간으로 기준 시나리오 중심 의사결정 가능";
             };
         }
     }

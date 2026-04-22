@@ -7,6 +7,7 @@ public record ValuationRiskResponse(
         String projectId,
         String projectName,
         ProjectValuation projectValuation,
+        ValuationBasis valuationBasis,
         StockValuation stockValuation,
         BondValuation bondValuation,
         DerivativeValuation derivativeValuation,
@@ -18,6 +19,19 @@ public record ValuationRiskResponse(
             Double irr,
             Double paybackPeriodYears,
             String outlook) {}
+
+    public record ValuationBasis(
+            BigDecimal discountRate,
+            BigDecimal riskPremium,
+            String ownerDepartment,
+            String interpretation,
+            List<ScenarioAssumption> scenarioAssumptions) {}
+
+    public record ScenarioAssumption(
+            String label,
+            BigDecimal npv,
+            BigDecimal probability,
+            String note) {}
 
     public record StockValuation(
             String symbol,
