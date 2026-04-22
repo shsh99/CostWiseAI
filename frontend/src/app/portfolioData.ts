@@ -75,7 +75,7 @@ export type ProjectDetail = {
   };
 };
 
-export type DataSource = 'api' | 'local' | 'mixed';
+export type DataSource = 'api' | 'degraded';
 
 export type Assumption = {
   label: string;
@@ -447,6 +447,28 @@ export const headquarterPalette: Record<string, string> = {
 export const defaultPortfolioSummary: PortfolioSummary =
   buildPortfolioSummary();
 
+export const emptyPortfolioSummary: PortfolioSummary = {
+  portfolioName: '포트폴리오 데이터',
+  owner: '-',
+  status: '검토중',
+  risk: '중간',
+  overview: {
+    headquarterCount: 0,
+    projectCount: 0,
+    totalInvestmentKrw: 0,
+    totalExpectedRevenueKrw: 0,
+    averageNpvKrw: 0,
+    averageIrr: 0,
+    averagePaybackYears: 0,
+    approvedCount: 0,
+    conditionalCount: 0
+  },
+  headquarters: [],
+  projects: [],
+  assumptions: [],
+  auditEvents: []
+};
+
 export const roleInsights: Record<Role, RoleInsight> = {
   원가담당자: {
     headline: '5개 본부의 원가가 활동 기준에 맞게 배분되는지 확인합니다.',
@@ -507,11 +529,8 @@ export async function loadPortfolioSummary(): Promise<{
       ),
       source: 'api'
     };
-  } catch {
-    return {
-      summary: defaultPortfolioSummary,
-      source: 'local'
-    };
+  } catch (error) {
+    throw toApiError('포트폴리오 요약을 불러오지 못했습니다.', error);
   }
 }
 
@@ -520,10 +539,7 @@ export async function loadProjectDetail(project: ProjectSummary): Promise<{
   source: DataSource;
 }> {
   if (!project.projectId) {
-    return {
-      detail: buildProjectDetail(project.code),
-      source: 'local'
-    };
+    throw new Error('프로젝트 식별자가 없어 상세 정보를 조회할 수 없습니다.');
   }
 
   try {
@@ -551,11 +567,8 @@ export async function loadProjectDetail(project: ProjectSummary): Promise<{
       detail: adaptProjectDetail(project, persistedDetail, valuationRisk),
       source: 'api'
     };
-  } catch {
-    return {
-      detail: buildProjectDetail(project.code),
-      source: 'local'
-    };
+  } catch (error) {
+    throw toApiError('프로젝트 상세를 불러오지 못했습니다.', error);
   }
 }
 
@@ -579,11 +592,8 @@ export async function loadAuditEvents(project: ProjectSummary): Promise<{
       events: payload.items.map(adaptAuditEvent),
       source: 'api'
     };
-  } catch {
-    return {
-      events: defaultPortfolioSummary.auditEvents,
-      source: 'local'
-    };
+  } catch (error) {
+    throw toApiError('감사 이력을 불러오지 못했습니다.', error);
   }
 }
 
@@ -702,9 +712,8 @@ function normalizePortfolioSummary(
     ...summary,
     projects: summary.projects.map((project) => ({
       ...project,
-      projectId: project.projectId ?? String(seedIndex(project.code) + 1),
-      assetCategory:
-        project.assetCategory ?? localProject(project.code).assetCategory
+      projectId: project.projectId ?? project.code,
+      assetCategory: project.assetCategory ?? '프로젝트'
     }))
   };
 }
@@ -836,7 +845,7 @@ function adaptProjectDetail(
   persistedDetail: ProjectDetailApiResponse,
   valuationRisk: ValuationRiskApiResponse
 ): ProjectDetail {
-  const fallback = buildProjectDetail(project.code);
+  const defaults = buildDetailDefaultsFromProject(project);
   const scenario =
     persistedDetail.scenarios.find(
       (candidate) => candidate.isActive && candidate.isBaseline
@@ -846,7 +855,7 @@ function adaptProjectDetail(
     persistedDetail.scenarios[0];
 
   if (!scenario) {
-    return fallback;
+    return defaults;
   }
 
   const allocationTotal = sumAmounts(
@@ -870,8 +879,8 @@ function adaptProjectDetail(
 
   return {
     code: persistedDetail.code || project.code,
-    manager: persistedDetail.approval?.lastActor || fallback.manager,
-    startDate: persistedDetail.createdAt?.slice(0, 10) || fallback.startDate,
+    manager: persistedDetail.approval?.lastActor || defaults.manager,
+    startDate: persistedDetail.createdAt?.slice(0, 10) || defaults.startDate,
     lifecycle: `${Math.max(1, Math.round(toNumber(scenario.valuation?.paybackPeriod, project.paybackYears)))}년`,
     assetCategory: project.assetCategory,
     headline:
@@ -881,72 +890,72 @@ function adaptProjectDetail(
     allocation: {
       personnelCostKrw:
         Math.round(allocationTotal * 0.32) ||
-        fallback.allocation.personnelCostKrw,
-      projectCostKrw: allocationTotal || fallback.allocation.projectCostKrw,
+        defaults.allocation.personnelCostKrw,
+      projectCostKrw: allocationTotal || defaults.allocation.projectCostKrw,
       headquarterCostKrw:
         Math.round(costPoolTotal * 0.18) ||
-        fallback.allocation.headquarterCostKrw,
+        defaults.allocation.headquarterCostKrw,
       enterpriseCostKrw:
         Math.round(costPoolTotal * 0.09) ||
-        fallback.allocation.enterpriseCostKrw,
+        defaults.allocation.enterpriseCostKrw,
       internalTransferPriceKrw:
         Math.round(allocationTotal * 0.14) ||
-        fallback.allocation.internalTransferPriceKrw,
+        defaults.allocation.internalTransferPriceKrw,
       standardCostKrw,
-      allocatedCostKrw: allocationTotal || fallback.allocation.allocatedCostKrw,
+      allocatedCostKrw: allocationTotal || defaults.allocation.allocatedCostKrw,
       efficiencyGapKrw:
-        (allocationTotal || fallback.allocation.allocatedCostKrw) -
+        (allocationTotal || defaults.allocation.allocatedCostKrw) -
         standardCostKrw,
       performanceGapKrw:
         operatingCashFlow -
-        (allocationTotal || fallback.allocation.allocatedCostKrw)
+        (allocationTotal || defaults.allocation.allocatedCostKrw)
     },
     valuation: {
       fairValueKrw: toNumber(
         valuationRisk.stockValuation?.fairValue,
-        fallback.valuation.fairValueKrw
+        defaults.valuation.fairValueKrw
       ),
       var95Krw: toNumber(
         valuationRisk.riskMetrics?.var95,
-        fallback.valuation.var95Krw
+        defaults.valuation.var95Krw
       ),
       var99Krw: toNumber(
         valuationRisk.riskMetrics?.var99,
-        fallback.valuation.var99Krw
+        defaults.valuation.var99Krw
       ),
       cvar95Krw: toNumber(
         valuationRisk.riskMetrics?.expectedShortfall95,
-        fallback.valuation.cvar95Krw
+        defaults.valuation.cvar95Krw
       ),
       duration: toNumber(
         valuationRisk.bondValuation?.macaulayDurationYears,
-        fallback.valuation.duration
+        defaults.valuation.duration
       ),
       convexity: toNumber(
         valuationRisk.bondValuation?.convexity,
-        fallback.valuation.convexity
+        defaults.valuation.convexity
       ),
       creditRiskScore: Math.round(
         toNumber(
           valuationRisk.creditRisk?.score,
-          fallback.valuation.creditRiskScore
+          defaults.valuation.creditRiskScore
         )
       ),
       creditGrade:
         ratingLabel(valuationRisk.creditRisk?.ratingBand) ??
-        fallback.valuation.creditGrade
+        defaults.valuation.creditGrade
     },
     scenarioReturns: buildScenarioReturns(npvKrw, scenarioValues),
     workflow: {
       currentStage: approvalStage,
-      owner: persistedDetail.approval?.lastActor || fallback.workflow.owner,
+      owner: persistedDetail.approval?.lastActor || defaults.workflow.owner,
       financeReviewer:
         persistedDetail.approval?.logs?.[0]?.actorName ||
-        fallback.workflow.financeReviewer,
+        defaults.workflow.financeReviewer,
       executiveComment:
         persistedDetail.approval?.lastComment ||
         scenario.valuation?.decision ||
-        fallback.workflow.executiveComment,
+        defaults.workflow.executiveComment,
       nextStep:
         persistedDetail.approval?.lastAction ||
         `${scenario.name} 기준 ${approvalStage === '승인' ? '사후 성과 모니터링' : '승인위원회 안건 등록'}`
@@ -1021,11 +1030,60 @@ function toNumber(value: number | string | undefined, fallback: number) {
   return fallback;
 }
 
-function localProject(projectCode: string) {
-  return (
-    projectSeeds.find((project) => project.code === projectCode) ??
-    projectSeeds[0]
+function buildDetailDefaultsFromProject(
+  project: ProjectSummary
+): ProjectDetail {
+  const standardCostKrw = Math.round(project.investmentKrw * 0.74);
+  const allocatedCostKrw = Math.round(project.investmentKrw * 0.86);
+  const baseVar95Krw = Math.round(
+    project.npvKrw - Math.abs(project.npvKrw) * 0.4
   );
+
+  return {
+    code: project.code,
+    manager: `${project.headquarter} PM`,
+    startDate: new Date().toISOString().slice(0, 10),
+    lifecycle: `${Math.max(1, Math.round(project.paybackYears))}년`,
+    assetCategory: project.assetCategory,
+    headline: `${project.headquarter} 투자안의 API 상세 데이터가 제한되어 프로젝트 요약 기준으로 표시합니다.`,
+    allocation: {
+      personnelCostKrw: Math.round(project.investmentKrw * 0.32),
+      projectCostKrw: Math.round(project.investmentKrw * 0.41),
+      headquarterCostKrw: Math.round(project.investmentKrw * 0.18),
+      enterpriseCostKrw: Math.round(project.investmentKrw * 0.09),
+      internalTransferPriceKrw: Math.round(project.investmentKrw * 0.06),
+      standardCostKrw,
+      allocatedCostKrw,
+      efficiencyGapKrw: allocatedCostKrw - standardCostKrw,
+      performanceGapKrw: project.expectedRevenueKrw - allocatedCostKrw
+    },
+    valuation: {
+      fairValueKrw: Math.round(project.expectedRevenueKrw * 0.82),
+      var95Krw: baseVar95Krw,
+      var99Krw: Math.round(baseVar95Krw * 0.92),
+      cvar95Krw: Math.round(baseVar95Krw * 0.95),
+      duration: Number((1.5 + project.paybackYears * 0.5).toFixed(2)),
+      convexity: Number((3 + project.paybackYears * 0.8).toFixed(2)),
+      creditRiskScore: 72,
+      creditGrade: 'A'
+    },
+    scenarioReturns: buildScenarioReturns(project.npvKrw, []),
+    workflow: {
+      currentStage: approvalStageFromStatus(project.status),
+      owner: `${project.headquarter} 담당`,
+      financeReviewer: '재무검토자',
+      executiveComment: 'API 기반 상세 승인 코멘트 확인 필요',
+      nextStep: '프로젝트 승인 이력 확인'
+    }
+  };
+}
+
+function toApiError(message: string, error: unknown) {
+  if (error instanceof Error && error.message) {
+    return new Error(`${message} (${error.message})`);
+  }
+
+  return new Error(message);
 }
 
 function seedIndex(projectCode: string) {

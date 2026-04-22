@@ -3,12 +3,11 @@ package com.costwise.workflow;
 import com.costwise.api.dto.workflow.ApprovalWorkflowResponse;
 import com.costwise.audit.AuditLogService;
 import com.costwise.api.dto.PortfolioSummaryResponse;
+import com.costwise.persistence.WorkflowStateRepository;
 import com.costwise.service.PortfolioSummaryService;
 import java.time.LocalDateTime;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
@@ -17,19 +16,21 @@ public class ApprovalWorkflowService {
 
     private final PortfolioSummaryService portfolioSummaryService;
     private final AuditLogService auditLogService;
-    private final Map<String, WorkflowState> states = new LinkedHashMap<>();
+    private final WorkflowStateRepository workflowStateRepository;
 
     public ApprovalWorkflowService(
-            PortfolioSummaryService portfolioSummaryService, AuditLogService auditLogService) {
+            PortfolioSummaryService portfolioSummaryService,
+            AuditLogService auditLogService,
+            WorkflowStateRepository workflowStateRepository) {
         this.portfolioSummaryService = portfolioSummaryService;
         this.auditLogService = auditLogService;
-        initializeStates();
+        this.workflowStateRepository = workflowStateRepository;
     }
 
     public ApprovalWorkflowResponse loadWorkflow(String projectId) {
-        String canonicalProjectId = canonicalProjectId(projectId);
-        WorkflowState state = getState(canonicalProjectId);
-        PortfolioSummaryResponse.ProjectSummary project = projectFor(canonicalProjectId);
+        PortfolioSummaryResponse.ProjectSummary project = projectFor(projectId);
+        String canonicalProjectId = project.projectId();
+        WorkflowState state = getOrCreateState(project);
         return new ApprovalWorkflowResponse(
                 canonicalProjectId,
                 project.name(),
@@ -41,8 +42,9 @@ public class ApprovalWorkflowService {
 
     public ApprovalWorkflowResponse transition(
             String projectId, String role, String action, String actor, String comment) {
-        String canonicalProjectId = canonicalProjectId(projectId);
-        WorkflowState state = getState(canonicalProjectId);
+        PortfolioSummaryResponse.ProjectSummary project = projectFor(projectId);
+        String canonicalProjectId = project.projectId();
+        WorkflowState state = getOrCreateState(project);
         WorkflowAction workflowAction = WorkflowAction.valueOf(action.toUpperCase(Locale.ROOT));
         WorkflowRole workflowRole = WorkflowRole.valueOf(role.toUpperCase(Locale.ROOT));
 
@@ -64,9 +66,13 @@ public class ApprovalWorkflowService {
         }
 
         String nextStatus = workflowAction == WorkflowAction.COMMENT ? state.status : workflowAction.nextStatus;
-        state.status = nextStatus;
-        state.lastAction = workflowAction.name();
-        state.updatedAt = LocalDateTime.now();
+        LocalDateTime updatedAt = LocalDateTime.now();
+        WorkflowState updatedState = new WorkflowState(nextStatus, workflowAction.name(), updatedAt);
+        workflowStateRepository.updateState(
+                canonicalProjectId,
+                updatedState.status,
+                updatedState.lastAction,
+                updatedState.updatedAt);
 
         auditLogService.record(
                 canonicalProjectId,
@@ -78,14 +84,26 @@ public class ApprovalWorkflowService {
         return loadWorkflow(canonicalProjectId);
     }
 
-    private void initializeStates() {
-        for (PortfolioSummaryResponse.ProjectSummary project : portfolioSummaryService.loadPortfolioSummary().projects()) {
-            states.putIfAbsent(project.projectId(), new WorkflowState(project.status().equals("승인") ? "APPROVED" : "DRAFT"));
+    private WorkflowState getOrCreateState(PortfolioSummaryResponse.ProjectSummary project) {
+        String projectId = project.projectId();
+        return workflowStateRepository.findState(projectId)
+                .map(this::toState)
+                .orElseGet(() -> createInitialState(project));
+    }
+
+    private WorkflowState createInitialState(PortfolioSummaryResponse.ProjectSummary project) {
+        String initialStatus = project.status().equals("승인") ? "APPROVED" : "DRAFT";
+        try {
+            return toState(workflowStateRepository.createState(project.projectId(), initialStatus));
+        } catch (IllegalStateException exception) {
+            return workflowStateRepository.findState(project.projectId())
+                    .map(this::toState)
+                    .orElseThrow(() -> exception);
         }
     }
 
-    private WorkflowState getState(String projectId) {
-        return states.computeIfAbsent(projectId, ignored -> new WorkflowState("DRAFT"));
+    private WorkflowState toState(WorkflowStateRepository.WorkflowStateRecord state) {
+        return new WorkflowState(state.status(), state.lastAction(), state.updatedAt());
     }
 
     private PortfolioSummaryResponse.ProjectSummary projectFor(String projectId) {
@@ -95,19 +113,15 @@ public class ApprovalWorkflowService {
                 .orElseThrow(() -> new IllegalArgumentException("Unknown project id: " + projectId));
     }
 
-    private String canonicalProjectId(String projectId) {
-        return projectFor(projectId).projectId();
-    }
-
     private static final class WorkflowState {
-        private String status;
-        private String lastAction;
-        private LocalDateTime updatedAt;
+        private final String status;
+        private final String lastAction;
+        private final LocalDateTime updatedAt;
 
-        private WorkflowState(String status) {
+        private WorkflowState(String status, String lastAction, LocalDateTime updatedAt) {
             this.status = status;
-            this.lastAction = "INIT";
-            this.updatedAt = LocalDateTime.now();
+            this.lastAction = lastAction;
+            this.updatedAt = updatedAt;
         }
     }
 

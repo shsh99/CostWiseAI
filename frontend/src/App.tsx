@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type KeyboardEvent } from 'react';
 import {
   buildDecisionSignals,
   detailTabs,
-  defaultPortfolioSummary,
+  emptyPortfolioSummary,
   loadAuditEvents,
   loadProjectDetail,
   loadPortfolioSummary,
@@ -40,26 +40,43 @@ export function App() {
     () => parseExplorerState(window.location.search),
     []
   );
+  const initialProjectFromQuery = useMemo(
+    () =>
+      new URLSearchParams(window.location.search).get('project')?.trim() ?? '',
+    []
+  );
   const [selectedRole, setSelectedRole] = useState<Role>('임원');
   const [activeView, setActiveView] = useState<NavigationKey>(
     initialExplorerState.view
   );
   const [portfolio, setPortfolio] = useState<PortfolioSummary>(
-    defaultPortfolioSummary
+    emptyPortfolioSummary
   );
-  const [portfolioSource, setPortfolioSource] = useState<DataSource>('local');
+  const [portfolioSource, setPortfolioSource] = useState<DataSource>('api');
+  const [portfolioStatus, setPortfolioStatus] = useState<
+    'loading' | 'ready' | 'error'
+  >('loading');
+  const [portfolioError, setPortfolioError] = useState<string | null>(null);
   const [selectedDetail, setSelectedDetail] = useState<ProjectDetail | null>(
     null
   );
   const [selectedDetailSource, setSelectedDetailSource] =
-    useState<DataSource>('local');
-  const [auditEvents, setAuditEvents] = useState<AuditEvent[]>(
-    defaultPortfolioSummary.auditEvents
+    useState<DataSource>('api');
+  const [selectedDetailStatus, setSelectedDetailStatus] = useState<
+    'idle' | 'loading' | 'ready' | 'error'
+  >('idle');
+  const [selectedDetailError, setSelectedDetailError] = useState<string | null>(
+    null
   );
-  const [auditSource, setAuditSource] = useState<DataSource>('local');
-  const [auditStatus, setAuditStatus] = useState<'idle' | 'loading' | 'ready'>(
-    'idle'
-  );
+  const [portfolioReloadKey, setPortfolioReloadKey] = useState(0);
+  const [selectedDetailReloadKey, setSelectedDetailReloadKey] = useState(0);
+  const [auditReloadKey, setAuditReloadKey] = useState(0);
+  const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
+  const [auditSource, setAuditSource] = useState<DataSource>('api');
+  const [auditStatus, setAuditStatus] = useState<
+    'idle' | 'loading' | 'ready' | 'error'
+  >('idle');
+  const [auditError, setAuditError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState(initialExplorerState.search);
   const [explorerSort, setExplorerSort] = useState<ExplorerSortKey>(
     initialExplorerState.sort
@@ -70,7 +87,7 @@ export function App() {
     initialExplorerState.headquarter
   );
   const [selectedProjectCode, setSelectedProjectCode] = useState(
-    initialExplorerState.projectCode
+    initialProjectFromQuery
   );
   const [activeWorkspaceTab, setActiveWorkspaceTab] =
     useState<WorkspaceTabKey>('allocation');
@@ -78,17 +95,33 @@ export function App() {
   useEffect(() => {
     let cancelled = false;
 
-    void loadPortfolioSummary().then(({ summary, source: loadedSource }) => {
-      if (!cancelled) {
-        setPortfolio(summary);
-        setPortfolioSource(loadedSource);
-      }
-    });
+    setPortfolioStatus('loading');
+    setPortfolioError(null);
+
+    void loadPortfolioSummary()
+      .then(({ summary, source: loadedSource }) => {
+        if (!cancelled) {
+          setPortfolio(summary);
+          setPortfolioSource(loadedSource);
+          setPortfolioStatus('ready');
+        }
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) {
+          setPortfolioSource('degraded');
+          setPortfolioStatus('error');
+          setPortfolioError(
+            error instanceof Error
+              ? error.message
+              : '포트폴리오 데이터를 불러오지 못했습니다.'
+          );
+        }
+      });
 
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [portfolioReloadKey]);
 
   const selectedProject = useMemo(
     () =>
@@ -100,55 +133,100 @@ export function App() {
   useEffect(() => {
     if (!selectedProject) {
       setSelectedDetail(null);
-      setSelectedDetailSource('local');
-      setAuditEvents(portfolio.auditEvents);
-      setAuditSource(portfolioSource);
-      setAuditStatus('ready');
+      setSelectedDetailSource(portfolioSource);
+      setSelectedDetailStatus('idle');
+      setSelectedDetailError(null);
       return;
     }
 
     let cancelled = false;
     setSelectedDetail(null);
+    setSelectedDetailStatus('loading');
+    setSelectedDetailError(null);
+    setSelectedDetailSource('api');
 
-    void loadProjectDetail(selectedProject).then(({ detail, source }) => {
-      if (!cancelled) {
-        setSelectedDetail(detail);
-        setSelectedDetailSource(source);
-      }
-    });
+    void loadProjectDetail(selectedProject)
+      .then(({ detail, source }) => {
+        if (!cancelled) {
+          setSelectedDetail(detail);
+          setSelectedDetailSource(source);
+          setSelectedDetailStatus('ready');
+        }
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) {
+          setSelectedDetailSource('degraded');
+          setSelectedDetailStatus('error');
+          setSelectedDetailError(
+            error instanceof Error
+              ? error.message
+              : '프로젝트 상세를 불러오지 못했습니다.'
+          );
+        }
+      });
 
     return () => {
       cancelled = true;
     };
-  }, [selectedProject]);
+  }, [selectedProject, selectedDetailReloadKey, portfolioSource]);
 
   useEffect(() => {
     if (!selectedProject) {
+      setAuditEvents(portfolio.auditEvents);
+      setAuditSource(portfolioSource);
+      setAuditError(portfolioError);
+      setAuditStatus(
+        portfolioStatus === 'loading'
+          ? 'loading'
+          : portfolioStatus === 'error'
+            ? 'error'
+            : 'ready'
+      );
       return;
     }
 
     let cancelled = false;
     setAuditStatus('loading');
+    setAuditError(null);
+    setAuditSource('api');
 
-    void loadAuditEvents(selectedProject).then(({ events, source }) => {
-      if (!cancelled) {
-        setAuditEvents(events);
-        setAuditSource(source);
-        setAuditStatus('ready');
-      }
-    });
+    void loadAuditEvents(selectedProject)
+      .then(({ events, source }) => {
+        if (!cancelled) {
+          setAuditEvents(events);
+          setAuditSource(source);
+          setAuditStatus('ready');
+        }
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) {
+          setAuditEvents([]);
+          setAuditSource('degraded');
+          setAuditStatus('error');
+          setAuditError(
+            error instanceof Error
+              ? error.message
+              : '감사 이력을 불러오지 못했습니다.'
+          );
+        }
+      });
 
     return () => {
       cancelled = true;
     };
-  }, [selectedProject]);
+  }, [
+    selectedProject,
+    portfolio.auditEvents,
+    portfolioError,
+    portfolioSource,
+    portfolioStatus,
+    auditReloadKey
+  ]);
 
   const source: DataSource =
-    portfolioSource === 'api' && selectedDetailSource === 'api'
-      ? 'api'
-      : portfolioSource === 'local' && selectedDetailSource === 'local'
-        ? 'local'
-        : 'mixed';
+    portfolioSource === 'degraded' || selectedDetailSource === 'degraded'
+      ? 'degraded'
+      : 'api';
   const selectedInsight = roleInsights[selectedRole];
   const decisionSignals = buildDecisionSignals(portfolio);
   const currentViewMeta = viewMeta[activeView];
@@ -156,15 +234,17 @@ export function App() {
     () => portfolio.projects.slice(0, 6),
     [portfolio.projects]
   );
-  const maxHeadquarterInvestment = useMemo(
-    () =>
-      Math.max(
-        ...portfolio.headquarters.map(
-          (headquarter) => headquarter.totalInvestmentKrw
-        )
-      ),
-    [portfolio.headquarters]
-  );
+  const maxHeadquarterInvestment = useMemo(() => {
+    if (portfolio.headquarters.length === 0) {
+      return 0;
+    }
+
+    return Math.max(
+      ...portfolio.headquarters.map(
+        (headquarter) => headquarter.totalInvestmentKrw
+      )
+    );
+  }, [portfolio.headquarters]);
 
   const selectedWorkspaceKpis = selectedProject
     ? [
@@ -397,12 +477,15 @@ export function App() {
   useEffect(() => {
     const handlePopState = () => {
       const restored = parseExplorerState(window.location.search);
+      const restoredProjectCode =
+        new URLSearchParams(window.location.search).get('project')?.trim() ??
+        '';
       setActiveView(restored.view);
       setSearchTerm(restored.search);
       setExplorerSort(restored.sort);
       setExplorerQuickFilter(restored.quickFilter);
       setHeadquarterFilter(restored.headquarter);
-      setSelectedProjectCode(restored.projectCode);
+      setSelectedProjectCode(restoredProjectCode);
     };
 
     window.addEventListener('popstate', handlePopState);
@@ -424,6 +507,18 @@ export function App() {
     setExplorerSort(defaultExplorerSort);
     setExplorerQuickFilter(defaultExplorerQuickFilter);
     setHeadquarterFilter('all');
+  }
+
+  function retryPortfolioLoad() {
+    setPortfolioReloadKey((current) => current + 1);
+  }
+
+  function retryDetailLoad() {
+    setSelectedDetailReloadKey((current) => current + 1);
+  }
+
+  function retryAuditLoad() {
+    setAuditReloadKey((current) => current + 1);
   }
 
   function handleWorkspaceTabKeydown(
@@ -493,6 +588,8 @@ export function App() {
           {activeView === 'portfolio' ? (
             <PortfolioView
               portfolio={portfolio}
+              portfolioStatus={portfolioStatus}
+              portfolioError={portfolioError}
               maxHeadquarterInvestment={maxHeadquarterInvestment}
               selectedProjectCode={selectedProjectCode}
               searchTerm={searchTerm}
@@ -508,6 +605,7 @@ export function App() {
               onResetExplorerControls={resetExplorerControls}
               onSelectProject={setSelectedProjectCode}
               onOpenWorkspace={openWorkspace}
+              onRetryPortfolioLoad={retryPortfolioLoad}
             />
           ) : null}
 
@@ -516,6 +614,8 @@ export function App() {
               activeView={activeView}
               selectedProject={selectedProject}
               selectedDetail={selectedDetail}
+              detailStatus={selectedDetailStatus}
+              detailError={selectedDetailError}
               selectedInsight={selectedInsight}
               activeWorkspaceTab={activeWorkspaceTab}
               selectedWorkspaceKpis={selectedWorkspaceKpis}
@@ -529,6 +629,7 @@ export function App() {
               riskGuardrailGap={riskGuardrailGap}
               onChangeWorkspaceTab={setActiveWorkspaceTab}
               onWorkspaceTabKeydown={handleWorkspaceTabKeydown}
+              onRetryDetailLoad={retryDetailLoad}
             />
           ) : null}
 
@@ -538,7 +639,9 @@ export function App() {
               auditEvents={auditEvents}
               auditSource={auditSource}
               auditStatus={auditStatus}
+              auditError={auditError}
               selectedProjectName={selectedProject?.name ?? null}
+              onRetryAuditLoad={retryAuditLoad}
             />
           ) : null}
 

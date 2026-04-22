@@ -10,8 +10,10 @@ type ReviewsViewProps = {
   portfolio: PortfolioSummary;
   auditEvents: AuditEvent[];
   auditSource: DataSource;
-  auditStatus: 'idle' | 'loading' | 'ready';
+  auditStatus: 'idle' | 'loading' | 'ready' | 'error';
+  auditError: string | null;
   selectedProjectName: string | null;
+  onRetryAuditLoad(): void;
 };
 
 export function ReviewsView({
@@ -19,9 +21,12 @@ export function ReviewsView({
   auditEvents,
   auditSource,
   auditStatus,
-  selectedProjectName
+  auditError,
+  selectedProjectName,
+  onRetryAuditLoad
 }: ReviewsViewProps) {
   const isAuditLoading = auditStatus === 'loading';
+  const isAuditError = auditStatus === 'error';
   const hasAuditEvents = auditEvents.length > 0;
 
   return (
@@ -48,7 +53,7 @@ export function ReviewsView({
           <span
             className={`status-pill status-pill--${auditSource === 'api' ? 'low' : 'mid'}`}
           >
-            {auditSource === 'api' ? '감사 API' : '로컬 fallback'}
+            {auditSource === 'api' ? '감사 API' : 'API 제한'}
           </span>
           <p>
             {selectedProjectName
@@ -64,14 +69,24 @@ export function ReviewsView({
           </div>
         ) : null}
 
-        {!isAuditLoading && !hasAuditEvents ? (
+        {isAuditError ? (
+          <div className="empty-state">
+            <strong>감사 이력을 불러오지 못했습니다.</strong>
+            <p>{auditError ?? 'API 연결을 확인한 뒤 다시 시도하세요.'}</p>
+            <button type="button" onClick={onRetryAuditLoad}>
+              다시 시도
+            </button>
+          </div>
+        ) : null}
+
+        {!isAuditLoading && !isAuditError && !hasAuditEvents ? (
           <div className="empty-state">
             <strong>표시할 감사 이력이 없습니다.</strong>
             <p>승인, 평가, 원가 검토 이벤트가 기록되면 이곳에 표시됩니다.</p>
           </div>
         ) : null}
 
-        {!isAuditLoading && hasAuditEvents ? (
+        {!isAuditLoading && !isAuditError && hasAuditEvents ? (
           <ol className="audit-list audit-list--wide">
             {auditEvents.map((item) => (
               <li key={`${item.actor}-${item.action}-${item.at}`}>

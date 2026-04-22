@@ -1,6 +1,11 @@
 /* eslint-disable no-unused-vars */
 import type { KeyboardEvent } from 'react';
-import { detailTabs, type ProjectDetail, type ProjectSummary, type RoleInsight } from '../../app/portfolioData';
+import {
+  detailTabs,
+  type ProjectDetail,
+  type ProjectSummary,
+  type RoleInsight
+} from '../../app/portfolioData';
 import { formatKrwCompact, formatPercent, formatYears } from '../../app/format';
 import {
   DecisionBarChart,
@@ -15,6 +20,8 @@ type WorkspaceViewProps = {
   activeView: 'accounting' | 'valuation';
   selectedProject: ProjectSummary | null;
   selectedDetail: ProjectDetail | null;
+  detailStatus: 'idle' | 'loading' | 'ready' | 'error';
+  detailError: string | null;
   selectedInsight: RoleInsight;
   activeWorkspaceTab: WorkspaceTabKey;
   selectedWorkspaceKpis: Array<{ label: string; value: string }>;
@@ -27,13 +34,19 @@ type WorkspaceViewProps = {
   valuationGap: number;
   riskGuardrailGap: number;
   onChangeWorkspaceTab(tab: WorkspaceTabKey): void;
-  onWorkspaceTabKeydown(event: KeyboardEvent<HTMLButtonElement>, index: number): void;
+  onWorkspaceTabKeydown(
+    event: KeyboardEvent<HTMLButtonElement>,
+    index: number
+  ): void;
+  onRetryDetailLoad(): void;
 };
 
 export function WorkspaceView({
   activeView,
   selectedProject,
   selectedDetail,
+  detailStatus,
+  detailError,
   selectedInsight,
   activeWorkspaceTab,
   selectedWorkspaceKpis,
@@ -46,30 +59,54 @@ export function WorkspaceView({
   valuationGap,
   riskGuardrailGap,
   onChangeWorkspaceTab,
-  onWorkspaceTabKeydown
+  onWorkspaceTabKeydown,
+  onRetryDetailLoad
 }: WorkspaceViewProps) {
+  const hasSelectedProject = Boolean(selectedProject);
+
   return (
     <section className="workspace-stage cockpit-stage">
-      <div className="workspace-stage__summary cockpit-summary-strip" aria-label="프로젝트 요약 스트립">
+      <div
+        className="workspace-stage__summary cockpit-summary-strip"
+        aria-label="프로젝트 요약 스트립"
+      >
         <div className="cockpit-summary-strip__intro">
           <p className="workspace-stage__eyebrow">
-            {activeView === 'accounting' ? 'Management Accounting' : 'Financial Evaluation'}
+            {activeView === 'accounting'
+              ? 'Management Accounting'
+              : 'Financial Evaluation'}
           </p>
           <h2>{selectedProject?.name ?? '선택된 프로젝트 없음'}</h2>
           <p>
-            {selectedProject?.headquarter} · {selectedDetail?.assetCategory} · {selectedDetail?.headline}
+            {hasSelectedProject && detailStatus === 'ready' && selectedDetail
+              ? `${selectedProject?.headquarter} · ${selectedDetail.assetCategory} · ${selectedDetail.headline}`
+              : hasSelectedProject
+                ? `${selectedProject?.headquarter} · API 상세 데이터 동기화 중`
+                : '포트폴리오에서 프로젝트를 먼저 선택하세요.'}
           </p>
         </div>
-        <div className="cockpit-summary-strip__focus" aria-label="핵심 신호와 다음 행동">
+        <div
+          className="cockpit-summary-strip__focus"
+          aria-label="핵심 신호와 다음 행동"
+        >
           <div className="workspace-stage__meta cockpit-summary-strip__kpis">
             {selectedWorkspaceKpis.map((item) => (
-              <InfoTile key={item.label} label={item.label} value={item.value} />
+              <InfoTile
+                key={item.label}
+                label={item.label}
+                value={item.value}
+              />
             ))}
-            <InfoTile label="다음 단계" value={selectedDetail?.workflow.nextStep ?? '-'} />
+            <InfoTile
+              label="다음 단계"
+              value={selectedDetail?.workflow.nextStep ?? '-'}
+            />
           </div>
           <article className="cockpit-next-action">
             <span>Next action</span>
-            <strong>{selectedDetail?.workflow.nextStep ?? '검토 단계 확인 필요'}</strong>
+            <strong>
+              {selectedDetail?.workflow.nextStep ?? '검토 단계 확인 필요'}
+            </strong>
             <p>{cockpitNextAction}</p>
           </article>
         </div>
@@ -84,12 +121,18 @@ export function WorkspaceView({
         <article className="cockpit-scan-rail__step">
           <span>01</span>
           <strong>Focus signal</strong>
-          <p>{selectedProject ? `${selectedProject.name} 핵심 KPI를 먼저 확인합니다.` : '프로젝트를 선택하세요.'}</p>
+          <p>
+            {selectedProject
+              ? `${selectedProject.name} 핵심 KPI를 먼저 확인합니다.`
+              : '프로젝트를 선택하세요.'}
+          </p>
         </article>
         <article className="cockpit-scan-rail__step">
           <span>02</span>
           <strong>Decision point</strong>
-          <p>{selectedDetail?.workflow.nextStep ?? '다음 결정을 확인합니다.'}</p>
+          <p>
+            {selectedDetail?.workflow.nextStep ?? '다음 결정을 확인합니다.'}
+          </p>
         </article>
         <article className="cockpit-scan-rail__step">
           <span>03</span>
@@ -98,7 +141,11 @@ export function WorkspaceView({
         </article>
       </div>
 
-      <div className="cockpit-tabs" role="tablist" aria-label="프로젝트 분석 탭">
+      <div
+        className="cockpit-tabs"
+        role="tablist"
+        aria-label="프로젝트 분석 탭"
+      >
         {detailTabs.map((tab, index) => {
           const tabId = `workspace-tab-${tab.key}`;
           const panelId = `workspace-panel-${tab.key}`;
@@ -128,15 +175,74 @@ export function WorkspaceView({
         aria-labelledby={`workspace-tab-${activeWorkspaceTab}`}
         className="cockpit-panel-shell"
       >
+        {!hasSelectedProject ? (
+          <div className="empty-state">
+            <strong>선택된 프로젝트가 없습니다.</strong>
+            <p>
+              Portfolio 화면에서 프로젝트를 선택하면 상세 분석을 표시합니다.
+            </p>
+          </div>
+        ) : null}
+
+        {hasSelectedProject && detailStatus === 'loading' ? (
+          <div className="audit-state" role="status">
+            <strong>프로젝트 상세 데이터를 불러오는 중입니다.</strong>
+            <p>원가, 가치평가, 리스크 정보를 API에서 조회하고 있습니다.</p>
+          </div>
+        ) : null}
+
+        {hasSelectedProject && detailStatus === 'error' ? (
+          <div className="empty-state">
+            <strong>프로젝트 상세를 불러오지 못했습니다.</strong>
+            <p>{detailError ?? 'API 상태를 확인한 뒤 다시 시도하세요.'}</p>
+            <button type="button" onClick={onRetryDetailLoad}>
+              다시 시도
+            </button>
+          </div>
+        ) : null}
+
+        {hasSelectedProject && detailStatus === 'ready' && !selectedDetail ? (
+          <div className="empty-state">
+            <strong>표시할 프로젝트 상세가 없습니다.</strong>
+            <p>프로젝트 데이터 구조를 확인한 뒤 다시 시도하세요.</p>
+            <button type="button" onClick={onRetryDetailLoad}>
+              다시 시도
+            </button>
+          </div>
+        ) : null}
+
         {activeWorkspaceTab === 'allocation' && selectedDetail ? (
           <>
             <section className="cockpit-kpi-group" aria-label="배분 핵심 지표">
-              <InfoTile label="배분 원가" value={formatKrwCompact(selectedDetail.allocation.allocatedCostKrw)} />
-              <InfoTile label="표준 원가" value={formatKrwCompact(selectedDetail.allocation.standardCostKrw)} />
-              <InfoTile label="효율 갭" value={formatKrwCompact(selectedDetail.allocation.efficiencyGapKrw)} />
-              <InfoTile label="성과 갭" value={formatKrwCompact(selectedDetail.allocation.performanceGapKrw)} />
+              <InfoTile
+                label="배분 원가"
+                value={formatKrwCompact(
+                  selectedDetail.allocation.allocatedCostKrw
+                )}
+              />
+              <InfoTile
+                label="표준 원가"
+                value={formatKrwCompact(
+                  selectedDetail.allocation.standardCostKrw
+                )}
+              />
+              <InfoTile
+                label="효율 갭"
+                value={formatKrwCompact(
+                  selectedDetail.allocation.efficiencyGapKrw
+                )}
+              />
+              <InfoTile
+                label="성과 갭"
+                value={formatKrwCompact(
+                  selectedDetail.allocation.performanceGapKrw
+                )}
+              />
             </section>
-            <section className="cockpit-dominant-surface" aria-label="배분 비교 surface">
+            <section
+              className="cockpit-dominant-surface"
+              aria-label="배분 비교 surface"
+            >
               <DecisionBarChart
                 title="Cost Driver 기여도"
                 subtitle={`총 배분원가 ${formatKrwCompact(selectedDetail.allocation.allocatedCostKrw)}`}
@@ -144,7 +250,10 @@ export function WorkspaceView({
                 summary={`표준원가 대비 ${formatKrwCompact(selectedDetail.allocation.efficiencyGapKrw)} 초과 상태`}
               />
             </section>
-            <section className="cockpit-support-grid" aria-label="배분 해석 및 다음 행동">
+            <section
+              className="cockpit-support-grid"
+              aria-label="배분 해석 및 다음 행동"
+            >
               <DecisionSummary
                 title="배분 해석"
                 items={[
@@ -167,13 +276,31 @@ export function WorkspaceView({
 
         {activeWorkspaceTab === 'valuation' && selectedDetail ? (
           <>
-            <section className="cockpit-kpi-group" aria-label="가치평가 핵심 지표">
-              <InfoTile label="공정가치" value={formatKrwCompact(selectedDetail.valuation.fairValueKrw)} />
-              <InfoTile label="기준 시나리오 NPV" value={formatKrwCompact(valuationExpectedCase?.npvKrw ?? 0)} />
-              <InfoTile label="IRR" value={formatPercent(selectedProject?.irr ?? 0)} />
-              <InfoTile label="회수기간" value={formatYears(selectedProject?.paybackYears ?? 0)} />
+            <section
+              className="cockpit-kpi-group"
+              aria-label="가치평가 핵심 지표"
+            >
+              <InfoTile
+                label="공정가치"
+                value={formatKrwCompact(selectedDetail.valuation.fairValueKrw)}
+              />
+              <InfoTile
+                label="기준 시나리오 NPV"
+                value={formatKrwCompact(valuationExpectedCase?.npvKrw ?? 0)}
+              />
+              <InfoTile
+                label="IRR"
+                value={formatPercent(selectedProject?.irr ?? 0)}
+              />
+              <InfoTile
+                label="회수기간"
+                value={formatYears(selectedProject?.paybackYears ?? 0)}
+              />
             </section>
-            <section className="cockpit-dominant-surface" aria-label="시나리오 가치 비교 surface">
+            <section
+              className="cockpit-dominant-surface"
+              aria-label="시나리오 가치 비교 surface"
+            >
               <DecisionBarChart
                 title="시나리오 가치 비교"
                 subtitle="확률 가중 흐름을 한 화면에서 비교"
@@ -181,7 +308,10 @@ export function WorkspaceView({
                 summary={`기준 대비 비관 격차 ${formatKrwCompact(valuationGap)}`}
               />
             </section>
-            <section className="cockpit-support-grid" aria-label="가치평가 보조 정보">
+            <section
+              className="cockpit-support-grid"
+              aria-label="가치평가 보조 정보"
+            >
               <DecisionSummary
                 title="의사결정 포인트"
                 items={[
@@ -190,23 +320,53 @@ export function WorkspaceView({
                   '확률 가정 변경 시 재계산 후 승인'
                 ]}
               />
-              <InfoTile label="신용등급" value={selectedDetail.valuation.creditGrade} />
-              <InfoTile label="Credit Score" value={`${selectedDetail.valuation.creditRiskScore}점`} />
-              <InfoTile label="Duration" value={`${selectedDetail.valuation.duration}년`} />
-              <InfoTile label="Convexity" value={`${selectedDetail.valuation.convexity}`} />
+              <InfoTile
+                label="신용등급"
+                value={selectedDetail.valuation.creditGrade}
+              />
+              <InfoTile
+                label="Credit Score"
+                value={`${selectedDetail.valuation.creditRiskScore}점`}
+              />
+              <InfoTile
+                label="Duration"
+                value={`${selectedDetail.valuation.duration}년`}
+              />
+              <InfoTile
+                label="Convexity"
+                value={`${selectedDetail.valuation.convexity}`}
+              />
             </section>
           </>
         ) : null}
 
         {activeWorkspaceTab === 'risk' && selectedDetail ? (
           <>
-            <section className="cockpit-kpi-group" aria-label="리스크 핵심 지표">
-              <InfoTile label="현재 리스크" value={selectedProject?.risk ?? '-'} />
-              <InfoTile label="VaR 95%" value={formatKrwCompact(selectedDetail.valuation.var95Krw)} />
-              <InfoTile label="CVaR 95%" value={formatKrwCompact(selectedDetail.valuation.cvar95Krw)} />
-              <InfoTile label="하방 격차" value={formatKrwCompact(riskGuardrailGap)} />
+            <section
+              className="cockpit-kpi-group"
+              aria-label="리스크 핵심 지표"
+            >
+              <InfoTile
+                label="현재 리스크"
+                value={selectedProject?.risk ?? '-'}
+              />
+              <InfoTile
+                label="VaR 95%"
+                value={formatKrwCompact(selectedDetail.valuation.var95Krw)}
+              />
+              <InfoTile
+                label="CVaR 95%"
+                value={formatKrwCompact(selectedDetail.valuation.cvar95Krw)}
+              />
+              <InfoTile
+                label="하방 격차"
+                value={formatKrwCompact(riskGuardrailGap)}
+              />
             </section>
-            <section className="cockpit-dominant-surface" aria-label="하방 노출 surface">
+            <section
+              className="cockpit-dominant-surface"
+              aria-label="하방 노출 surface"
+            >
               <DecisionBarChart
                 title="Downside Exposure"
                 subtitle="손실 한계와 시나리오 하방을 동시 비교"
@@ -237,19 +397,36 @@ export function WorkspaceView({
 
         {activeWorkspaceTab === 'workflow' && selectedDetail ? (
           <>
-            <section className="cockpit-kpi-group" aria-label="워크플로우 핵심 지표">
-              <InfoTile label="현재 단계" value={selectedDetail.workflow.currentStage} />
+            <section
+              className="cockpit-kpi-group"
+              aria-label="워크플로우 핵심 지표"
+            >
+              <InfoTile
+                label="현재 단계"
+                value={selectedDetail.workflow.currentStage}
+              />
               <InfoTile label="담당자" value={selectedDetail.workflow.owner} />
-              <InfoTile label="검토자" value={selectedDetail.workflow.financeReviewer} />
-              <InfoTile label="다음 단계" value={selectedDetail.workflow.nextStep} />
+              <InfoTile
+                label="검토자"
+                value={selectedDetail.workflow.financeReviewer}
+              />
+              <InfoTile
+                label="다음 단계"
+                value={selectedDetail.workflow.nextStep}
+              />
             </section>
-            <section className="cockpit-dominant-surface" aria-label="워크플로우 진행 surface">
+            <section
+              className="cockpit-dominant-surface"
+              aria-label="워크플로우 진행 surface"
+            >
               <div className="workflow-steps">
                 {(['기획', '검토', '승인', '보류'] as const).map((step) => (
                   <div
                     key={step}
                     className={`workflow-step ${
-                      selectedDetail.workflow.currentStage === step ? 'workflow-step--active' : ''
+                      selectedDetail.workflow.currentStage === step
+                        ? 'workflow-step--active'
+                        : ''
                     }`}
                   >
                     {step}
@@ -257,7 +434,10 @@ export function WorkspaceView({
                 ))}
               </div>
             </section>
-            <section className="cockpit-support-grid" aria-label="워크플로우 상세">
+            <section
+              className="cockpit-support-grid"
+              aria-label="워크플로우 상세"
+            >
               <article className="workflow-note">
                 <strong>승인 코멘트</strong>
                 <p>{selectedDetail.workflow.executiveComment}</p>
