@@ -3,9 +3,11 @@ import {
   buildDecisionSignals,
   detailTabs,
   defaultPortfolioSummary,
+  loadAuditEvents,
   loadProjectDetail,
   loadPortfolioSummary,
   roleInsights,
+  type AuditEvent,
   type DataSource,
   type ProjectDetail,
   type PortfolioSummary,
@@ -51,6 +53,13 @@ export function App() {
   );
   const [selectedDetailSource, setSelectedDetailSource] =
     useState<DataSource>('local');
+  const [auditEvents, setAuditEvents] = useState<AuditEvent[]>(
+    defaultPortfolioSummary.auditEvents
+  );
+  const [auditSource, setAuditSource] = useState<DataSource>('local');
+  const [auditStatus, setAuditStatus] = useState<'idle' | 'loading' | 'ready'>(
+    'idle'
+  );
   const [searchTerm, setSearchTerm] = useState(initialExplorerState.search);
   const [explorerSort, setExplorerSort] = useState<ExplorerSortKey>(
     initialExplorerState.sort
@@ -92,6 +101,9 @@ export function App() {
     if (!selectedProject) {
       setSelectedDetail(null);
       setSelectedDetailSource('local');
+      setAuditEvents(portfolio.auditEvents);
+      setAuditSource(portfolioSource);
+      setAuditStatus('ready');
       return;
     }
 
@@ -102,6 +114,27 @@ export function App() {
       if (!cancelled) {
         setSelectedDetail(detail);
         setSelectedDetailSource(source);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedProject]);
+
+  useEffect(() => {
+    if (!selectedProject) {
+      return;
+    }
+
+    let cancelled = false;
+    setAuditStatus('loading');
+
+    void loadAuditEvents(selectedProject).then(({ events, source }) => {
+      if (!cancelled) {
+        setAuditEvents(events);
+        setAuditSource(source);
+        setAuditStatus('ready');
       }
     });
 
@@ -500,7 +533,13 @@ export function App() {
           ) : null}
 
           {activeView === 'reviews' ? (
-            <ReviewsView portfolio={portfolio} />
+            <ReviewsView
+              portfolio={portfolio}
+              auditEvents={auditEvents}
+              auditSource={auditSource}
+              auditStatus={auditStatus}
+              selectedProjectName={selectedProject?.name ?? null}
+            />
           ) : null}
 
           {activeView === 'settings' ? (
