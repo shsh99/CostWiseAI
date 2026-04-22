@@ -88,12 +88,8 @@ export function TaskTopbar({
 
 function dataSourceLabel(source: DataSource) {
   if (source === 'api') {
-    return '백엔드 연동';
+    return 'API 연동';
   }
 
-  if (source === 'mixed') {
-    return 'API/로컬 혼합';
-  }
-
-  return '로컬 시드';
+  return 'API 일부 제한';
 }

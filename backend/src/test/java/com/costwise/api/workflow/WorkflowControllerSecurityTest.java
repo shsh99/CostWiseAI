@@ -53,6 +53,7 @@ class WorkflowControllerSecurityTest {
                         "sa",
                         "");
                 Statement statement = connection.createStatement()) {
+            statement.execute("drop table if exists workflow_states");
             statement.execute("drop table if exists audit_logs");
             statement.execute("""
                     create table audit_logs (
@@ -73,6 +74,14 @@ class WorkflowControllerSecurityTest {
             statement.execute("create index idx_audit_logs_project_id_id on audit_logs (project_id, id desc)");
             statement.execute("create index idx_audit_logs_project_event_id on audit_logs (project_id, event_type, id desc)");
             statement.execute("create index idx_audit_logs_project_occurred_id on audit_logs (project_id, occurred_at desc, id desc)");
+            statement.execute("""
+                    create table workflow_states (
+                      project_id varchar(128) primary key,
+                      status varchar(32) not null,
+                      last_action varchar(32) not null,
+                      updated_at timestamp not null
+                    )
+                    """);
         }
     }
 

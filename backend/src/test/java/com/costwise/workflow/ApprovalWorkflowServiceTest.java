@@ -6,11 +6,16 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.costwise.api.dto.workflow.ApprovalWorkflowResponse;
 import com.costwise.audit.AuditLogRepository;
 import com.costwise.audit.AuditLogService;
+import com.costwise.persistence.WorkflowStateRepository;
 import com.costwise.service.PortfolioSummaryService;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.access.AccessDeniedException;
 
@@ -18,8 +23,9 @@ class ApprovalWorkflowServiceTest {
 
     private final PortfolioSummaryService portfolioSummaryService = new PortfolioSummaryService();
     private final AuditLogService auditLogService = new AuditLogService(new InMemoryAuditLogRepository());
+    private final WorkflowStateRepository workflowStateRepository = new InMemoryWorkflowStateRepository();
     private final ApprovalWorkflowService service =
-            new ApprovalWorkflowService(portfolioSummaryService, auditLogService);
+            new ApprovalWorkflowService(portfolioSummaryService, auditLogService, workflowStateRepository);
 
     @Test
     void submitTransitionsDraftToReviewAndWritesAuditEvent() {
@@ -140,6 +146,35 @@ class ApprovalWorkflowServiceTest {
                     .sorted(Comparator.comparingLong(StoredAuditEntry::id).reversed())
                     .limit(fetchSize)
                     .toList();
+        }
+    }
+
+    private static final class InMemoryWorkflowStateRepository implements WorkflowStateRepository {
+
+        private final Map<String, WorkflowStateRecord> states = new LinkedHashMap<>();
+
+        @Override
+        public Optional<WorkflowStateRecord> findState(String projectId) {
+            return Optional.ofNullable(states.get(projectId));
+        }
+
+        @Override
+        public WorkflowStateRecord createState(String projectId, String status) {
+            WorkflowStateRecord state = new WorkflowStateRecord(projectId, status, "INIT", LocalDateTime.now());
+            states.put(projectId, state);
+            return state;
+        }
+
+        @Override
+        public WorkflowStateRecord updateState(
+                String projectId, String status, String lastAction, LocalDateTime updatedAt) {
+            WorkflowStateRecord existing = states.get(projectId);
+            if (existing == null) {
+                throw new IllegalArgumentException("Unknown workflow project id: " + projectId);
+            }
+            WorkflowStateRecord updated = new WorkflowStateRecord(projectId, status, lastAction, updatedAt);
+            states.put(projectId, updated);
+            return updated;
         }
     }
 }
