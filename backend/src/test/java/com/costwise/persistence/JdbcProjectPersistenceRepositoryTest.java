@@ -3,14 +3,18 @@ package com.costwise.persistence;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.costwise.api.dto.persistence.AnalysisUpsertRequest;
 import com.costwise.api.dto.persistence.CreateProjectRequest;
 import com.costwise.api.dto.persistence.CreateScenarioRequest;
 import com.costwise.api.dto.persistence.UpdateProjectRequest;
 import com.costwise.api.dto.persistence.UpdateScenarioRequest;
 import com.costwise.config.AuditPersistenceProperties;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class JdbcProjectPersistenceRepositoryTest {
@@ -43,6 +47,76 @@ class JdbcProjectPersistenceRepositoryTest {
         assertThat(detail.scenarios()).hasSize(1);
         assertThat(detail.scenarios().getFirst().id()).isEqualTo(scenario.id());
         assertThat(detail.scenarios().getFirst().name()).isEqualTo("Base");
+    }
+
+    @Test
+    void analysisResultsAndApprovalHistoryAreReadableAcrossServiceRecreation() throws Exception {
+        String jdbcUrl = "jdbc:h2:mem:persistence-analysis;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE";
+        createSchema(jdbcUrl);
+        AuditPersistenceProperties properties = new AuditPersistenceProperties(null, jdbcUrl, "sa", "", "disable");
+
+        PersistenceService writer = new PersistenceService(new JdbcProjectPersistenceRepository(properties));
+        var project = writer.createProject(new CreateProjectRequest(
+                "PJT-DB-ANALYSIS",
+                "분석 저장 프로젝트",
+                "new_business",
+                "analysis restart test"));
+        var scenario = writer.createScenario(project.id(), new CreateScenarioRequest(
+                "Base",
+                "기준 시나리오",
+                true,
+                true));
+
+        writer.upsertAnalysis(
+                project.id(),
+                scenario.id(),
+                new AnalysisUpsertRequest(
+                        List.of(new AnalysisUpsertRequest.AllocationRuleInput(
+                                "D-001",
+                                "manual",
+                                new BigDecimal("1.000000"),
+                                new BigDecimal("1000000.00"),
+                                "공통비",
+                                "shared",
+                                new BigDecimal("1000000.00"))),
+                        List.of(new AnalysisUpsertRequest.CashFlowInput(
+                                0,
+                                "현재",
+                                "2026",
+                                new BigDecimal("500000.00"),
+                                new BigDecimal("-200000.00"),
+                                BigDecimal.ZERO,
+                                new BigDecimal("0.080000"))),
+                        new AnalysisUpsertRequest.ValuationInput(
+                                new BigDecimal("0.080000"),
+                                new BigDecimal("300000.00"),
+                                new BigDecimal("0.120000"),
+                                new BigDecimal("2.50"),
+                                "recommend",
+                                JsonNodeFactory.instance.objectNode().put("growthRate", 0.03)),
+                        new AnalysisUpsertRequest.ApprovalInput(
+                                "planner",
+                                "plan-user",
+                                "allocated",
+                                "분석 반영",
+                                "in_review")));
+
+        PersistenceService reader = new PersistenceService(new JdbcProjectPersistenceRepository(properties));
+        var detail = reader.getProjectDetail(project.id());
+        var scenarioDetail = detail.scenarios().getFirst();
+
+        assertThat(detail.status()).isEqualTo("in_review");
+        assertThat(detail.approval().status()).isEqualTo("in_review");
+        assertThat(detail.approval().lastAction()).isEqualTo("allocated");
+        assertThat(detail.approval().lastActor()).isEqualTo("plan-user");
+        assertThat(detail.approval().logs()).hasSize(1);
+        assertThat(scenarioDetail.allocationRules()).hasSize(1);
+        assertThat(scenarioDetail.allocationRules().getFirst().departmentCode()).isEqualTo("D-001");
+        assertThat(scenarioDetail.cashFlows()).hasSize(1);
+        assertThat(scenarioDetail.cashFlows().getFirst().netCashFlow()).isEqualByComparingTo("300000.00");
+        assertThat(scenarioDetail.valuation()).isNotNull();
+        assertThat(scenarioDetail.valuation().decision()).isEqualTo("recommend");
+        assertThat(scenarioDetail.valuation().assumptions().path("growthRate").asDouble()).isEqualTo(0.03);
     }
 
     @Test
@@ -132,6 +206,14 @@ class JdbcProjectPersistenceRepositoryTest {
                     )
                     """);
             statement.execute("""
+                    create table departments (
+                      id uuid default random_uuid() primary key,
+                      code text not null unique,
+                      name text not null,
+                      sort_order integer not null default 0
+                    )
+                    """);
+            statement.execute("""
                     create table scenarios (
                       id uuid default random_uuid() primary key,
                       project_id uuid not null references projects (id) on delete cascade,
@@ -141,6 +223,77 @@ class JdbcProjectPersistenceRepositoryTest {
                       is_active boolean not null default true,
                       created_at timestamp not null default current_timestamp,
                       unique (project_id, name)
+                    )
+                    """);
+            statement.execute("""
+                    create table cost_pools (
+                      id uuid default random_uuid() primary key,
+                      project_id uuid not null references projects (id) on delete cascade,
+                      scenario_id uuid references scenarios (id) on delete set null,
+                      name text not null,
+                      category text not null,
+                      amount numeric(14, 2) not null,
+                      currency char(3) not null default 'KRW',
+                      description text,
+                      created_at timestamp not null default current_timestamp
+                    )
+                    """);
+            statement.execute("""
+                    create table allocation_rules (
+                      id uuid default random_uuid() primary key,
+                      project_id uuid not null references projects (id) on delete cascade,
+                      scenario_id uuid references scenarios (id) on delete set null,
+                      cost_pool_id uuid not null references cost_pools (id) on delete cascade,
+                      department_id uuid not null references departments (id),
+                      basis text not null,
+                      allocation_rate numeric(7, 6) not null,
+                      allocated_amount numeric(14, 2) not null,
+                      created_at timestamp not null default current_timestamp,
+                      unique (scenario_id, cost_pool_id, department_id)
+                    )
+                    """);
+            statement.execute("""
+                    create table cash_flows (
+                      id uuid default random_uuid() primary key,
+                      project_id uuid not null references projects (id) on delete cascade,
+                      scenario_id uuid references scenarios (id) on delete set null,
+                      period_no integer not null,
+                      period_label text not null,
+                      year_label text not null,
+                      operating_cash_flow numeric(14, 2) not null default 0,
+                      investment_cash_flow numeric(14, 2) not null default 0,
+                      financing_cash_flow numeric(14, 2) not null default 0,
+                      net_cash_flow numeric(14, 2) not null,
+                      discount_rate numeric(8, 6) not null,
+                      created_at timestamp not null default current_timestamp,
+                      unique (project_id, scenario_id, period_no)
+                    )
+                    """);
+            statement.execute("""
+                    create table valuation_results (
+                      id uuid default random_uuid() primary key,
+                      project_id uuid not null references projects (id) on delete cascade,
+                      scenario_id uuid references scenarios (id) on delete set null,
+                      discount_rate numeric(8, 6) not null,
+                      npv numeric(14, 2) not null,
+                      irr numeric(8, 6) not null,
+                      payback_period numeric(8, 2) not null,
+                      decision text not null,
+                      assumptions clob not null,
+                      created_at timestamp not null default current_timestamp,
+                      unique (project_id, scenario_id)
+                    )
+                    """);
+            statement.execute("""
+                    create table approval_logs (
+                      id uuid default random_uuid() primary key,
+                      project_id uuid not null references projects (id) on delete cascade,
+                      scenario_id uuid references scenarios (id) on delete set null,
+                      actor_role text not null,
+                      actor_name text not null,
+                      action text not null,
+                      comment text,
+                      created_at timestamp not null default current_timestamp
                     )
                     """);
         }

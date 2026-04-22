@@ -13,12 +13,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -38,9 +35,6 @@ public class PersistenceService {
             Set.of("recommend", "review", "reject");
 
     private final ProjectPersistenceRepository projectRepository;
-    private final Map<String, ScenarioAnalysisState> scenarioAnalyses = new ConcurrentHashMap<>();
-    private final Map<String, ApprovalSummaryState> approvalSummaries = new ConcurrentHashMap<>();
-    private final Map<String, List<ApprovalLog>> approvalLogs = new ConcurrentHashMap<>();
 
     public PersistenceService(ProjectPersistenceRepository projectRepository) {
         this.projectRepository = projectRepository;
@@ -58,12 +52,11 @@ public class PersistenceService {
                         request.businessType().trim(),
                         "draft",
                         request.description()));
-        approvalSummaries.put(project.id(), createdApprovalSummary(project.status(), project.createdAt()));
         return toProjectSummary(project);
     }
 
     public ProjectSummaryResponse updateProject(String projectId, UpdateProjectRequest request) {
-        ProjectPersistenceRepository.ProjectRecord currentProject = getProjectState(projectId);
+        getProjectState(projectId);
         String status = normalizeEnum(request.status(), PROJECT_STATUSES, "project status");
         ProjectPersistenceRepository.ProjectRecord project = projectRepository.updateProject(
                 new ProjectPersistenceRepository.ProjectUpdate(
@@ -72,19 +65,11 @@ public class PersistenceService {
                         request.businessType().trim(),
                         status,
                         request.description()));
-        ApprovalSummaryState approvalSummary = approvalSummaries.computeIfAbsent(
-                projectId,
-                ignored -> createdApprovalSummary(currentProject.status(), currentProject.createdAt()));
-        approvalSummary.status = status;
-        approvalSummary.updatedAt = LocalDateTime.now();
         return toProjectSummary(project);
     }
 
     public void deleteProject(String projectId) {
         projectRepository.deleteProject(projectId);
-        approvalSummaries.remove(projectId);
-        approvalLogs.remove(projectId);
-        scenarioAnalyses.keySet().removeIf(key -> key.startsWith(projectId + ":"));
     }
 
     public ScenarioResponse createScenario(String projectId, CreateScenarioRequest request) {
@@ -119,7 +104,6 @@ public class PersistenceService {
     public void deleteScenario(String projectId, String scenarioId) {
         getProjectState(projectId);
         projectRepository.deleteScenario(projectId, scenarioId);
-        scenarioAnalyses.remove(analysisKey(projectId, scenarioId));
     }
 
     public AnalysisUpdateResponse upsertAnalysis(
@@ -127,7 +111,7 @@ public class PersistenceService {
         ProjectPersistenceRepository.ProjectRecord project = getProjectState(projectId);
         getScenarioState(projectId, scenarioId);
 
-        ScenarioAnalysisState analysis = new ScenarioAnalysisState(
+        ProjectPersistenceRepository.AnalysisRecord analysis = new ProjectPersistenceRepository.AnalysisRecord(
                 request.allocationRules().stream()
                         .map(this::toAllocationRule)
                         .toList(),
@@ -135,9 +119,8 @@ public class PersistenceService {
                         .map(this::toCashFlow)
                         .toList(),
                 toValuation(request.valuation()));
-        scenarioAnalyses.put(analysisKey(projectId, scenarioId), analysis);
 
-        ApprovalLog approvalLog = toApprovalLog(request.approval());
+        ProjectPersistenceRepository.ApprovalLogRecord approvalLog = toApprovalLog(request.approval());
         String projectStatus = normalizeEnum(
                 request.approval().projectStatus(), PROJECT_STATUSES, "project status");
         projectRepository.updateProject(new ProjectPersistenceRepository.ProjectUpdate(
@@ -146,17 +129,10 @@ public class PersistenceService {
                 project.businessType(),
                 projectStatus,
                 project.description()));
-        ApprovalSummaryState approvalSummary = approvalSummaries.computeIfAbsent(
-                projectId,
-                ignored -> createdApprovalSummary(project.status(), project.createdAt()));
-        approvalSummary.status = projectStatus;
-        approvalSummary.lastAction = approvalLog.action;
-        approvalSummary.lastActor = approvalLog.actorName;
-        approvalSummary.lastComment = approvalLog.comment;
-        approvalSummary.updatedAt = approvalLog.createdAt;
-        approvalLogs.computeIfAbsent(projectId, ignored -> new ArrayList<>()).add(approvalLog);
+        projectRepository.upsertAnalysis(projectId, scenarioId, analysis, approvalLog);
 
-        return new AnalysisUpdateResponse(projectId, scenarioId, analysis.allocationRules.size(), analysis.cashFlows.size());
+        return new AnalysisUpdateResponse(
+                projectId, scenarioId, analysis.allocationRules().size(), analysis.cashFlows().size());
     }
 
     public ProjectDetailResponse getProjectDetail(String projectId) {
@@ -164,21 +140,19 @@ public class PersistenceService {
         List<ProjectDetailResponse.ScenarioDetailResponse> scenarios = projectRepository.listScenarios(projectId).stream()
                 .map(scenario -> toScenarioDetailResponse(projectId, scenario))
                 .toList();
-        List<ProjectDetailResponse.ApprovalEvent> logs = approvalLogs
-                .getOrDefault(projectId, List.of())
-                .stream()
+        List<ProjectPersistenceRepository.ApprovalLogRecord> storedLogs = projectRepository.listApprovalLogs(projectId);
+        List<ProjectDetailResponse.ApprovalEvent> logs = storedLogs.stream()
                 .map(log -> new ProjectDetailResponse.ApprovalEvent(
-                        log.actorRole, log.actorName, log.action, log.comment, log.createdAt))
+                        log.actorRole(), log.actorName(), log.action(), log.comment(), log.createdAt()))
                 .toList();
-        ApprovalSummaryState approvalSummaryState = approvalSummaries.computeIfAbsent(
-                projectId,
-                ignored -> createdApprovalSummary(project.status(), project.createdAt()));
+        ProjectPersistenceRepository.ApprovalLogRecord latestApproval =
+                storedLogs.isEmpty() ? null : storedLogs.getLast();
         ProjectDetailResponse.ApprovalSummary approvalSummary = new ProjectDetailResponse.ApprovalSummary(
-                approvalSummaryState.status,
-                approvalSummaryState.lastAction,
-                approvalSummaryState.lastActor,
-                approvalSummaryState.lastComment,
-                approvalSummaryState.updatedAt,
+                project.status(),
+                latestApproval == null ? "created" : latestApproval.action(),
+                latestApproval == null ? "system" : latestApproval.actorName(),
+                latestApproval == null ? "project created" : latestApproval.comment(),
+                latestApproval == null ? project.createdAt() : latestApproval.createdAt(),
                 logs);
         return new ProjectDetailResponse(
                 project.id(),
@@ -215,39 +189,37 @@ public class PersistenceService {
 
     private ProjectDetailResponse.ScenarioDetailResponse toScenarioDetailResponse(
             String projectId, ProjectPersistenceRepository.ScenarioRecord scenario) {
-        ScenarioAnalysisState analysis = scenarioAnalyses.getOrDefault(
-                analysisKey(projectId, scenario.id()),
-                ScenarioAnalysisState.empty());
-        List<ProjectDetailResponse.AllocationRule> allocations = analysis.allocationRules.stream()
+        ProjectPersistenceRepository.AnalysisRecord analysis = projectRepository.findAnalysis(projectId, scenario.id());
+        List<ProjectDetailResponse.AllocationRule> allocations = analysis.allocationRules().stream()
                 .map(value -> new ProjectDetailResponse.AllocationRule(
-                        value.departmentCode,
-                        value.basis,
-                        value.allocationRate,
-                        value.allocatedAmount,
-                        value.costPoolName,
-                        value.costPoolCategory,
-                        value.costPoolAmount))
+                        value.departmentCode(),
+                        value.basis(),
+                        value.allocationRate(),
+                        value.allocatedAmount(),
+                        value.costPoolName(),
+                        value.costPoolCategory(),
+                        value.costPoolAmount()))
                 .toList();
-        List<ProjectDetailResponse.CashFlow> cashFlows = analysis.cashFlows.stream()
+        List<ProjectDetailResponse.CashFlow> cashFlows = analysis.cashFlows().stream()
                 .map(value -> new ProjectDetailResponse.CashFlow(
-                        value.periodNo,
-                        value.periodLabel,
-                        value.yearLabel,
-                        value.operatingCashFlow,
-                        value.investmentCashFlow,
-                        value.financingCashFlow,
-                        value.netCashFlow,
-                        value.discountRate))
+                        value.periodNo(),
+                        value.periodLabel(),
+                        value.yearLabel(),
+                        value.operatingCashFlow(),
+                        value.investmentCashFlow(),
+                        value.financingCashFlow(),
+                        value.netCashFlow(),
+                        value.discountRate()))
                 .toList();
-        ProjectDetailResponse.Valuation valuation = analysis.valuation == null
+        ProjectDetailResponse.Valuation valuation = analysis.valuation() == null
                 ? null
                 : new ProjectDetailResponse.Valuation(
-                        analysis.valuation.discountRate,
-                        analysis.valuation.npv,
-                        analysis.valuation.irr,
-                        analysis.valuation.paybackPeriod,
-                        analysis.valuation.decision,
-                        analysis.valuation.assumptions);
+                        analysis.valuation().discountRate(),
+                        analysis.valuation().npv(),
+                        analysis.valuation().irr(),
+                        analysis.valuation().paybackPeriod(),
+                        analysis.valuation().decision(),
+                        analysis.valuation().assumptions());
         return new ProjectDetailResponse.ScenarioDetailResponse(
                 scenario.id(),
                 scenario.name(),
@@ -260,7 +232,8 @@ public class PersistenceService {
                 valuation);
     }
 
-    private AllocationRuleState toAllocationRule(AnalysisUpsertRequest.AllocationRuleInput input) {
+    private ProjectPersistenceRepository.AllocationRuleRecord toAllocationRule(
+            AnalysisUpsertRequest.AllocationRuleInput input) {
         String basis = normalizeEnum(input.basis(), ALLOCATION_BASIS, "allocation basis");
         String costPoolCategory = normalizeEnum(input.costPoolCategory(), COST_POOL_CATEGORIES, "cost pool category");
         if (input.allocationRate().compareTo(BigDecimal.ZERO) < 0 || input.allocationRate().compareTo(BigDecimal.ONE) > 0) {
@@ -269,7 +242,7 @@ public class PersistenceService {
         if (input.allocatedAmount().compareTo(BigDecimal.ZERO) < 0 || input.costPoolAmount().compareTo(BigDecimal.ZERO) < 0) {
             throw new IllegalArgumentException("allocatedAmount and costPoolAmount must be >= 0");
         }
-        return new AllocationRuleState(
+        return new ProjectPersistenceRepository.AllocationRuleRecord(
                 input.departmentCode().trim(),
                 basis,
                 input.allocationRate(),
@@ -279,7 +252,7 @@ public class PersistenceService {
                 input.costPoolAmount());
     }
 
-    private CashFlowState toCashFlow(AnalysisUpsertRequest.CashFlowInput input) {
+    private ProjectPersistenceRepository.CashFlowRecord toCashFlow(AnalysisUpsertRequest.CashFlowInput input) {
         if (input.periodNo() < 0) {
             throw new IllegalArgumentException("periodNo must be >= 0");
         }
@@ -289,7 +262,7 @@ public class PersistenceService {
         // Schema contract keeps net_cash_flow as stored value; this slice derives it deterministically
         // from operating + investment + financing to avoid drift between API payload and persisted shape.
         BigDecimal netCashFlow = input.operatingCashFlow().add(input.investmentCashFlow()).add(input.financingCashFlow());
-        return new CashFlowState(
+        return new ProjectPersistenceRepository.CashFlowRecord(
                 input.periodNo(),
                 input.periodLabel().trim(),
                 input.yearLabel().trim(),
@@ -300,13 +273,13 @@ public class PersistenceService {
                 input.discountRate());
     }
 
-    private ValuationState toValuation(AnalysisUpsertRequest.ValuationInput input) {
+    private ProjectPersistenceRepository.ValuationRecord toValuation(AnalysisUpsertRequest.ValuationInput input) {
         String decision = normalizeEnum(input.decision(), VALUATION_DECISIONS, "valuation decision");
         if (input.discountRate().compareTo(BigDecimal.ZERO) < 0) {
             throw new IllegalArgumentException("discountRate must be >= 0");
         }
         JsonNode assumptions = input.assumptions() == null ? JsonNodeFactory.instance.objectNode() : input.assumptions();
-        return new ValuationState(
+        return new ProjectPersistenceRepository.ValuationRecord(
                 input.discountRate(),
                 input.npv(),
                 input.irr(),
@@ -315,10 +288,11 @@ public class PersistenceService {
                 assumptions);
     }
 
-    private ApprovalLog toApprovalLog(AnalysisUpsertRequest.ApprovalInput input) {
+    private ProjectPersistenceRepository.ApprovalLogRecord toApprovalLog(AnalysisUpsertRequest.ApprovalInput input) {
         String actorRole = normalizeEnum(input.actorRole(), ACTOR_ROLES, "actor role");
         String action = normalizeEnum(input.action(), APPROVAL_ACTIONS, "approval action");
-        return new ApprovalLog(actorRole, input.actorName().trim(), action, input.comment(), LocalDateTime.now());
+        return new ProjectPersistenceRepository.ApprovalLogRecord(
+                actorRole, input.actorName().trim(), action, input.comment(), LocalDateTime.now());
     }
 
     private ProjectPersistenceRepository.ProjectRecord getProjectState(String projectId) {
@@ -346,69 +320,4 @@ public class PersistenceService {
         return normalized;
     }
 
-    private ApprovalSummaryState createdApprovalSummary(String status, LocalDateTime createdAt) {
-        ApprovalSummaryState approvalSummary = new ApprovalSummaryState();
-        approvalSummary.status = status;
-        approvalSummary.lastAction = "created";
-        approvalSummary.lastActor = "system";
-        approvalSummary.lastComment = "project created";
-        approvalSummary.updatedAt = createdAt;
-        return approvalSummary;
-    }
-
-    private String analysisKey(String projectId, String scenarioId) {
-        return projectId + ":" + scenarioId;
-    }
-
-    private record ScenarioAnalysisState(
-            List<AllocationRuleState> allocationRules,
-            List<CashFlowState> cashFlows,
-            ValuationState valuation) {
-
-        private static ScenarioAnalysisState empty() {
-            return new ScenarioAnalysisState(List.of(), List.of(), null);
-        }
-    }
-
-    private record AllocationRuleState(
-            String departmentCode,
-            String basis,
-            BigDecimal allocationRate,
-            BigDecimal allocatedAmount,
-            String costPoolName,
-            String costPoolCategory,
-            BigDecimal costPoolAmount) {}
-
-    private record CashFlowState(
-            int periodNo,
-            String periodLabel,
-            String yearLabel,
-            BigDecimal operatingCashFlow,
-            BigDecimal investmentCashFlow,
-            BigDecimal financingCashFlow,
-            BigDecimal netCashFlow,
-            BigDecimal discountRate) {}
-
-    private record ValuationState(
-            BigDecimal discountRate,
-            BigDecimal npv,
-            BigDecimal irr,
-            BigDecimal paybackPeriod,
-            String decision,
-            JsonNode assumptions) {}
-
-    private static final class ApprovalSummaryState {
-        private String status;
-        private String lastAction;
-        private String lastActor;
-        private String lastComment;
-        private LocalDateTime updatedAt;
-    }
-
-    private record ApprovalLog(
-            String actorRole,
-            String actorName,
-            String action,
-            String comment,
-            LocalDateTime createdAt) {}
 }
