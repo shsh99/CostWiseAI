@@ -86,7 +86,7 @@ export type AuditEvent = {
   at: string;
   actor: string;
   action: string;
-  domain: 'PORTFOLIO' | 'ABC' | 'DCF' | 'ACCESS';
+  domain: string;
 };
 
 export type PortfolioSummary = {
@@ -559,6 +559,34 @@ export async function loadProjectDetail(project: ProjectSummary): Promise<{
   }
 }
 
+export async function loadAuditEvents(project: ProjectSummary): Promise<{
+  events: AuditEvent[];
+  source: DataSource;
+}> {
+  const projectId = project.projectId ?? project.code;
+
+  try {
+    const response = await apiFetch(
+      `/api/audit-logs?projectId=${encodeURIComponent(projectId)}&limit=20`
+    );
+    if (!response.ok) {
+      throw new Error(`Audit log request failed: ${response.status}`);
+    }
+
+    const payload = (await response.json()) as AuditLogListApiResponse;
+
+    return {
+      events: payload.items.map(adaptAuditEvent),
+      source: 'api'
+    };
+  } catch {
+    return {
+      events: defaultPortfolioSummary.auditEvents,
+      source: 'local'
+    };
+  }
+}
+
 export function buildDecisionSignals(summary: PortfolioSummary) {
   return [
     { label: '검토 단계', value: summary.status },
@@ -772,6 +800,36 @@ type ValuationRiskApiResponse = {
     ratingBand?: string;
   };
 };
+
+type AuditLogListApiResponse = {
+  items: AuditLogEntryApiResponse[];
+  nextCursor?: string | null;
+};
+
+type AuditLogEntryApiResponse = {
+  eventType?: string;
+  actorRole?: string;
+  actorId?: string;
+  action?: string;
+  target?: string;
+  result?: string;
+  occurredAt?: string;
+  createdAt?: string;
+};
+
+function adaptAuditEvent(entry: AuditLogEntryApiResponse): AuditEvent {
+  const actor = [entry.actorRole, entry.actorId].filter(Boolean).join(' · ');
+  const action = [entry.action, entry.target, entry.result]
+    .filter(Boolean)
+    .join(' / ');
+
+  return {
+    at: entry.occurredAt ?? entry.createdAt ?? new Date().toISOString(),
+    actor: actor || '감사 로그',
+    action: action || '이력이 기록되었습니다.',
+    domain: entry.eventType ?? 'AUDIT'
+  };
+}
 
 function adaptProjectDetail(
   project: ProjectSummary,

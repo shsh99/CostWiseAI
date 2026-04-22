@@ -1341,6 +1341,33 @@ textarea {
   grid-template-columns: 1fr;
 }
 
+.audit-status,
+.audit-state {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(123, 137, 167, 0.14);
+  background: #f9fafc;
+}
+
+.audit-status {
+  align-items: center;
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.audit-status p,
+.audit-state p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.audit-state strong {
+  color: var(--text);
+}
+
 .status-pill {
   display: inline-flex;
   align-items: center;
