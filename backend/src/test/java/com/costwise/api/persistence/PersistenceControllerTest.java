@@ -57,7 +57,13 @@ class PersistenceControllerTest {
                         "sa",
                         "");
                 Statement statement = connection.createStatement()) {
+            statement.execute("drop table if exists approval_logs");
+            statement.execute("drop table if exists valuation_results");
+            statement.execute("drop table if exists cash_flows");
+            statement.execute("drop table if exists allocation_rules");
+            statement.execute("drop table if exists cost_pools");
             statement.execute("drop table if exists scenarios");
+            statement.execute("drop table if exists departments");
             statement.execute("drop table if exists projects");
             statement.execute("""
                     create table projects (
@@ -71,6 +77,14 @@ class PersistenceControllerTest {
                     )
                     """);
             statement.execute("""
+                    create table departments (
+                      id uuid default random_uuid() primary key,
+                      code text not null unique,
+                      name text not null,
+                      sort_order integer not null default 0
+                    )
+                    """);
+            statement.execute("""
                     create table scenarios (
                       id uuid default random_uuid() primary key,
                       project_id uuid not null references projects (id) on delete cascade,
@@ -80,6 +94,77 @@ class PersistenceControllerTest {
                       is_active boolean not null default true,
                       created_at timestamp not null default current_timestamp,
                       unique (project_id, name)
+                    )
+                    """);
+            statement.execute("""
+                    create table cost_pools (
+                      id uuid default random_uuid() primary key,
+                      project_id uuid not null references projects (id) on delete cascade,
+                      scenario_id uuid references scenarios (id) on delete set null,
+                      name text not null,
+                      category text not null,
+                      amount numeric(14, 2) not null,
+                      currency char(3) not null default 'KRW',
+                      description text,
+                      created_at timestamp not null default current_timestamp
+                    )
+                    """);
+            statement.execute("""
+                    create table allocation_rules (
+                      id uuid default random_uuid() primary key,
+                      project_id uuid not null references projects (id) on delete cascade,
+                      scenario_id uuid references scenarios (id) on delete set null,
+                      cost_pool_id uuid not null references cost_pools (id) on delete cascade,
+                      department_id uuid not null references departments (id),
+                      basis text not null,
+                      allocation_rate numeric(7, 6) not null,
+                      allocated_amount numeric(14, 2) not null,
+                      created_at timestamp not null default current_timestamp,
+                      unique (scenario_id, cost_pool_id, department_id)
+                    )
+                    """);
+            statement.execute("""
+                    create table cash_flows (
+                      id uuid default random_uuid() primary key,
+                      project_id uuid not null references projects (id) on delete cascade,
+                      scenario_id uuid references scenarios (id) on delete set null,
+                      period_no integer not null,
+                      period_label text not null,
+                      year_label text not null,
+                      operating_cash_flow numeric(14, 2) not null default 0,
+                      investment_cash_flow numeric(14, 2) not null default 0,
+                      financing_cash_flow numeric(14, 2) not null default 0,
+                      net_cash_flow numeric(14, 2) not null,
+                      discount_rate numeric(8, 6) not null,
+                      created_at timestamp not null default current_timestamp,
+                      unique (project_id, scenario_id, period_no)
+                    )
+                    """);
+            statement.execute("""
+                    create table valuation_results (
+                      id uuid default random_uuid() primary key,
+                      project_id uuid not null references projects (id) on delete cascade,
+                      scenario_id uuid references scenarios (id) on delete set null,
+                      discount_rate numeric(8, 6) not null,
+                      npv numeric(14, 2) not null,
+                      irr numeric(8, 6) not null,
+                      payback_period numeric(8, 2) not null,
+                      decision text not null,
+                      assumptions clob not null,
+                      created_at timestamp not null default current_timestamp,
+                      unique (project_id, scenario_id)
+                    )
+                    """);
+            statement.execute("""
+                    create table approval_logs (
+                      id uuid default random_uuid() primary key,
+                      project_id uuid not null references projects (id) on delete cascade,
+                      scenario_id uuid references scenarios (id) on delete set null,
+                      actor_role text not null,
+                      actor_name text not null,
+                      action text not null,
+                      comment text,
+                      created_at timestamp not null default current_timestamp
                     )
                     """);
         }
