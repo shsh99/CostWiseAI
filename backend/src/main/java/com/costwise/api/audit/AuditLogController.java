@@ -90,7 +90,6 @@ public class AuditLogController {
         context.put("requestId", request.getHeader("X-Request-Id"));
         context.put("remoteAddr", request.getRemoteAddr());
         context.put("userAgent", request.getHeader("User-Agent"));
-        context.put("authorization", request.getHeader("Authorization"));
         context.put("principal", authentication == null ? null : authentication.getName());
         context.put("capturedAt", Instant.now().toString());
         return context;
