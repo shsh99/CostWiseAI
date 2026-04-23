@@ -69,15 +69,29 @@ export function WorkspaceView({
     const allocationRows = selectedDetail?.allocation.rules ?? [];
 
     return (
-      <section className="finops-cost-page">
-        <header className="finops-page-header finops-page-header--actions">
+      <section>
+        <header className="mb-3.5 flex items-center justify-between gap-4">
           <div>
-            <h2>원가 집계·분석</h2>
-            <p>본부/프로젝트별 원가 집계 및 표준원가 차이분석</p>
+            <h2 className="m-0 text-[1.9rem] font-bold text-[#182847]">
+              원가 집계·분석
+            </h2>
+            <p className="mt-1 text-[#607397]">
+              본부/프로젝트별 원가 집계 및 표준원가 차이분석
+            </p>
           </div>
-          <div className="table-actions">
-            <button type="button">CSV</button>
-            <button type="button">+ 원가 입력</button>
+          <div className="flex items-center gap-2.5">
+            <button
+              className="rounded-[10px] border border-[#cbd6ea] bg-white px-3.5 py-2.5 font-bold text-[#2f4570]"
+              type="button"
+            >
+              CSV
+            </button>
+            <button
+              className="rounded-[10px] bg-[#2b4dbf] px-3.5 py-2.5 font-extrabold text-white"
+              type="button"
+            >
+              + 원가 입력
+            </button>
           </div>
         </header>
 
@@ -145,9 +159,9 @@ export function WorkspaceView({
               </div>
             </Panel>
 
-            <section className="finops-dashboard-grid">
+            <section className="grid grid-cols-[2fr_1fr] gap-4 max-[1280px]:grid-cols-1">
               <Panel title="본부별 원가 구성" subtitle="배부원가 기준 막대 비교">
-                <div className="finops-bar-list">
+                <div className="grid gap-2.5">
                   {allocationRows.map((rule) => {
                     const maxAmount = Math.max(
                       1,
@@ -155,13 +169,18 @@ export function WorkspaceView({
                     );
                     const width = Math.round((rule.allocatedAmount / maxAmount) * 100);
                     return (
-                      <article key={`${rule.departmentCode}-${rule.basis}`} className="finops-bar-item">
-                        <div className="finops-bar-item__meta">
+                      <article key={`${rule.departmentCode}-${rule.basis}`} className="grid gap-2">
+                        <div className="flex items-baseline justify-between gap-3">
                           <strong>{rule.departmentCode}</strong>
-                          <span>{formatKrwCompact(rule.allocatedAmount)}</span>
+                          <span className="text-[0.88rem] text-[#7388ac]">
+                            {formatKrwCompact(rule.allocatedAmount)}
+                          </span>
                         </div>
-                        <div className="finops-bar-track">
-                          <span className="finops-bar-fill" style={{ width: `${width}%` }} />
+                        <div className="h-3 overflow-hidden rounded-full bg-[#edf2fa]">
+                          <span
+                            className="block h-full rounded-full bg-[linear-gradient(90deg,#3f79ea,#1db0db)]"
+                            style={{ width: `${width}%` }}
+                          />
                         </div>
                       </article>
                     );
@@ -170,10 +189,23 @@ export function WorkspaceView({
               </Panel>
 
               <Panel title="원가 배분 시뮬레이터" subtitle="간단 배분 입력 폼">
-                <div className="finops-simulator">
-                  <input type="number" placeholder="배분할 총 금액 (예: 100000000)" />
-                  <textarea rows={6} defaultValue='{"PRJ-001":30,"PRJ-002":20,"PRJ-003":50}' />
-                  <button type="button">배분 계산</button>
+                <div className="grid gap-2.5">
+                  <input
+                    className="w-full rounded-[10px] border border-[#cbd6ea] px-3 py-2.5"
+                    type="number"
+                    placeholder="배분할 총 금액 (예: 100000000)"
+                  />
+                  <textarea
+                    className="w-full rounded-[10px] border border-[#cbd6ea] px-3 py-2.5"
+                    rows={6}
+                    defaultValue='{"PRJ-001":30,"PRJ-002":20,"PRJ-003":50}'
+                  />
+                  <button
+                    className="rounded-[10px] bg-[#2b4dbf] px-3 py-[11px] font-extrabold text-white"
+                    type="button"
+                  >
+                    배분 계산
+                  </button>
                 </div>
               </Panel>
             </section>

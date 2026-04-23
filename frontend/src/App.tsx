@@ -770,7 +770,7 @@ export function App() {
   }
 
   return (
-    <div className="app-shell app-shell--finops">
+    <div className="grid min-h-screen grid-cols-[260px_minmax(0,1fr)] bg-cw-page">
       <a className="skip-link" href="#main-content">
         본문으로 건너뛰기
       </a>
@@ -781,7 +781,7 @@ export function App() {
         onChangeView={setActiveView}
       />
 
-      <div className="workspace workspace--finops">
+      <div className="min-h-screen">
         <TaskTopbar
           selectedRole={selectedRole}
           username={session.displayName}
@@ -796,7 +796,7 @@ export function App() {
           onLogout={handleLogout}
         />
 
-        <main id="main-content" className="content content--finops">
+        <main id="main-content" className="grid gap-4 px-[22px] pb-[26px] pt-[18px]">
           {activeView === 'dashboard' ? (
             <DashboardView
               decisionSignals={decisionSignals}

@@ -52,16 +52,18 @@ export function TaskSidebar({
   const renderedSections = new Set<string>();
 
   return (
-    <aside className="sidebar sidebar--finops">
-      <div className="brand brand--finops">
-        <div className="brand__mark brand__mark--finops">CW</div>
+    <aside className="min-h-screen w-[260px] border-r border-[rgba(136,153,196,0.2)] bg-[linear-gradient(180deg,#1e1b4b_0%,#312e81_100%)] px-3 pb-4 pt-5 shadow-cw-sidebar">
+      <div className="mb-[18px] ml-2 mr-2 flex items-center gap-2.5">
+        <div className="grid h-[42px] w-[42px] place-items-center rounded-[11px] bg-[linear-gradient(135deg,#2d68e4,#19b2db)] text-base font-extrabold text-white">
+          CW
+        </div>
         <div>
-          <strong>CostWise</strong>
-          <p>원가·평가 통합관리</p>
+          <strong className="text-[1.72rem] text-white">CostWise</strong>
+          <p className="m-0 text-[0.92rem] text-[#8fa7d3]">원가·평가 통합관리</p>
         </div>
       </div>
 
-      <nav className="nav nav--finops" aria-label="메뉴">
+      <nav className="grid gap-2 px-0.5" aria-label="메뉴">
         {orderedNavigationItems.map((item) => {
           const section = sectionLabelByKey[item.key] ?? '메뉴';
           const showSection = !renderedSections.has(section);
@@ -71,13 +73,23 @@ export function TaskSidebar({
 
           return (
             <div key={item.key}>
-              {showSection ? <p className="nav__section">{section}</p> : null}
+              {showSection ? (
+                <p className="mb-1.5 ml-2.5 mr-2.5 mt-3.5 text-[0.76rem] font-extrabold tracking-[0.08em] text-[#6f84b1]">
+                  {section}
+                </p>
+              ) : null}
               <button
                 type="button"
-                className={`nav__item nav__item--finops ${activeView === item.key ? 'nav__item--active' : ''}`}
+                className={`flex w-full items-center gap-3 rounded-lg px-4 py-2.5 text-left text-sm font-medium transition-colors ${
+                  activeView === item.key
+                    ? 'bg-[linear-gradient(90deg,#2666e2_0%,#1ab3dc_100%)] text-white'
+                    : 'text-[#cbd5e1] hover:bg-white/10 hover:text-white'
+                }`}
                 onClick={() => onChangeView(item.key)}
               >
-                <span className="nav__icon">{iconByKey[item.key] ?? '•'}</span>
+                <span className="inline-block w-5 text-center opacity-95">
+                  {iconByKey[item.key] ?? '•'}
+                </span>
                 <span>{item.label}</span>
               </button>
             </div>

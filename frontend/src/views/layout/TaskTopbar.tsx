@@ -38,21 +38,22 @@ export function TaskTopbar({
   const pendingCount = Math.max(0, conditionalCount);
 
   return (
-    <header className="topbar topbar--finops">
-      <div className="topbar__context">
-        <p className="topbar__eyebrow">{meta.eyebrow}</p>
+    <header className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-[#d4dceb] bg-[#f8fbff] px-4 py-2.5">
+      <div className="flex items-center">
+        <p className="m-0 text-[0.95rem] font-bold text-[#6c7e9f]">{meta.eyebrow}</p>
       </div>
 
-      <div className="topbar__cluster">
-        <span className="topbar-system-pill">
+      <div className="flex items-center gap-2.5">
+        <span className="rounded-full border border-[#d8e0ef] bg-[#eff4fb] px-3 py-1.5 text-[0.8rem] font-bold text-[#556a93]">
           {source === 'api'
             ? `${projectCount}개 프로젝트`
             : `CostWise API 일부 제한 · ${projectCount}개 프로젝트`}
         </span>
         {divisionScope ? (
-          <label className="topbar-division-scope">
-            <span>본부 범위</span>
+          <label className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1">
+            <span className="text-xs font-bold text-cw-muted">본부 범위</span>
             <select
+              className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-sm"
               value={divisionScope}
               onChange={(event) => onChangeDivision(event.target.value)}
             >
@@ -64,17 +65,28 @@ export function TaskTopbar({
             </select>
           </label>
         ) : null}
-        <div className="topbar-user">
-          <span className="topbar-user__bell" aria-label={`알림 ${pendingCount}건`}>
+        <div className="flex items-center gap-2.5">
+          <span
+            className="grid h-5 w-5 place-items-center rounded-full bg-[#ef4444] text-[0.72rem] font-extrabold text-white"
+            aria-label={`알림 ${pendingCount}건`}
+          >
             {pendingCount}
           </span>
-          <div className="topbar-user__avatar">{username.charAt(0)}</div>
-          <div>
-            <strong>{username}</strong>
-            <small>{getRoleLabel(selectedRole).toUpperCase()}</small>
+          <div className="grid h-[34px] w-[34px] place-items-center rounded-full bg-[linear-gradient(135deg,#2f67e3,#23b3db)] font-extrabold text-white">
+            {username.charAt(0)}
           </div>
-          <span className="topbar-user__date">{now}</span>
-          <button type="button" onClick={onLogout}>
+          <div>
+            <strong className="block text-[0.84rem] text-[#182844]">{username}</strong>
+            <small className="block text-[0.76rem] tracking-[0.05em] text-[#62759a]">
+              {getRoleLabel(selectedRole).toUpperCase()}
+            </small>
+          </div>
+          <span className="text-[0.8rem] text-[#6c7e9f]">{now}</span>
+          <button
+            className="bg-transparent text-[0.8rem] font-bold text-[#4c5f85]"
+            type="button"
+            onClick={onLogout}
+          >
             로그아웃
           </button>
         </div>
