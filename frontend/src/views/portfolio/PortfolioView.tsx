@@ -972,70 +972,119 @@ export function PortfolioView({
     }
   }
 
+  const actionButtonBaseClass =
+    'inline-flex h-10 items-center justify-center rounded-md border px-3 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-45';
+  const secondaryActionButtonClass = `${actionButtonBaseClass} border-slate-300 bg-white text-slate-700 hover:border-slate-400 hover:bg-slate-50`;
+  const primaryActionButtonClass = `${actionButtonBaseClass} border-slate-900 bg-slate-900 text-white hover:bg-slate-800`;
+  const controlSurfaceClass =
+    'h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-slate-500 focus:ring-2 focus:ring-slate-200';
+  const stateBoxClass = 'grid gap-2 rounded-lg border border-slate-200 bg-slate-50 p-4';
+  const stateButtonClass = 'inline-flex h-9 items-center rounded-md border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-100';
+  const statusPillBaseClass =
+    'inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold';
+  const projectFormClass = 'mt-4 grid gap-4';
+  const projectFormGridClass = 'grid gap-3 sm:grid-cols-2';
+  const projectFormFieldClass =
+    'grid gap-2 rounded-xl border border-slate-200 bg-white px-3 py-3';
+  const projectFormFieldWideClass = `${projectFormFieldClass} sm:col-span-2`;
+  const projectFormFieldLabelClass =
+    'text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500';
+  const projectFormActionsClass =
+    'flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 sm:flex-row sm:items-center sm:justify-between';
+  const projectFormHintClass = 'm-0 text-sm leading-6 text-slate-600';
+
+  function statusPillClass(status: ProjectStatus) {
+    if (status === '승인') {
+      return `${statusPillBaseClass} border-emerald-200 bg-emerald-50 text-emerald-700`;
+    }
+    if (status === '조건부 진행') {
+      return `${statusPillBaseClass} border-amber-200 bg-amber-50 text-amber-700`;
+    }
+    if (status === '보류') {
+      return `${statusPillBaseClass} border-rose-200 bg-rose-50 text-rose-700`;
+    }
+    return `${statusPillBaseClass} border-blue-200 bg-blue-50 text-blue-700`;
+  }
+
+  function riskPillClass(risk: ProjectSummary['risk']) {
+    if (risk === '높음') {
+      return `${statusPillBaseClass} border-rose-200 bg-rose-50 text-rose-700`;
+    }
+    if (risk === '중간') {
+      return `${statusPillBaseClass} border-amber-200 bg-amber-50 text-amber-700`;
+    }
+    return `${statusPillBaseClass} border-emerald-200 bg-emerald-50 text-emerald-700`;
+  }
+
   return (
-    <section className="portfolio-grid portfolio-grid--operations">
+    <section className="grid gap-4">
       <Panel
         title="프로젝트"
         subtitle="20여개 프로젝트 동시 평가·관리"
       >
         {portfolioStatus === 'loading' && !hasHeadquarters ? (
-          <div className="audit-state" role="status">
+          <div className={stateBoxClass} role="status">
             <strong>포트폴리오 본부 현황을 불러오는 중입니다.</strong>
             <p>API 응답을 기다리고 있습니다.</p>
           </div>
         ) : null}
         {portfolioStatus === 'error' && !hasHeadquarters ? (
-          <div className="empty-state">
+          <div className={stateBoxClass}>
             <strong>포트폴리오 본부 현황을 불러오지 못했습니다.</strong>
-            <p>
+            <p className="m-0 text-sm text-slate-600">
               {portfolioError ?? 'API 연결 상태를 확인한 뒤 다시 시도하세요.'}
             </p>
-            <button type="button" onClick={onRetryPortfolioLoad}>
+            <button
+              type="button"
+              className={stateButtonClass}
+              onClick={onRetryPortfolioLoad}
+            >
               다시 시도
             </button>
           </div>
         ) : null}
         {hasHeadquarters ? (
           <>
-            <div className="portfolio-overview__meta" aria-label="포트폴리오 개요">
-              <article className="portfolio-overview__meta-card">
-                <span>총 투자액</span>
+            <div
+              className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
+              aria-label="포트폴리오 개요"
+            >
+              <article className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                <span className="text-xs text-slate-500">총 투자액</span>
                 <strong>
                   {formatKrwCompact(portfolio.overview.totalInvestmentKrw)}
                 </strong>
               </article>
-              <article className="portfolio-overview__meta-card">
-                <span>평균 NPV</span>
+              <article className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                <span className="text-xs text-slate-500">평균 NPV</span>
                 <strong>
                   {formatKrwCompact(portfolio.overview.averageNpvKrw)}
                 </strong>
               </article>
-              <article className="portfolio-overview__meta-card">
-                <span>조건부 진행</span>
+              <article className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                <span className="text-xs text-slate-500">조건부 진행</span>
                 <strong>{portfolio.overview.conditionalCount}개</strong>
               </article>
-              <article className="portfolio-overview__meta-card">
-                <span>승인 완료</span>
+              <article className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                <span className="text-xs text-slate-500">승인 완료</span>
                 <strong>{portfolio.overview.approvedCount}개</strong>
               </article>
             </div>
 
-            <div className="headquarter-grid headquarter-grid--portfolio">
+            <div className="grid gap-3 lg:grid-cols-2">
               {portfolio.headquarters.map((headquarter) => (
                 <article
                   key={headquarter.code}
-                  className="headquarter-card headquarter-card--portfolio"
+                  className="grid gap-3 rounded-xl border border-slate-200 bg-white p-4"
                 >
-                  <div className="headquarter-card__header">
+                  <div className="flex items-start justify-between gap-3">
                     <div>
                       <strong>{headquarter.name}</strong>
-                      <span>{headquarter.projectCount}개 프로젝트</span>
+                      <span className="mt-1 block text-sm text-slate-500">
+                        {headquarter.projectCount}개 프로젝트
+                      </span>
                     </div>
-                    <span
-                      className={`status-pill status-pill--${riskToneMap[headquarter.risk]}`}
-                    >
-                      {headquarter.risk}
-                    </span>
+                    <span className={riskPillClass(headquarter.risk)}>{headquarter.risk}</span>
                   </div>
                   <ProgressBar
                     label="투자 비중"
@@ -1052,15 +1101,15 @@ export function PortfolioView({
                           : 'teal'
                     }
                   />
-                  <div className="headquarter-card__metrics">
-                    <div>
-                      <span>총 투자액</span>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                      <span className="text-xs text-slate-500">총 투자액</span>
                       <strong>
                         {formatKrwCompact(headquarter.totalInvestmentKrw)}
                       </strong>
                     </div>
-                    <div>
-                      <span>평균 NPV</span>
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                      <span className="text-xs text-slate-500">평균 NPV</span>
                       <strong>
                         {formatKrwCompact(headquarter.averageNpvKrw)}
                       </strong>
@@ -1078,38 +1127,51 @@ export function PortfolioView({
         subtitle="필터/검색 후 상세 분석으로 진입합니다."
       >
         {isErrorWithoutData ? (
-          <div className="empty-state">
+          <div className={stateBoxClass}>
             <strong>프로젝트 목록을 불러오지 못했습니다.</strong>
-            <p>{portfolioError ?? '잠시 후 다시 시도하세요.'}</p>
-            <button type="button" onClick={onRetryPortfolioLoad}>
+            <p className="m-0 text-sm text-slate-600">
+              {portfolioError ?? '잠시 후 다시 시도하세요.'}
+            </p>
+            <button
+              type="button"
+              className={stateButtonClass}
+              onClick={onRetryPortfolioLoad}
+            >
               다시 시도
             </button>
           </div>
         ) : null}
 
         {isLoadingWithoutData ? (
-          <div className="audit-state" role="status">
+          <div className={stateBoxClass} role="status">
             <strong>프로젝트 목록을 불러오는 중입니다.</strong>
             <p>필터와 테이블은 데이터 수신 후 활성화됩니다.</p>
           </div>
         ) : null}
 
         {!isErrorWithoutData && !isLoadingWithoutData ? (
-          <div className="portfolio-ops">
-            <div className="portfolio-ops__header">
-              <div className="portfolio-ops__title">
-                <p className="portfolio-ops__eyebrow">Project operations</p>
-                <h3>프로젝트 관리</h3>
-                <p>
+          <div className="rounded-xl border border-slate-200 bg-gradient-to-b from-slate-50 to-white p-4 shadow-sm sm:p-5">
+            <div className="flex flex-col gap-4 border-b border-slate-200 pb-4 lg:flex-row lg:items-start lg:justify-between">
+              <div className="max-w-2xl space-y-2">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                  Project operations
+                </p>
+                <h3 className="text-xl font-semibold tracking-tight text-slate-900">
+                  프로젝트 관리
+                </h3>
+                <p className="text-sm leading-6 text-slate-600">
                   탐색 조건을 빠르게 조합하고, 행 선택 후 상세 허브에서
                   컨텍스트 선택과 워크스페이스 진입을 마무리합니다.
                 </p>
               </div>
-              <div className="portfolio-ops__actions" aria-label="운영 액션">
+              <div
+                className="flex flex-wrap items-center gap-2.5"
+                aria-label="운영 액션"
+              >
                 {isProjectWritable ? (
                   <button
                     type="button"
-                    className="portfolio-action portfolio-action--secondary"
+                    className={secondaryActionButtonClass}
                     onClick={(event: ReactMouseEvent<HTMLButtonElement>) =>
                       openProjectCreateModal(event.currentTarget)
                     }
@@ -1117,11 +1179,11 @@ export function PortfolioView({
                     신규 프로젝트 등록
                   </button>
                 ) : (
-                  <p className="table-subtle">{writeAccessMessage}</p>
+                  <p className="text-xs text-slate-500">{writeAccessMessage}</p>
                 )}
                 <button
                   type="button"
-                  className="portfolio-action portfolio-action--primary"
+                  className={primaryActionButtonClass}
                   onClick={(event: ReactMouseEvent<HTMLButtonElement>) => {
                     if (explicitSelectedProject) {
                       openProjectModal(
@@ -1137,7 +1199,7 @@ export function PortfolioView({
                 {isProjectWritable ? (
                   <button
                     type="button"
-                    className="portfolio-action portfolio-action--secondary"
+                    className={secondaryActionButtonClass}
                     onClick={(event: ReactMouseEvent<HTMLButtonElement>) => {
                       if (explicitSelectedProject) {
                         openProjectEditModal(explicitSelectedProject, {
@@ -1155,34 +1217,40 @@ export function PortfolioView({
             </div>
 
             <div
-              className="portfolio-filter-strip"
+              className="mt-4 grid gap-3 rounded-lg border border-slate-200 bg-slate-50/70 p-3 md:grid-cols-2 xl:grid-cols-[minmax(260px,1.35fr)_minmax(180px,0.65fr)_1fr_1fr_1fr]"
               aria-label="프로젝트 운영 필터"
             >
               <label
-                className="portfolio-filter-strip__search"
+                className="flex min-w-0 flex-col gap-1.5"
                 htmlFor="project-search-input"
               >
-                <span>검색</span>
+                <span className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+                  검색
+                </span>
                 <input
                   id="project-search-input"
                   type="search"
                   value={searchTerm}
                   placeholder="프로젝트명, 코드, 본부 검색"
                   onChange={(event) => onChangeSearchTerm(event.target.value)}
+                  className={controlSurfaceClass}
                 />
               </label>
 
               <label
-                className="portfolio-filter-strip__field"
+                className="flex min-w-0 flex-col gap-1.5"
                 htmlFor="project-sort-select"
               >
-                <span>정렬</span>
+                <span className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+                  정렬
+                </span>
                 <select
                   id="project-sort-select"
                   value={explorerSort}
                   onChange={(event) =>
                     onChangeSort(event.target.value as ExplorerSortKey)
                   }
+                  className={controlSurfaceClass}
                 >
                   {explorerSortOptions.map((option) => (
                     <option key={option.key} value={option.key}>
@@ -1193,18 +1261,20 @@ export function PortfolioView({
               </label>
 
               <div
-                className="portfolio-filter-strip__group"
+                className="flex flex-wrap items-start gap-1.5"
                 aria-label="빠른 필터"
               >
-                <span className="portfolio-filter-strip__label">빠른 필터</span>
+                <span className="w-full text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+                  빠른 필터
+                </span>
                 {explorerQuickFilterOptions.map((filter) => (
                   <button
                     key={filter.key}
                     type="button"
-                    className={`portfolio-chip ${
+                    className={`inline-flex h-8 items-center rounded-full border px-3 text-xs font-medium transition ${
                       explorerQuickFilter === filter.key
-                        ? 'portfolio-chip--active'
-                        : ''
+                        ? 'border-slate-900 bg-slate-900 text-white shadow-sm'
+                        : 'border-slate-300 bg-white text-slate-700 hover:border-slate-400'
                     }`}
                     aria-pressed={explorerQuickFilter === filter.key}
                     onClick={() => onChangeQuickFilter(filter.key)}
@@ -1216,16 +1286,20 @@ export function PortfolioView({
               </div>
 
               <div
-                className="portfolio-filter-strip__group"
+                className="flex flex-wrap items-start gap-1.5"
                 aria-label="상태 필터"
               >
-                <span className="portfolio-filter-strip__label">상태</span>
+                <span className="w-full text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+                  상태
+                </span>
                 {projectStatusFilterOptions.map((filter) => (
                   <button
                     key={filter.key}
                     type="button"
-                    className={`portfolio-chip portfolio-chip--subtle ${
-                      statusFilter === filter.key ? 'portfolio-chip--active' : ''
+                    className={`inline-flex h-8 items-center rounded-full border px-3 text-xs font-medium transition ${
+                      statusFilter === filter.key
+                        ? 'border-slate-900 bg-slate-900 text-white shadow-sm'
+                        : 'border-slate-300 bg-white text-slate-600 hover:border-slate-400 hover:text-slate-800'
                     }`}
                     aria-pressed={statusFilter === filter.key}
                     onClick={() => setStatusFilter(filter.key)}
@@ -1236,18 +1310,20 @@ export function PortfolioView({
               </div>
 
               <div
-                className="portfolio-filter-strip__group"
+                className="flex flex-wrap items-start gap-1.5"
                 aria-label="본부 필터"
               >
-                <span className="portfolio-filter-strip__label">본부</span>
+                <span className="w-full text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+                  본부
+                </span>
                 {renderedHeadquarterOptions.map((headquarter) => (
                   <button
                     key={headquarter}
                     type="button"
-                    className={`portfolio-chip portfolio-chip--subtle ${
+                    className={`inline-flex h-8 items-center rounded-full border px-3 text-xs font-medium transition ${
                       resolvedHeadquarterFilter === headquarter
-                        ? 'portfolio-chip--active'
-                        : ''
+                        ? 'border-slate-900 bg-slate-900 text-white shadow-sm'
+                        : 'border-slate-300 bg-white text-slate-600 hover:border-slate-400 hover:text-slate-800'
                     }`}
                     aria-pressed={resolvedHeadquarterFilter === headquarter}
                     onClick={() => onChangeHeadquarterFilter(headquarter)}
@@ -1258,20 +1334,20 @@ export function PortfolioView({
               </div>
             </div>
 
-            <div className="portfolio-ops__summary">
-              <p>
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3">
+              <p className="text-sm text-slate-600">
                 운영 대상 <strong>{displayedProjects.length}</strong> / 필터 결과{' '}
                 {recomputedFilteredProjects.length} / 전체 {mergedProjects.length}
               </p>
-              <div className="portfolio-ops__summary-actions">
+              <div className="flex flex-wrap items-center gap-2.5">
                 {explicitSelectedProject ? (
-                  <span className="portfolio-ops__selection">
+                  <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800">
                     현재 선택 {explicitSelectedProject.name}
                   </span>
                 ) : null}
                 <button
                   type="button"
-                  className="explorer-reset"
+                  className="inline-flex h-9 items-center rounded-md border border-slate-300 px-3 text-xs font-medium text-slate-600 transition hover:border-slate-400 hover:bg-slate-50"
                   onClick={resetOperationalFilters}
                 >
                   필터 초기화
@@ -1279,60 +1355,61 @@ export function PortfolioView({
               </div>
             </div>
 
-            <div className="table-shell table-shell--operations">
-              <table className="data-table data-table--operations">
-                <thead>
+            <div className="mt-4 overflow-hidden rounded-lg border border-slate-200 bg-white">
+              <div className="overflow-x-auto">
+                <table className="min-w-[920px] w-full border-collapse text-sm">
+                  <thead className="bg-slate-100/70">
                   <tr>
-                    <th>우선</th>
-                    <th>프로젝트</th>
-                    <th>본부</th>
-                    <th>상태</th>
-                    <th>투자액</th>
-                    <th>NPV</th>
-                    <th>IRR</th>
-                    <th>회수</th>
-                    <th>허브</th>
+                    <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">우선</th>
+                    <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">프로젝트</th>
+                    <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">본부</th>
+                    <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">상태</th>
+                    <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">투자액</th>
+                    <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">NPV</th>
+                    <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">IRR</th>
+                    <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">회수</th>
+                    <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">허브</th>
                   </tr>
                 </thead>
-                <tbody>
+                  <tbody>
                   {displayedProjects.map((project) => (
                     <tr
                       key={project.code}
-                      className={`${
+                      className={`border-t border-slate-200 align-top transition hover:bg-slate-50 ${
                         project.code === selectedProjectCode
-                          ? 'data-table__row--selected'
+                          ? 'bg-emerald-50/70'
                           : ''
                       } ${
                         project.code === modalProjectCode
-                          ? 'data-table__row--modal'
+                          ? 'bg-indigo-50/70'
                           : ''
                       }`}
                     >
-                      <td>
-                        <span className="table-rank">#{project.rank}</span>
+                      <td className="whitespace-nowrap px-3 py-2.5">
+                        <span className="inline-flex rounded-md border border-slate-300 bg-slate-50 px-2 py-0.5 text-xs font-semibold text-slate-600">
+                          #{project.rank}
+                        </span>
                       </td>
-                      <td>
-                        <strong>{project.name}</strong>
-                        <div className="table-subtle">
+                      <td className="px-3 py-2.5">
+                        <strong className="font-semibold text-slate-800">{project.name}</strong>
+                        <div className="mt-0.5 text-xs text-slate-500">
                           {project.code} · {project.assetCategory}
                         </div>
                       </td>
-                      <td>{project.headquarter}</td>
-                      <td>
-                        <span
-                          className={`status-pill status-pill--${statusTone(project.status)}`}
-                        >
+                      <td className="whitespace-nowrap px-3 py-2.5 text-slate-700">{project.headquarter}</td>
+                      <td className="whitespace-nowrap px-3 py-2.5">
+                        <span className={statusPillClass(project.status)}>
                           {project.status}
                         </span>
                       </td>
-                      <td>{formatKrwCompact(project.investmentKrw)}</td>
-                      <td>{formatKrwCompact(project.npvKrw)}</td>
-                      <td>{(project.irr * 100).toFixed(1)}%</td>
-                      <td>{project.paybackYears.toFixed(1)}년</td>
-                      <td>
+                      <td className="whitespace-nowrap px-3 py-2.5 text-slate-700">{formatKrwCompact(project.investmentKrw)}</td>
+                      <td className="whitespace-nowrap px-3 py-2.5 text-slate-700">{formatKrwCompact(project.npvKrw)}</td>
+                      <td className="whitespace-nowrap px-3 py-2.5 text-slate-700">{(project.irr * 100).toFixed(1)}%</td>
+                      <td className="whitespace-nowrap px-3 py-2.5 text-slate-700">{project.paybackYears.toFixed(1)}년</td>
+                      <td className="whitespace-nowrap px-3 py-2.5">
                         <button
                           type="button"
-                          className="table-link-button"
+                          className="inline-flex h-8 items-center rounded-md border border-slate-300 px-3 text-xs font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-100"
                           aria-label={`${project.name} 상세 허브 열기`}
                           onClick={(event: ReactMouseEvent<HTMLButtonElement>) => {
                             openProjectModal(project, event.currentTarget);
@@ -1343,12 +1420,17 @@ export function PortfolioView({
                       </td>
                     </tr>
                   ))}
-                </tbody>
-              </table>
+                  </tbody>
+                </table>
+              </div>
               {displayedProjects.length === 0 ? (
-                <div className="empty-state">
-                  <p>조건에 맞는 프로젝트가 없습니다.</p>
-                  <button type="button" onClick={resetOperationalFilters}>
+                <div className="mt-3 grid gap-2 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                  <p className="m-0 text-sm text-slate-600">조건에 맞는 프로젝트가 없습니다.</p>
+                  <button
+                    type="button"
+                    className={stateButtonClass}
+                    onClick={resetOperationalFilters}
+                  >
                     탐색 조건 초기화
                   </button>
                 </div>
@@ -1359,10 +1441,10 @@ export function PortfolioView({
       </Panel>
 
       {isCreateModalOpen || modalProject ? (
-        <div className="portfolio-modal" role="presentation">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6" role="presentation">
           <button
             type="button"
-            className="portfolio-modal__backdrop"
+            className="absolute inset-0 bg-slate-950/60 backdrop-blur-[2px]"
             aria-label={
               modalMode === 'create'
                 ? '프로젝트 등록 닫기'
@@ -1375,7 +1457,7 @@ export function PortfolioView({
           />
           <div
             ref={modalCardRef}
-            className="portfolio-modal__card"
+            className="relative z-10 w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-xl border border-slate-200 bg-white p-4 shadow-2xl sm:p-6"
             role="dialog"
             aria-modal="true"
             aria-labelledby={
@@ -1396,43 +1478,54 @@ export function PortfolioView({
           >
             {modalMode === 'create' && createForm ? (
               <>
-                <div className="portfolio-modal__header">
+                <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 pb-4">
                   <div>
-                    <p className="portfolio-modal__eyebrow">New project</p>
-                    <h3 id="portfolio-create-modal-title">프로젝트 등록</h3>
-                    <p id="portfolio-create-modal-description">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                      New project
+                    </p>
+                    <h3
+                      id="portfolio-create-modal-title"
+                      className="mt-1 text-xl font-semibold tracking-tight text-slate-900"
+                    >
+                      프로젝트 등록
+                    </h3>
+                    <p
+                      id="portfolio-create-modal-description"
+                      className="mt-1 text-sm leading-6 text-slate-600"
+                    >
                       프로젝트 기본 정보를 입력하면 로컬 상태에 즉시 추가됩니다.
                     </p>
                   </div>
                   <button
                     ref={closeButtonRef}
                     type="button"
-                    className="portfolio-modal__close"
+                    className="inline-flex h-9 items-center rounded-md border border-slate-300 px-3 text-xs font-semibold text-slate-600 transition hover:border-slate-400 hover:bg-slate-50"
                     onClick={handleModalClose}
                   >
                     닫기
                   </button>
                 </div>
 
-                <div className="portfolio-modal__band">
-                  <span className="portfolio-modal__band-item">
+                <div className="mt-4 grid gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 sm:grid-cols-3">
+                  <span className="flex flex-col gap-0.5 rounded-md border border-slate-200 bg-white px-3 py-2">
                     <small>기본 자산군</small>
                     <strong>{createForm.assetCategory}</strong>
                   </span>
-                  <span className="portfolio-modal__band-item">
+                  <span className="flex flex-col gap-0.5 rounded-md border border-slate-200 bg-white px-3 py-2">
                     <small>현재 선택</small>
                     <strong>{explicitSelectedProject?.name ?? '선택 없음'}</strong>
                   </span>
-                  <span className="portfolio-modal__band-item">
+                  <span className="flex flex-col gap-0.5 rounded-md border border-slate-200 bg-white px-3 py-2">
                     <small>저장 방식</small>
                     <strong>프론트엔드 로컬 상태</strong>
                   </span>
                 </div>
 
-                <form className="portfolio-edit-form" onSubmit={handleCreateSubmit}>
-                  <div className="portfolio-edit-form__field portfolio-edit-form__field--wide">
-                    <span>Yahoo ticker lookup</span>
+                <form className={projectFormClass} onSubmit={handleCreateSubmit}>
+                  <div className={projectFormFieldWideClass}>
+                    <span className={projectFormFieldLabelClass}>Yahoo ticker lookup</span>
                     <input
+                      className={controlSurfaceClass}
                       type="text"
                       value={projectLookup.symbol}
                       placeholder="예: AAPL, 005930.KS"
@@ -1457,17 +1550,17 @@ export function PortfolioView({
                         }
                       }}
                     />
-                    <div className="portfolio-edit-form__actions">
-                      <p className="portfolio-edit-form__hint">
+                    <div className={projectFormActionsClass}>
+                      <p className={projectFormHintClass}>
                         {projectLookup.status === 'loading'
                           ? 'Yahoo ticker 정보를 조회하는 중입니다.'
                           : projectLookup.error ??
                             '조회 성공 시 코드, 프로젝트명, 자산군을 자동으로 채웁니다.'}
                       </p>
-                      <div className="portfolio-edit-form__action-group">
+                      <div className="flex flex-wrap items-center gap-2.5">
                         <button
                           type="button"
-                          className="portfolio-action portfolio-action--secondary"
+                          className={secondaryActionButtonClass}
                           onClick={() => void handleProjectLookup()}
                           disabled={projectLookup.status === 'loading'}
                         >
@@ -1478,18 +1571,21 @@ export function PortfolioView({
                   </div>
 
                   {projectLookup.summary ? (
-                    <div className="portfolio-modal__band" aria-label="ticker summary">
-                      <span className="portfolio-modal__band-item">
+                    <div
+                      className="mt-3 grid gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 sm:grid-cols-3"
+                      aria-label="ticker summary"
+                    >
+                      <span className="flex flex-col gap-0.5 rounded-md border border-slate-200 bg-white px-3 py-2">
                         <small>Symbol</small>
                         <strong>{projectLookup.summary.symbol}</strong>
                       </span>
-                      <span className="portfolio-modal__band-item">
+                      <span className="flex flex-col gap-0.5 rounded-md border border-slate-200 bg-white px-3 py-2">
                         <small>Market</small>
                         <strong>
                           {projectLookup.summary.exchange ?? '시장 정보 없음'}
                         </strong>
                       </span>
-                      <span className="portfolio-modal__band-item">
+                      <span className="flex flex-col gap-0.5 rounded-md border border-slate-200 bg-white px-3 py-2">
                         <small>Price / Change</small>
                         <strong>
                           {projectLookup.summary.regularMarketPrice === null
@@ -1506,10 +1602,11 @@ export function PortfolioView({
                     </div>
                   ) : null}
 
-                  <div className="portfolio-edit-form__grid">
-                    <label className="portfolio-edit-form__field">
-                      <span>프로젝트 코드</span>
+                  <div className={projectFormGridClass}>
+                    <label className={projectFormFieldClass}>
+                      <span className={projectFormFieldLabelClass}>프로젝트 코드</span>
                       <input
+                        className={controlSurfaceClass}
                         type="text"
                         value={createForm.code}
                         onChange={(event) => {
@@ -1524,9 +1621,10 @@ export function PortfolioView({
                       />
                     </label>
 
-                    <label className="portfolio-edit-form__field portfolio-edit-form__field--wide">
-                      <span>프로젝트명</span>
+                    <label className={projectFormFieldWideClass}>
+                      <span className={projectFormFieldLabelClass}>프로젝트명</span>
                       <input
+                        className={controlSurfaceClass}
                         type="text"
                         value={createForm.name}
                         onChange={(event) => {
@@ -1541,9 +1639,10 @@ export function PortfolioView({
                       />
                     </label>
 
-                    <label className="portfolio-edit-form__field">
-                      <span>자산군</span>
+                    <label className={projectFormFieldClass}>
+                      <span className={projectFormFieldLabelClass}>자산군</span>
                       <select
+                        className={controlSurfaceClass}
                         value={createForm.assetCategory}
                         onChange={(event) => {
                           setCreateFormError(null);
@@ -1565,9 +1664,10 @@ export function PortfolioView({
                       </select>
                     </label>
 
-                    <label className="portfolio-edit-form__field">
-                      <span>상태</span>
+                    <label className={projectFormFieldClass}>
+                      <span className={projectFormFieldLabelClass}>상태</span>
                       <select
+                        className={controlSurfaceClass}
                         value={createForm.status}
                         onChange={(event) => {
                           setCreateFormError(null);
@@ -1589,9 +1689,10 @@ export function PortfolioView({
                       </select>
                     </label>
 
-                    <label className="portfolio-edit-form__field">
-                      <span>본부</span>
+                    <label className={projectFormFieldClass}>
+                      <span className={projectFormFieldLabelClass}>본부</span>
                       <input
+                        className={controlSurfaceClass}
                         list="portfolio-headquarter-options"
                         type="text"
                         value={createForm.headquarter}
@@ -1615,9 +1716,10 @@ export function PortfolioView({
                       </datalist>
                     </label>
 
-                    <label className="portfolio-edit-form__field">
-                      <span>투자액</span>
+                    <label className={projectFormFieldClass}>
+                      <span className={projectFormFieldLabelClass}>투자액</span>
                       <input
+                        className={controlSurfaceClass}
                         type="number"
                         min="0"
                         step="1"
@@ -1638,9 +1740,10 @@ export function PortfolioView({
                       />
                     </label>
 
-                    <label className="portfolio-edit-form__field">
-                      <span>예상 매출</span>
+                    <label className={projectFormFieldClass}>
+                      <span className={projectFormFieldLabelClass}>예상 매출</span>
                       <input
+                        className={controlSurfaceClass}
                         type="number"
                         min="0"
                         step="1"
@@ -1662,24 +1765,24 @@ export function PortfolioView({
                     </label>
                   </div>
 
-                  <div className="portfolio-edit-form__actions">
-                    <p className="portfolio-edit-form__hint">
+                  <div className={projectFormActionsClass}>
+                    <p className={projectFormHintClass}>
                       {createFormError ??
                         (divisionScope
                           ? `등록 본부가 ${divisionScope}로 고정되어 있습니다.`
                           : '등록 후 즉시 테이블과 상세 허브에서 새 프로젝트를 사용할 수 있습니다.')}
                     </p>
-                    <div className="portfolio-edit-form__action-group">
+                    <div className="flex flex-wrap items-center gap-2.5">
                       <button
                         type="button"
-                        className="portfolio-action portfolio-action--secondary"
+                        className={secondaryActionButtonClass}
                         onClick={handleModalClose}
                       >
                         취소
                       </button>
                       <button
                         type="submit"
-                        className="portfolio-action portfolio-action--primary"
+                        className={primaryActionButtonClass}
                       >
                         등록
                       </button>
@@ -1689,11 +1792,21 @@ export function PortfolioView({
               </>
             ) : modalMode === 'edit' && editForm && modalProject ? (
               <>
-                <div className="portfolio-modal__header">
+                <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 pb-4">
                   <div>
-                    <p className="portfolio-modal__eyebrow">{modalProject.code}</p>
-                    <h3 id="portfolio-edit-modal-title">프로젝트 편집</h3>
-                    <p id="portfolio-edit-modal-description">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                      {modalProject.code}
+                    </p>
+                    <h3
+                      id="portfolio-edit-modal-title"
+                      className="mt-1 text-xl font-semibold tracking-tight text-slate-900"
+                    >
+                      프로젝트 편집
+                    </h3>
+                    <p
+                      id="portfolio-edit-modal-description"
+                      className="mt-1 text-sm leading-6 text-slate-600"
+                    >
                       프로젝트명, 본부, 상태, 투자액, 예상 매출을 프론트엔드 상태에서만
                       수정합니다.
                     </p>
@@ -1701,33 +1814,34 @@ export function PortfolioView({
                   <button
                     ref={closeButtonRef}
                     type="button"
-                    className="portfolio-modal__close"
+                    className="inline-flex h-9 items-center rounded-md border border-slate-300 px-3 text-xs font-semibold text-slate-600 transition hover:border-slate-400 hover:bg-slate-50"
                     onClick={handleModalClose}
                   >
                     닫기
                   </button>
                 </div>
 
-                <div className="portfolio-modal__band">
-                  <span className="portfolio-modal__band-item">
+                <div className="mt-4 grid gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 sm:grid-cols-3">
+                  <span className="flex flex-col gap-0.5 rounded-md border border-slate-200 bg-white px-3 py-2">
                     <small>본부</small>
                     <strong>{modalProject.headquarter}</strong>
                   </span>
-                  <span className="portfolio-modal__band-item">
+                  <span className="flex flex-col gap-0.5 rounded-md border border-slate-200 bg-white px-3 py-2">
                     <small>현재 선택</small>
                     <strong>{explicitSelectedProject?.name ?? '선택 없음'}</strong>
                   </span>
-                  <span className="portfolio-modal__band-item">
+                  <span className="flex flex-col gap-0.5 rounded-md border border-slate-200 bg-white px-3 py-2">
                     <small>편집 대상</small>
                     <strong>{modalProject.code}</strong>
                   </span>
                 </div>
 
-                <form className="portfolio-edit-form" onSubmit={handleEditSubmit}>
-                  <div className="portfolio-edit-form__grid">
-                    <label className="portfolio-edit-form__field portfolio-edit-form__field--wide">
-                      <span>프로젝트명</span>
+                <form className={projectFormClass} onSubmit={handleEditSubmit}>
+                  <div className={projectFormGridClass}>
+                    <label className={projectFormFieldWideClass}>
+                      <span className={projectFormFieldLabelClass}>프로젝트명</span>
                       <input
+                        className={controlSurfaceClass}
                         type="text"
                         value={editForm.name}
                         onChange={(event) =>
@@ -1741,9 +1855,10 @@ export function PortfolioView({
                       />
                     </label>
 
-                    <label className="portfolio-edit-form__field">
-                      <span>상태</span>
+                    <label className={projectFormFieldClass}>
+                      <span className={projectFormFieldLabelClass}>상태</span>
                       <select
+                        className={controlSurfaceClass}
                         value={editForm.status}
                         onChange={(event) =>
                           setEditForm((currentForm) =>
@@ -1764,9 +1879,10 @@ export function PortfolioView({
                       </select>
                     </label>
 
-                    <label className="portfolio-edit-form__field">
-                      <span>본부</span>
+                    <label className={projectFormFieldClass}>
+                      <span className={projectFormFieldLabelClass}>본부</span>
                       <input
+                        className={controlSurfaceClass}
                         list="portfolio-headquarter-options"
                         type="text"
                         value={editForm.headquarter}
@@ -1781,9 +1897,10 @@ export function PortfolioView({
                       />
                     </label>
 
-                    <label className="portfolio-edit-form__field">
-                      <span>투자액</span>
+                    <label className={projectFormFieldClass}>
+                      <span className={projectFormFieldLabelClass}>투자액</span>
                       <input
+                        className={controlSurfaceClass}
                         type="number"
                         min="0"
                         step="1"
@@ -1803,9 +1920,10 @@ export function PortfolioView({
                       />
                     </label>
 
-                    <label className="portfolio-edit-form__field">
-                      <span>예상 매출</span>
+                    <label className={projectFormFieldClass}>
+                      <span className={projectFormFieldLabelClass}>예상 매출</span>
                       <input
+                        className={controlSurfaceClass}
                         type="number"
                         min="0"
                         step="1"
@@ -1826,14 +1944,14 @@ export function PortfolioView({
                     </label>
                   </div>
 
-                  <div className="portfolio-edit-form__actions">
-                    <p className="portfolio-edit-form__hint">
+                  <div className={projectFormActionsClass}>
+                    <p className={projectFormHintClass}>
                       저장 즉시 운영 테이블, 본부 필터, 상세 허브 값이 갱신됩니다.
                     </p>
-                    <div className="portfolio-edit-form__action-group">
+                    <div className="flex flex-wrap items-center gap-2.5">
                       <button
                         type="button"
-                        className="portfolio-action portfolio-action--secondary"
+                        className={secondaryActionButtonClass}
                         onClick={handleEditCancel}
                       >
                         {editReturnMode === 'detail'
@@ -1842,7 +1960,7 @@ export function PortfolioView({
                       </button>
                       <button
                         type="submit"
-                        className="portfolio-action portfolio-action--primary"
+                        className={primaryActionButtonClass}
                       >
                         저장
                       </button>
@@ -1852,11 +1970,21 @@ export function PortfolioView({
               </>
             ) : modalProject ? (
               <>
-                <div className="portfolio-modal__header">
+                <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 pb-4">
                   <div>
-                    <p className="portfolio-modal__eyebrow">{modalProject.code}</p>
-                    <h3 id="portfolio-modal-title">{modalProject.name}</h3>
-                    <p id="portfolio-modal-description">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                      {modalProject.code}
+                    </p>
+                    <h3
+                      id="portfolio-modal-title"
+                      className="mt-1 text-xl font-semibold tracking-tight text-slate-900"
+                    >
+                      {modalProject.name}
+                    </h3>
+                    <p
+                      id="portfolio-modal-description"
+                      className="mt-1 text-sm leading-6 text-slate-600"
+                    >
                       운영 컨텍스트를 선택한 뒤 관리회계 또는 재무평가
                       워크스페이스로 이동합니다.
                     </p>
@@ -1864,78 +1992,82 @@ export function PortfolioView({
                   <button
                     ref={closeButtonRef}
                     type="button"
-                    className="portfolio-modal__close"
+                    className="inline-flex h-9 items-center rounded-md border border-slate-300 px-3 text-xs font-semibold text-slate-600 transition hover:border-slate-400 hover:bg-slate-50"
                     onClick={handleModalClose}
                   >
                     닫기
                   </button>
                 </div>
 
-                <div className="portfolio-modal__band">
-                  <span className="portfolio-modal__band-item">
+                <div className="mt-4 grid gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 sm:grid-cols-3">
+                  <span className="flex flex-col gap-0.5 rounded-md border border-slate-200 bg-white px-3 py-2">
                     <small>본부</small>
                     <strong>{modalProject.headquarter}</strong>
                   </span>
-                  <span className="portfolio-modal__band-item">
+                  <span className="flex flex-col gap-0.5 rounded-md border border-slate-200 bg-white px-3 py-2">
                     <small>상태</small>
                     <strong>
-                      <span
-                        className={`status-pill status-pill--${statusTone(modalProject.status)}`}
-                      >
+                      <span className={statusPillClass(modalProject.status)}>
                         {modalProject.status}
                       </span>
                     </strong>
                   </span>
-                  <span className="portfolio-modal__band-item">
+                  <span className="flex flex-col gap-0.5 rounded-md border border-slate-200 bg-white px-3 py-2">
                     <small>리스크</small>
                     <strong>
-                      <span
-                        className={`status-pill status-pill--${riskToneMap[modalProject.risk]}`}
-                      >
+                      <span className={riskPillClass(modalProject.risk)}>
                         {modalProject.risk}
                       </span>
                     </strong>
                   </span>
                 </div>
 
-                <div className="portfolio-modal__metrics">
-                  <article className="portfolio-modal__metric">
-                    <span>투자 예산</span>
-                    <strong>{formatKrwCompact(modalProject.investmentKrw)}</strong>
+                <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                  <article className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+                    <span className="text-xs font-medium text-slate-500">투자 예산</span>
+                    <strong className="mt-1 block text-sm font-semibold text-slate-900">
+                      {formatKrwCompact(modalProject.investmentKrw)}
+                    </strong>
                   </article>
-                  <article className="portfolio-modal__metric">
-                    <span>예상 매출</span>
-                    <strong>
+                  <article className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+                    <span className="text-xs font-medium text-slate-500">예상 매출</span>
+                    <strong className="mt-1 block text-sm font-semibold text-slate-900">
                       {formatKrwCompact(modalProject.expectedRevenueKrw)}
                     </strong>
                   </article>
-                  <article className="portfolio-modal__metric">
-                    <span>NPV</span>
-                    <strong>{formatKrwCompact(modalProject.npvKrw)}</strong>
+                  <article className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+                    <span className="text-xs font-medium text-slate-500">NPV</span>
+                    <strong className="mt-1 block text-sm font-semibold text-slate-900">
+                      {formatKrwCompact(modalProject.npvKrw)}
+                    </strong>
                   </article>
-                  <article className="portfolio-modal__metric">
-                    <span>IRR / 회수기간</span>
-                    <strong>
+                  <article className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+                    <span className="text-xs font-medium text-slate-500">IRR / 회수기간</span>
+                    <strong className="mt-1 block text-sm font-semibold text-slate-900">
                       {(modalProject.irr * 100).toFixed(1)}% ·{' '}
                       {modalProject.paybackYears.toFixed(1)}년
                     </strong>
                   </article>
                 </div>
 
-                <div className="portfolio-modal__workspace">
-                  <div className="portfolio-modal__workspace-copy">
-                    <span>Workspace entry</span>
-                    <strong>선택 후 필요한 분석 레인으로 바로 진입</strong>
-                    <p>
+                <div className="mt-4 flex flex-col gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 sm:p-4">
+                  <div className="space-y-1">
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      Workspace entry
+                    </span>
+                    <strong className="block text-sm font-semibold text-slate-900">
+                      선택 후 필요한 분석 레인으로 바로 진입
+                    </strong>
+                    <p className="text-sm text-slate-600">
                       현재 행위는 기존 라우팅과 동일하며, 프로젝트 컨텍스트만 먼저
                       정리합니다.
                     </p>
                   </div>
-                  <div className="portfolio-modal__workspace-actions">
+                  <div className="flex flex-wrap items-center gap-2.5">
                     {isProjectWritable ? (
                       <button
                         type="button"
-                        className="portfolio-action portfolio-action--secondary"
+                        className={secondaryActionButtonClass}
                         onClick={() =>
                           openProjectEditModal(modalProject, {
                             returnMode: 'detail'
@@ -1947,7 +2079,7 @@ export function PortfolioView({
                     ) : null}
                     <button
                       type="button"
-                      className="portfolio-action portfolio-action--primary"
+                      className={primaryActionButtonClass}
                       onClick={() => {
                         onSelectProject(modalProject.code);
                         handleModalClose();
@@ -1957,7 +2089,7 @@ export function PortfolioView({
                     </button>
                     <button
                       type="button"
-                      className="portfolio-workspace-button portfolio-workspace-button--accounting"
+                      className={`${actionButtonBaseClass} border-transparent bg-cyan-700 text-white hover:bg-cyan-600`}
                       onClick={() =>
                         handleWorkspaceEntry('accounting', modalProject.code)
                       }
@@ -1966,7 +2098,7 @@ export function PortfolioView({
                     </button>
                     <button
                       type="button"
-                      className="portfolio-workspace-button portfolio-workspace-button--valuation"
+                      className={`${actionButtonBaseClass} border-transparent bg-indigo-700 text-white hover:bg-indigo-600`}
                       onClick={() =>
                         handleWorkspaceEntry('valuation', modalProject.code)
                       }
