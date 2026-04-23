@@ -1,14 +1,20 @@
 /* eslint-disable no-unused-vars */
 import {
-  roleInsights,
   type DataSource,
   type ProjectSummary,
   type Role
 } from '../../app/portfolioData';
+import {
+  getRoleLabel,
+  roleOptions
+} from '../../features/auth/permissions';
 
 type TaskTopbarProps = {
   selectedRole: Role;
   onChangeRole(role: Role): void;
+  divisionScope: string | null;
+  divisionOptions: string[];
+  onChangeDivision(division: string | null): void;
   source: DataSource;
   projectCount: number;
   conditionalCount: number;
@@ -24,6 +30,9 @@ type TaskTopbarProps = {
 export function TaskTopbar({
   selectedRole,
   onChangeRole,
+  divisionScope,
+  divisionOptions,
+  onChangeDivision,
   source,
   projectCount,
   conditionalCount,
@@ -53,13 +62,16 @@ export function TaskTopbar({
           <span className="context-pill">{dataSourceLabel(source)}</span>
           <span className="context-pill">{projectCount}개 프로젝트</span>
           <span className="context-pill">{conditionalCount}개 승인 대기</span>
+          {divisionScope ? (
+            <span className="context-pill">본부 스코프: {divisionScope}</span>
+          ) : null}
         </div>
         <div
           className="role-switcher"
           role="tablist"
           aria-label="역할 컨텍스트"
         >
-          {(Object.keys(roleInsights) as Role[]).map((role) => (
+          {roleOptions.map((role) => (
             <button
               key={role}
               type="button"
@@ -67,10 +79,25 @@ export function TaskTopbar({
               aria-pressed={selectedRole === role}
               onClick={() => onChangeRole(role)}
             >
-              {role}
+              {getRoleLabel(role)}
             </button>
           ))}
         </div>
+        {divisionScope ? (
+          <label className="topbar-division-scope">
+            <span>본부 범위</span>
+            <select
+              value={divisionScope}
+              onChange={(event) => onChangeDivision(event.target.value)}
+            >
+              {divisionOptions.map((division) => (
+                <option key={division} value={division}>
+                  {division}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
         {selectedProject ? (
           <div className="project-context">
             <span>Selected project</span>

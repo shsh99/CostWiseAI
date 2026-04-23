@@ -15,17 +15,24 @@ import java.util.Base64;
 import java.util.List;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+import com.costwise.security.SupabaseJwtAuthenticationConverter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.security.oauth2.jwt.JwsHeader;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.test.web.servlet.MockMvc;
 
 @SpringBootTest(properties = {
@@ -45,6 +52,20 @@ class WorkflowControllerSecurityTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @MockBean
+    private SupabaseJwtAuthenticationConverter jwtAuthenticationConverter;
+
+    @BeforeEach
+    void stubJwtAuthenticationConverter() {
+        when(jwtAuthenticationConverter.convert(any(Jwt.class))).thenAnswer(invocation -> {
+            Jwt jwt = invocation.getArgument(0);
+            String role = jwt.getClaimAsString("role");
+            String authorityRole = toAuthorityRole(role);
+            String principal = firstNonBlank(jwt.getClaimAsString("email"), jwt.getSubject(), jwt.getClaimAsString("sub"));
+            return new JwtAuthenticationToken(jwt, List.of(new SimpleGrantedAuthority("ROLE_" + authorityRole)), principal);
+        });
+    }
 
     @BeforeEach
     void createSchema() throws Exception {
@@ -172,9 +193,8 @@ class WorkflowControllerSecurityTest {
 
     @Test
     void coreBusinessApisAllowAuthenticatedBusinessRoles() throws Exception {
-        Instant now = Instant.now();
-        for (String role : List.of("planner", "finance_reviewer", "executive")) {
-            String authHeader = bearerToken(token(role, ISSUER, AUDIENCE, now, now.plusSeconds(3600)));
+        for (String role : List.of("planner", "PM", "finance_reviewer", "ACCOUNTANT", "executive")) {
+            String authHeader = bearerToken(token(role, ISSUER, AUDIENCE, Instant.now(), Instant.now().plusSeconds(3600)));
 
             mockMvc.perform(get("/api/dashboard").header("Authorization", authHeader))
                     .andExpect(status().isOk());
@@ -194,11 +214,21 @@ class WorkflowControllerSecurityTest {
 
     @Test
     void reviewEndpointAllowsPlannerToSubmit() throws Exception {
-        Instant now = Instant.now();
         mockMvc.perform(post("/api/projects/14/review")
-                        .header("Authorization", bearerToken(token("planner", ISSUER, AUDIENCE, now, now.plusSeconds(3600))))
+                        .header("Authorization", bearerToken(token("planner", ISSUER, AUDIENCE, Instant.now(), Instant.now().plusSeconds(3600))))
                         .contentType(APPLICATION_JSON)
                         .content("{\"action\":\"SUBMIT\",\"comment\":\"검토 요청\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("REVIEW"))
+                .andExpect(jsonPath("$.lastAction").value("SUBMIT"));
+    }
+
+    @Test
+    void reviewEndpointAllowsPmToSubmit() throws Exception {
+        mockMvc.perform(post("/api/projects/14/review")
+                        .header("Authorization", bearerToken(token("PM", ISSUER, AUDIENCE, Instant.now(), Instant.now().plusSeconds(3600))))
+                        .contentType(APPLICATION_JSON)
+                        .content("{\"action\":\"SUBMIT\",\"comment\":\"canonical alias\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("REVIEW"))
                 .andExpect(jsonPath("$.lastAction").value("SUBMIT"));
@@ -222,6 +252,24 @@ class WorkflowControllerSecurityTest {
                 .build();
         return encoder.encode(JwtEncoderParameters.from(JwsHeader.with(MacAlgorithm.HS256).build(), claims))
                 .getTokenValue();
+    }
+
+    private String toAuthorityRole(String role) {
+        return switch (role == null ? "" : role.trim().toLowerCase()) {
+            case "pm", "planner" -> "PLANNER";
+            case "accountant", "finance_reviewer" -> "FINANCE_REVIEWER";
+            case "admin", "auditor", "executive" -> "EXECUTIVE";
+            default -> role == null ? "EXECUTIVE" : role.trim().toUpperCase();
+        };
+    }
+
+    private String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (value != null && !value.trim().isBlank()) {
+                return value.trim();
+            }
+        }
+        return null;
     }
 
     private String validComputeRequest() {

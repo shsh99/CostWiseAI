@@ -2,6 +2,7 @@ package com.costwise.security;
 
 import java.util.Collection;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -19,7 +20,10 @@ import org.springframework.stereotype.Component;
 public class SupabaseJwtAuthenticationConverter implements Converter<Jwt, AbstractAuthenticationToken> {
 
     private static final Set<String> SUPPORTED_ROLES =
-            Set.of("PLANNER", "FINANCE_REVIEWER", "EXECUTIVE");
+            Set.of("ADMIN", "EXECUTIVE", "PM", "ACCOUNTANT", "AUDITOR", "PLANNER", "FINANCE_REVIEWER");
+    private static final Map<String, List<String>> ROLE_ALIASES = Map.of(
+            "PM", List.of("PM", "PLANNER"),
+            "ACCOUNTANT", List.of("ACCOUNTANT", "FINANCE_REVIEWER"));
 
     @Override
     public AbstractAuthenticationToken convert(Jwt jwt) {
@@ -34,6 +38,7 @@ public class SupabaseJwtAuthenticationConverter implements Converter<Jwt, Abstra
                 .filter(candidate -> !candidate.isBlank())
                 .map(candidate -> candidate.toUpperCase(Locale.ROOT))
                 .filter(SUPPORTED_ROLES::contains)
+                .flatMap(this::expandRoleAliases)
                 .forEach(roleNames::add);
 
         return roleNames.stream()
@@ -56,6 +61,10 @@ public class SupabaseJwtAuthenticationConverter implements Converter<Jwt, Abstra
 
     private Stream<String> flattenClaimValue(String value) {
         return value == null ? Stream.empty() : Stream.of(value);
+    }
+
+    private Stream<String> expandRoleAliases(String role) {
+        return ROLE_ALIASES.getOrDefault(role, List.of(role)).stream();
     }
 
     private String nestedStringClaim(Object metadataClaim, String key) {

@@ -3,6 +3,7 @@ import {
   buildDecisionSignals,
   detailTabs,
   emptyPortfolioSummary,
+  isForbiddenApiError,
   loadAuditEvents,
   loadProjectDetail,
   loadPortfolioSummary,
@@ -22,6 +23,12 @@ import {
   type ExplorerSortKey,
   type NavigationKey
 } from './features/portfolio/explorerState';
+import {
+  canAccessMenu,
+  getDefaultMenuForRole,
+  isDivisionScopedRole,
+  resolveDivisionScope
+} from './features/auth/permissions';
 import { filterAndSortProjects } from './features/portfolio/explorerFilters';
 import { buildDecisionBars } from './features/workspace/decisionVisuals';
 import { DashboardView } from './views/dashboard/DashboardView';
@@ -45,7 +52,7 @@ export function App() {
       new URLSearchParams(window.location.search).get('project')?.trim() ?? '',
     []
   );
-  const [selectedRole, setSelectedRole] = useState<Role>('임원');
+  const [selectedRole, setSelectedRole] = useState<Role>('EXECUTIVE');
   const [activeView, setActiveView] = useState<NavigationKey>(
     initialExplorerState.view
   );
@@ -89,6 +96,7 @@ export function App() {
   const [selectedProjectCode, setSelectedProjectCode] = useState(
     initialProjectFromQuery
   );
+  const [selectedDivision, setSelectedDivision] = useState<string | null>(null);
   const [activeWorkspaceTab, setActiveWorkspaceTab] =
     useState<WorkspaceTabKey>('allocation');
 
@@ -111,9 +119,11 @@ export function App() {
           setPortfolioSource('degraded');
           setPortfolioStatus('error');
           setPortfolioError(
-            error instanceof Error
-              ? error.message
-              : '포트폴리오 데이터를 불러오지 못했습니다.'
+            isForbiddenApiError(error)
+              ? '포트폴리오 조회 권한이 없습니다(403). 관리자에게 읽기 권한을 요청하세요.'
+              : error instanceof Error
+                ? error.message
+                : '포트폴리오 데이터를 불러오지 못했습니다.'
           );
         }
       });
@@ -158,9 +168,11 @@ export function App() {
           setSelectedDetailSource('degraded');
           setSelectedDetailStatus('error');
           setSelectedDetailError(
-            error instanceof Error
-              ? error.message
-              : '프로젝트 상세를 불러오지 못했습니다.'
+            isForbiddenApiError(error)
+              ? '프로젝트 상세 조회 권한이 없습니다(403). 접근 권한을 확인하세요.'
+              : error instanceof Error
+                ? error.message
+                : '프로젝트 상세를 불러오지 못했습니다.'
           );
         }
       });
@@ -204,9 +216,11 @@ export function App() {
           setAuditSource('degraded');
           setAuditStatus('error');
           setAuditError(
-            error instanceof Error
-              ? error.message
-              : '감사 이력을 불러오지 못했습니다.'
+            isForbiddenApiError(error)
+              ? '감사 이력 조회 권한이 없습니다(403). 감사 로그 열람 권한을 요청하세요.'
+              : error instanceof Error
+                ? error.message
+                : '감사 이력을 불러오지 못했습니다.'
           );
         }
       });
@@ -227,24 +241,99 @@ export function App() {
     portfolioSource === 'degraded' || selectedDetailSource === 'degraded'
       ? 'degraded'
       : 'api';
+  const divisionOptions = useMemo(
+    () => portfolio.headquarters.map((headquarter) => headquarter.name),
+    [portfolio.headquarters]
+  );
+  const divisionScope = resolveDivisionScope(
+    selectedRole,
+    selectedDivision,
+    divisionOptions
+  );
+  const scopedPortfolio = useMemo(() => {
+    if (!divisionScope) {
+      return portfolio;
+    }
+
+    const projects = portfolio.projects.filter(
+      (project) => project.headquarter === divisionScope
+    );
+    const headquarters = portfolio.headquarters.filter(
+      (headquarter) => headquarter.name === divisionScope
+    );
+    const projectCodeSet = new Set(projects.map((project) => project.code));
+    const auditEvents = portfolio.auditEvents.filter((event) =>
+      projectCodeSet.has(event.domain)
+    );
+    const approvedCount = projects.filter(
+      (project) => project.status === '승인'
+    ).length;
+    const conditionalCount = projects.filter(
+      (project) => project.status === '조건부 진행'
+    ).length;
+    const totalInvestmentKrw = projects.reduce(
+      (sum, project) => sum + project.investmentKrw,
+      0
+    );
+    const totalExpectedRevenueKrw = projects.reduce(
+      (sum, project) => sum + project.expectedRevenueKrw,
+      0
+    );
+    const averageNpvKrw =
+      projects.length > 0
+        ? Math.round(
+            projects.reduce((sum, project) => sum + project.npvKrw, 0) /
+              projects.length
+          )
+        : 0;
+    const averageIrr =
+      projects.length > 0
+        ? projects.reduce((sum, project) => sum + project.irr, 0) /
+          projects.length
+        : 0;
+    const averagePaybackYears =
+      projects.length > 0
+        ? projects.reduce((sum, project) => sum + project.paybackYears, 0) /
+          projects.length
+        : 0;
+
+    return {
+      ...portfolio,
+      overview: {
+        ...portfolio.overview,
+        headquarterCount: headquarters.length,
+        projectCount: projects.length,
+        totalInvestmentKrw,
+        totalExpectedRevenueKrw,
+        averageNpvKrw,
+        averageIrr,
+        averagePaybackYears,
+        approvedCount,
+        conditionalCount
+      },
+      headquarters,
+      projects,
+      auditEvents
+    };
+  }, [divisionScope, portfolio]);
   const selectedInsight = roleInsights[selectedRole];
-  const decisionSignals = buildDecisionSignals(portfolio);
+  const decisionSignals = buildDecisionSignals(scopedPortfolio);
   const currentViewMeta = viewMeta[activeView];
   const priorityProjects = useMemo(
-    () => portfolio.projects.slice(0, 6),
-    [portfolio.projects]
+    () => scopedPortfolio.projects.slice(0, 6),
+    [scopedPortfolio.projects]
   );
   const maxHeadquarterInvestment = useMemo(() => {
-    if (portfolio.headquarters.length === 0) {
+    if (scopedPortfolio.headquarters.length === 0) {
       return 0;
     }
 
     return Math.max(
-      ...portfolio.headquarters.map(
+      ...scopedPortfolio.headquarters.map(
         (headquarter) => headquarter.totalInvestmentKrw
       )
     );
-  }, [portfolio.headquarters]);
+  }, [scopedPortfolio.headquarters]);
 
   const selectedWorkspaceKpis = selectedProject
     ? [
@@ -379,27 +468,52 @@ export function App() {
   const headquarterOptions = useMemo(
     () => [
       'all',
-      ...portfolio.headquarters.map((headquarter) => headquarter.name)
+      ...scopedPortfolio.headquarters.map((headquarter) => headquarter.name)
     ],
-    [portfolio.headquarters]
+    [scopedPortfolio.headquarters]
   );
 
   const filteredProjects = useMemo(
     () =>
-      filterAndSortProjects(portfolio.projects, {
+      filterAndSortProjects(scopedPortfolio.projects, {
         headquarterFilter,
         searchTerm,
         quickFilter: explorerQuickFilter,
         sort: explorerSort
       }),
     [
-      portfolio.projects,
+      scopedPortfolio.projects,
       headquarterFilter,
       searchTerm,
       explorerQuickFilter,
       explorerSort
     ]
   );
+
+  useEffect(() => {
+    if (!isDivisionScopedRole(selectedRole)) {
+      return;
+    }
+
+    if (
+      selectedDivision &&
+      divisionOptions.some((division) => division === selectedDivision)
+    ) {
+      return;
+    }
+
+    setSelectedDivision(divisionOptions[0] ?? null);
+  }, [selectedDivision, selectedRole, divisionOptions]);
+
+  useEffect(() => {
+    if (!divisionScope || !selectedProject) {
+      return;
+    }
+
+    if (selectedProject.headquarter !== divisionScope) {
+      setSelectedProjectCode('');
+    }
+  }, [divisionScope, selectedProject]);
 
   useEffect(() => {
     if (
@@ -462,6 +576,12 @@ export function App() {
     headquarterFilter,
     selectedProjectCode
   ]);
+
+  useEffect(() => {
+    if (!canAccessMenu(selectedRole, activeView)) {
+      setActiveView(getDefaultMenuForRole(selectedRole));
+    }
+  }, [activeView, selectedRole]);
 
   useEffect(() => {
     if (activeView === 'accounting') {
@@ -564,22 +684,25 @@ export function App() {
       />
 
       <div className="workspace workspace--task-first">
-        <TaskTopbar
-          selectedRole={selectedRole}
-          onChangeRole={setSelectedRole}
-          source={source}
-          projectCount={portfolio.overview.projectCount}
-          conditionalCount={portfolio.overview.conditionalCount}
-          selectedProject={selectedProject}
-          meta={currentViewMeta}
-        />
+      <TaskTopbar
+        selectedRole={selectedRole}
+        onChangeRole={setSelectedRole}
+        divisionScope={divisionScope}
+        divisionOptions={divisionOptions}
+        onChangeDivision={setSelectedDivision}
+        source={source}
+        projectCount={scopedPortfolio.overview.projectCount}
+        conditionalCount={scopedPortfolio.overview.conditionalCount}
+        selectedProject={selectedProject}
+        meta={currentViewMeta}
+      />
 
         <main id="main-content" className="content content--task-first">
           {activeView === 'dashboard' ? (
             <DashboardView
               decisionSignals={decisionSignals}
               selectedInsight={selectedInsight}
-              portfolio={portfolio}
+              portfolio={scopedPortfolio}
               priorityProjects={priorityProjects}
               onOpenWorkspace={openWorkspace}
             />
@@ -587,10 +710,12 @@ export function App() {
 
           {activeView === 'portfolio' ? (
             <PortfolioView
-              portfolio={portfolio}
+              selectedRole={selectedRole}
+              portfolio={scopedPortfolio}
               portfolioStatus={portfolioStatus}
               portfolioError={portfolioError}
               maxHeadquarterInvestment={maxHeadquarterInvestment}
+              divisionScope={divisionScope}
               selectedProjectCode={selectedProjectCode}
               searchTerm={searchTerm}
               explorerSort={explorerSort}
@@ -635,7 +760,7 @@ export function App() {
 
           {activeView === 'reviews' ? (
             <ReviewsView
-              portfolio={portfolio}
+              portfolio={scopedPortfolio}
               auditEvents={auditEvents}
               auditSource={auditSource}
               auditStatus={auditStatus}

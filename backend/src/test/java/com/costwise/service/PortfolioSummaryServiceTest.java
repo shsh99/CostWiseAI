@@ -8,13 +8,24 @@ import com.costwise.api.dto.PortfolioSummaryResponse;
 import com.costwise.persistence.ProjectPersistenceRepository;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 class PortfolioSummaryServiceTest {
 
     private final PortfolioSummaryService service = new PortfolioSummaryService();
+
+    @AfterEach
+    void clearSecurityContext() {
+        SecurityContextHolder.clearContext();
+    }
 
     @Test
     void loadPortfolioSummaryBuildsFiveHeadquartersAndTwentyProjects() {
@@ -112,5 +123,84 @@ class PortfolioSummaryServiceTest {
         assertThat(summary.projects().getFirst().expectedRevenueKrw()).isEqualTo(900_000_000L);
         assertThat(summary.auditEvents()).hasSize(1);
         assertThat(summary.auditEvents().getFirst().domain()).isEqualTo("DCF");
+    }
+
+    @Test
+    void loadPortfolioSummaryRestrictsSeedProjectsForScopedPlannerRole() {
+        authenticate("PLANNER", "division", "언더라이팅본부");
+
+        PortfolioSummaryResponse summary = service.loadPortfolioSummary();
+
+        assertThat(summary.overview().projectCount()).isEqualTo(4);
+        assertThat(summary.overview().headquarterCount()).isEqualTo(1);
+        assertThat(summary.projects()).allSatisfy(project -> assertThat(project.headquarter()).isEqualTo("언더라이팅본부"));
+    }
+
+    @Test
+    void loadPortfolioSummaryKeepsAccountantUnrestrictedEvenWithDivisionClaim() {
+        authenticate("ACCOUNTANT", "division_code", "UND");
+
+        PortfolioSummaryResponse summary = service.loadPortfolioSummary();
+
+        assertThat(summary.overview().projectCount()).isEqualTo(20);
+        assertThat(summary.overview().headquarterCount()).isEqualTo(5);
+    }
+
+    @Test
+    void loadPortfolioSummaryRestrictsDbBackedProjectionWhenScopedDivisionClaimExists() {
+        ProjectPersistenceRepository repository = mock(ProjectPersistenceRepository.class);
+        PortfolioSummaryService dbBackedService = new PortfolioSummaryService(repository);
+
+        authenticate("EXECUTIVE", "headquarter", "영업본부");
+
+        String salesProjectId = "20000000-0000-0000-0000-000000000101";
+        String underWritingProjectId = "20000000-0000-0000-0000-000000000102";
+        when(repository.listProjects()).thenReturn(List.of(
+                new ProjectPersistenceRepository.ProjectRecord(
+                        salesProjectId,
+                        "SALES-2026-001",
+                        "영업 프로젝트",
+                        "영업본부",
+                        "in_review",
+                        "sales",
+                        LocalDateTime.parse("2026-04-22T09:00:00")),
+                new ProjectPersistenceRepository.ProjectRecord(
+                        underWritingProjectId,
+                        "UND-2026-001",
+                        "언더라이팅 프로젝트",
+                        "언더라이팅본부",
+                        "in_review",
+                        "und",
+                        LocalDateTime.parse("2026-04-22T09:10:00"))));
+        when(repository.listScenarios(salesProjectId)).thenReturn(List.of());
+        when(repository.listScenarios(underWritingProjectId)).thenReturn(List.of());
+        when(repository.listApprovalLogs(salesProjectId)).thenReturn(List.of());
+        when(repository.listApprovalLogs(underWritingProjectId)).thenReturn(List.of());
+
+        PortfolioSummaryResponse summary = dbBackedService.loadPortfolioSummary();
+
+        assertThat(summary.overview().projectCount()).isEqualTo(1);
+        assertThat(summary.projects()).hasSize(1);
+        assertThat(summary.projects().getFirst().projectId()).isEqualTo(salesProjectId);
+        assertThat(summary.projects().getFirst().headquarter()).isEqualTo("영업본부");
+    }
+
+    private void authenticate(String roleAuthority, String claimKey, String claimValue) {
+        Jwt.Builder builder = Jwt.withTokenValue("test-token")
+                .header("alg", "none")
+                .subject("summary-user")
+                .issuedAt(Instant.parse("2026-04-23T00:00:00Z"))
+                .expiresAt(Instant.parse("2026-04-23T02:00:00Z"))
+                .claim("email", "summary-user@example.com")
+                .claim("role", roleAuthority);
+        if (claimKey != null && claimValue != null) {
+            builder.claim(claimKey, claimValue);
+        }
+
+        Jwt jwt = builder.build();
+        SecurityContextHolder.getContext().setAuthentication(new JwtAuthenticationToken(
+                jwt,
+                List.of(new SimpleGrantedAuthority("ROLE_" + roleAuthority)),
+                "summary-user@example.com"));
     }
 }

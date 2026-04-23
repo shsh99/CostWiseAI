@@ -15,8 +15,12 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import com.costwise.security.DivisionScope;
 
 @Service
 public class PersistenceService {
@@ -24,7 +28,9 @@ public class PersistenceService {
     private static final Set<String> PROJECT_STATUSES =
             Set.of("draft", "in_review", "approved", "rejected", "archived");
     private static final Set<String> ACTOR_ROLES =
-            Set.of("planner", "finance_reviewer", "executive", "system");
+            Set.of("planner", "pm", "finance_reviewer", "accountant", "executive", "system");
+    private static final Map<String, String> ACTOR_ROLE_ALIASES =
+            Map.of("pm", "planner", "accountant", "finance_reviewer");
     private static final Set<String> APPROVAL_ACTIONS =
             Set.of("created", "allocated", "evaluated", "approved", "rejected", "commented");
     private static final Set<String> COST_POOL_CATEGORIES =
@@ -41,6 +47,8 @@ public class PersistenceService {
     }
 
     public ProjectSummaryResponse createProject(CreateProjectRequest request) {
+        String businessType = request.businessType().trim();
+        ensureBusinessTypeAccess(businessType);
         String code = request.code().trim();
         if (projectRepository.existsProjectCode(code)) {
             throw new IllegalArgumentException("Project code already exists: " + code);
@@ -49,7 +57,7 @@ public class PersistenceService {
                 new ProjectPersistenceRepository.NewProject(
                         code,
                         request.name().trim(),
-                        request.businessType().trim(),
+                        businessType,
                         "draft",
                         request.description()));
         return toProjectSummary(project);
@@ -57,12 +65,14 @@ public class PersistenceService {
 
     public ProjectSummaryResponse updateProject(String projectId, UpdateProjectRequest request) {
         getProjectState(projectId);
+        String businessType = request.businessType().trim();
+        ensureBusinessTypeAccess(businessType);
         String status = normalizeEnum(request.status(), PROJECT_STATUSES, "project status");
         ProjectPersistenceRepository.ProjectRecord project = projectRepository.updateProject(
                 new ProjectPersistenceRepository.ProjectUpdate(
                         projectId,
                         request.name().trim(),
-                        request.businessType().trim(),
+                        businessType,
                         status,
                         request.description()));
         return toProjectSummary(project);
@@ -164,6 +174,23 @@ public class PersistenceService {
                 project.createdAt(),
                 scenarios,
                 approvalSummary);
+    }
+
+    public void assertProjectAccess(String projectReference) {
+        DivisionScope scope = DivisionScope.current();
+        if (!scope.isRestricted()) {
+            return;
+        }
+
+        Optional<ProjectPersistenceRepository.ProjectRecord> project = resolveProjectByIdOrCode(projectReference);
+        if (project.isPresent()) {
+            ensureProjectAccess(project.get(), projectReference);
+            return;
+        }
+
+        if (!scope.allowsProjectReference(projectReference)) {
+            throw new AccessDeniedException("Project is outside division scope: " + projectReference);
+        }
     }
 
     private ProjectSummaryResponse toProjectSummary(ProjectPersistenceRepository.ProjectRecord project) {
@@ -289,15 +316,17 @@ public class PersistenceService {
     }
 
     private ProjectPersistenceRepository.ApprovalLogRecord toApprovalLog(AnalysisUpsertRequest.ApprovalInput input) {
-        String actorRole = normalizeEnum(input.actorRole(), ACTOR_ROLES, "actor role");
+        String actorRole = normalizeActorRole(input.actorRole());
         String action = normalizeEnum(input.action(), APPROVAL_ACTIONS, "approval action");
         return new ProjectPersistenceRepository.ApprovalLogRecord(
                 actorRole, input.actorName().trim(), action, input.comment(), LocalDateTime.now());
     }
 
     private ProjectPersistenceRepository.ProjectRecord getProjectState(String projectId) {
-        return projectRepository.findProject(projectId)
+        ProjectPersistenceRepository.ProjectRecord project = projectRepository.findProject(projectId)
                 .orElseThrow(() -> new IllegalArgumentException("Unknown project id: " + projectId));
+        ensureProjectAccess(project, projectId);
+        return project;
     }
 
     private ProjectPersistenceRepository.ScenarioRecord getScenarioState(String projectId, String scenarioId) {
@@ -318,6 +347,54 @@ public class PersistenceService {
             throw new IllegalArgumentException("Invalid " + fieldName + ": " + value);
         }
         return normalized;
+    }
+
+    private String normalizeActorRole(String value) {
+        String normalized = normalizeEnum(value, ACTOR_ROLES, "actor role");
+        return ACTOR_ROLE_ALIASES.getOrDefault(normalized, normalized);
+    }
+
+    private Optional<ProjectPersistenceRepository.ProjectRecord> resolveProjectByIdOrCode(String projectReference) {
+        if (projectReference == null || projectReference.isBlank()) {
+            return Optional.empty();
+        }
+
+        try {
+            Optional<ProjectPersistenceRepository.ProjectRecord> byId = projectRepository.findProject(projectReference);
+            if (byId.isPresent()) {
+                return byId;
+            }
+        } catch (IllegalArgumentException ignored) {
+            // Non-UUID project references are matched by code fallback.
+        }
+
+        String normalizedReference = projectReference.trim();
+        return projectRepository.listProjects().stream()
+                .filter(project -> normalizedReference.equals(project.id())
+                        || normalizedReference.equalsIgnoreCase(project.code()))
+                .findFirst();
+    }
+
+    private void ensureProjectAccess(ProjectPersistenceRepository.ProjectRecord project, String projectReference) {
+        DivisionScope scope = DivisionScope.current();
+        if (!scope.isRestricted()) {
+            return;
+        }
+        if (scope.allowsBusinessType(project.businessType()) || scope.allowsProjectReference(project.code())) {
+            return;
+        }
+        throw new AccessDeniedException("Project is outside division scope: " + projectReference);
+    }
+
+    private void ensureBusinessTypeAccess(String businessType) {
+        DivisionScope scope = DivisionScope.current();
+        if (!scope.isRestricted()) {
+            return;
+        }
+        if (scope.allowsBusinessType(businessType)) {
+            return;
+        }
+        throw new AccessDeniedException("Business type is outside division scope: " + businessType);
     }
 
 }

@@ -1,5 +1,9 @@
 /* eslint-disable no-unused-vars */
-import { navigationItems, type Role } from '../../app/portfolioData';
+import type { Role } from '../../app/portfolioData';
+import {
+  getNavigationItemsForRole,
+  getRoleLabel
+} from '../../features/auth/permissions';
 import type { NavigationKey } from '../../features/portfolio/explorerState';
 
 type TaskSidebarProps = {
@@ -8,7 +12,13 @@ type TaskSidebarProps = {
   onChangeView(view: NavigationKey): void;
 };
 
-export function TaskSidebar({ activeView, selectedRole, onChangeView }: TaskSidebarProps) {
+export function TaskSidebar({
+  activeView,
+  selectedRole,
+  onChangeView
+}: TaskSidebarProps) {
+  const visibleNavigationItems = getNavigationItemsForRole(selectedRole);
+
   return (
     <aside className="sidebar sidebar--task-first">
       <div className="brand">
@@ -21,7 +31,7 @@ export function TaskSidebar({ activeView, selectedRole, onChangeView }: TaskSide
 
       <nav className="nav nav--stacked" aria-label="제품 맵">
         <p className="nav__label">Product Map</p>
-        {navigationItems.map((item) => (
+        {visibleNavigationItems.map((item) => (
           <button
             key={item.key}
             type="button"
@@ -36,7 +46,7 @@ export function TaskSidebar({ activeView, selectedRole, onChangeView }: TaskSide
 
       <div className="sidebar__footer">
         <span>Current role</span>
-        <strong>{selectedRole}</strong>
+        <strong>{getRoleLabel(selectedRole)}</strong>
         <small>역할 전환은 상단 컨텍스트 바에서 수행합니다.</small>
       </div>
     </aside>

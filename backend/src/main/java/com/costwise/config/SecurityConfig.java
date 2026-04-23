@@ -34,6 +34,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfig {
 
     private static final String INVALID_AUDIENCE_ERROR = "invalid_token";
+    private static final String[] BUSINESS_ROLES = {"PLANNER", "PM", "FINANCE_REVIEWER", "ACCOUNTANT", "EXECUTIVE"};
+    private static final String[] AUDIT_ROLES = {"EXECUTIVE", "AUDITOR", "ADMIN"};
 
     private final JwtSecurityProperties jwtSecurityProperties;
     private final SupabaseJwtAuthenticationConverter jwtAuthenticationConverter;
@@ -96,14 +98,14 @@ public class SecurityConfig {
                                 "/api/cost-accounting/summary",
                                 "/api/valuation-risk/projects/**",
                                 "/api/compute")
-                        .hasAnyRole("PLANNER", "FINANCE_REVIEWER", "EXECUTIVE")
+                        .hasAnyRole(BUSINESS_ROLES)
                         .requestMatchers("/actuator/health", "/actuator/info")
                         .permitAll()
                         .requestMatchers("/actuator/**")
                         .access((authentication, context) ->
                                 new AuthorizationDecision(securityPolicyProperties.actuatorAllPublic()))
                         .requestMatchers("/api/projects/*/workflow", "/api/projects/*/review").authenticated()
-                        .requestMatchers("/api/audit-logs").hasRole("EXECUTIVE")
+                        .requestMatchers("/api/audit-logs").hasAnyRole(AUDIT_ROLES)
                         .requestMatchers(HttpMethod.OPTIONS, "/**")
                         .permitAll()
                         .requestMatchers("/v3/api-docs",

@@ -7,12 +7,15 @@ import com.costwise.api.dto.PortfolioSummaryResponse.HeadquarterSummary;
 import com.costwise.api.dto.PortfolioSummaryResponse.Overview;
 import com.costwise.api.dto.PortfolioSummaryResponse.ProjectSummary;
 import com.costwise.persistence.ProjectPersistenceRepository;
+import com.costwise.security.DivisionScope;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Stream;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -56,15 +59,16 @@ public class PortfolioSummaryService {
     }
 
     public PortfolioSummaryResponse loadPortfolioSummary() {
-        PortfolioSummaryResponse dbSummary = loadDbBackedSummary();
+        DivisionScope scope = DivisionScope.current();
+        PortfolioSummaryResponse dbSummary = loadDbBackedSummary(scope);
         if (dbSummary != null) {
             return dbSummary;
         }
 
-        return loadSeedSummary();
+        return loadSeedSummary(scope);
     }
 
-    private PortfolioSummaryResponse loadDbBackedSummary() {
+    private PortfolioSummaryResponse loadDbBackedSummary(DivisionScope scope) {
         if (projectRepository == null) {
             return null;
         }
@@ -78,14 +82,17 @@ public class PortfolioSummaryService {
             List<ProjectProjection> projectViews = projects.stream()
                     .map(this::projectProjection)
                     .toList();
-            List<ProjectProjection> rankedProjects = projectViews.stream()
+            List<ProjectProjection> scopedProjectViews = projectViews.stream()
+                    .filter(project -> scope.allowsHeadquarter(project.headquarter()))
+                    .toList();
+            List<ProjectProjection> rankedProjects = scopedProjectViews.stream()
                     .sorted(Comparator.comparingLong(ProjectProjection::npvKrw).reversed())
                     .toList();
             List<ProjectSummary> projectSummaries = java.util.stream.IntStream.range(0, rankedProjects.size())
                     .mapToObj(index -> rankedProjects.get(index).toSummary(index + 1))
                     .toList();
 
-            Map<String, List<ProjectProjection>> projectsByHeadquarter = projectViews.stream()
+            Map<String, List<ProjectProjection>> projectsByHeadquarter = scopedProjectViews.stream()
                     .collect(Collectors.groupingBy(ProjectProjection::headquarter));
             List<HeadquarterSummary> headquarters = projectsByHeadquarter.entrySet().stream()
                     .map(entry -> summarizeProjectedHeadquarter(
@@ -96,21 +103,21 @@ public class PortfolioSummaryService {
                     .sorted(Comparator.comparing(HeadquarterSummary::code))
                     .toList();
 
-            long totalInvestment = projectViews.stream().mapToLong(ProjectProjection::investmentKrw).sum();
-            long totalExpectedRevenue = projectViews.stream().mapToLong(ProjectProjection::expectedRevenueKrw).sum();
-            long averageNpv = averageLong(projectViews.stream().map(ProjectProjection::npvKrw).toList());
-            double averageIrr = averageDouble(projectViews.stream().map(ProjectProjection::irr).toList());
-            double averagePayback = averageDouble(projectViews.stream().map(ProjectProjection::paybackYears).toList());
-            int approvedCount = (int) projectViews.stream().filter(project -> "승인".equals(project.status())).count();
-            int conditionalCount = (int) projectViews.stream().filter(project -> "조건부 진행".equals(project.status())).count();
+            long totalInvestment = scopedProjectViews.stream().mapToLong(ProjectProjection::investmentKrw).sum();
+            long totalExpectedRevenue = scopedProjectViews.stream().mapToLong(ProjectProjection::expectedRevenueKrw).sum();
+            long averageNpv = averageLong(scopedProjectViews.stream().map(ProjectProjection::npvKrw).toList());
+            double averageIrr = averageDouble(scopedProjectViews.stream().map(ProjectProjection::irr).toList());
+            double averagePayback = averageDouble(scopedProjectViews.stream().map(ProjectProjection::paybackYears).toList());
+            int approvedCount = (int) scopedProjectViews.stream().filter(project -> "승인".equals(project.status())).count();
+            int conditionalCount = (int) scopedProjectViews.stream().filter(project -> "조건부 진행".equals(project.status())).count();
 
             List<Assumption> assumptions = List.of(
-                    new Assumption("할인율", displayRate(projectViews)),
-                    new Assumption("평가기간", displayPeriod(projectViews)),
-                    new Assumption("데이터 소스", "DB 프로젝트 " + projectViews.size() + "건"),
+                    new Assumption("할인율", displayRate(scopedProjectViews)),
+                    new Assumption("평가기간", displayPeriod(scopedProjectViews)),
+                    new Assumption("데이터 소스", "DB 프로젝트 " + scopedProjectViews.size() + "건"),
                     new Assumption("ABC 적용 본부", headquarters.size() + "개"));
 
-            List<AuditEvent> auditEvents = projectViews.stream()
+            List<AuditEvent> auditEvents = scopedProjectViews.stream()
                     .flatMap(project -> project.auditEvents().stream())
                     .sorted(Comparator.comparing(AuditEvent::at).reversed())
                     .limit(12)
@@ -119,11 +126,11 @@ public class PortfolioSummaryService {
             return new PortfolioSummaryResponse(
                     PORTFOLIO_NAME,
                     PORTFOLIO_OWNER,
-                    portfolioStatus(projectViews),
-                    portfolioRisk(projectViews),
+                    portfolioStatus(scopedProjectViews),
+                    portfolioRisk(scopedProjectViews),
                     new Overview(
                             headquarters.size(),
-                            projectViews.size(),
+                            scopedProjectViews.size(),
                             totalInvestment,
                             totalExpectedRevenue,
                             averageNpv,
@@ -140,8 +147,11 @@ public class PortfolioSummaryService {
         }
     }
 
-    private PortfolioSummaryResponse loadSeedSummary() {
-        List<ProjectSeed> rankedProjects = PROJECTS.stream()
+    private PortfolioSummaryResponse loadSeedSummary(DivisionScope scope) {
+        List<ProjectSeed> scopedProjects = PROJECTS.stream()
+                .filter(project -> scope.allowsHeadquarter(project.headquarter()))
+                .toList();
+        List<ProjectSeed> rankedProjects = scopedProjects.stream()
                 .sorted(Comparator.comparingLong(ProjectSeed::npvKrw).reversed())
                 .toList();
 
@@ -164,33 +174,35 @@ public class PortfolioSummaryService {
                 })
                 .toList();
 
-        Map<String, List<ProjectSeed>> projectsByHeadquarter = PROJECTS.stream()
+        Map<String, List<ProjectSeed>> projectsByHeadquarter = scopedProjects.stream()
                 .collect(Collectors.groupingBy(ProjectSeed::headquarter));
 
-        List<HeadquarterSummary> headquarters = List.of(
+        List<HeadquarterSummary> headquarters = Stream.of(
                 summarizeSeedHeadquarter("UND", "언더라이팅본부", "중간", projectsByHeadquarter.get("언더라이팅본부")),
                 summarizeSeedHeadquarter("PROD", "상품개발본부", "중간", projectsByHeadquarter.get("상품개발본부")),
                 summarizeSeedHeadquarter("SALES", "영업본부", "중간", projectsByHeadquarter.get("영업본부")),
                 summarizeSeedHeadquarter("IT", "IT본부", "높음", projectsByHeadquarter.get("IT본부")),
-                summarizeSeedHeadquarter("CORP", "경영지원본부", "낮음", projectsByHeadquarter.get("경영지원본부")));
+                summarizeSeedHeadquarter("CORP", "경영지원본부", "낮음", projectsByHeadquarter.get("경영지원본부")))
+                .filter(Objects::nonNull)
+                .toList();
 
-        long totalInvestment = PROJECTS.stream().mapToLong(ProjectSeed::investmentKrw).sum();
-        long totalExpectedRevenue = PROJECTS.stream().mapToLong(ProjectSeed::expectedRevenueKrw).sum();
+        long totalInvestment = scopedProjects.stream().mapToLong(ProjectSeed::investmentKrw).sum();
+        long totalExpectedRevenue = scopedProjects.stream().mapToLong(ProjectSeed::expectedRevenueKrw).sum();
         long averageNpv = Math.round(
-                PROJECTS.stream().mapToLong(ProjectSeed::npvKrw).average().orElse(0.0));
-        double averageIrr = PROJECTS.stream().mapToDouble(ProjectSeed::irr).average().orElse(0);
-        double averagePayback = PROJECTS.stream().mapToDouble(ProjectSeed::paybackYears).average().orElse(0);
-        int approvedCount = (int) PROJECTS.stream().filter(project -> "승인".equals(project.status())).count();
-        int conditionalCount = (int) PROJECTS.stream().filter(project -> "조건부 진행".equals(project.status())).count();
+                scopedProjects.stream().mapToLong(ProjectSeed::npvKrw).average().orElse(0.0));
+        double averageIrr = scopedProjects.stream().mapToDouble(ProjectSeed::irr).average().orElse(0);
+        double averagePayback = scopedProjects.stream().mapToDouble(ProjectSeed::paybackYears).average().orElse(0);
+        int approvedCount = (int) scopedProjects.stream().filter(project -> "승인".equals(project.status())).count();
+        int conditionalCount = (int) scopedProjects.stream().filter(project -> "조건부 진행".equals(project.status())).count();
 
         return new PortfolioSummaryResponse(
                 PORTFOLIO_NAME,
                 PORTFOLIO_OWNER,
-                "검토중",
-                "중간",
+                portfolioStatusSeed(scopedProjects),
+                portfolioRiskSeed(scopedProjects),
                 new Overview(
-                        5,
-                        PROJECTS.size(),
+                        headquarters.size(),
+                        scopedProjects.size(),
                         totalInvestment,
                         totalExpectedRevenue,
                         averageNpv,
@@ -204,7 +216,7 @@ public class PortfolioSummaryService {
                         new Assumption("할인율", "11.5%"),
                         new Assumption("법인세율", "27.5%"),
                         new Assumption("평가기간", "5개년"),
-                        new Assumption("ABC 적용 본부", "5개")),
+                        new Assumption("ABC 적용 본부", headquarters.size() + "개")),
                 List.of(
                         new AuditEvent("전략기획실", "포트폴리오 초안을 등록했습니다.", "PORTFOLIO", LocalDateTime.parse("2026-04-18T10:18:00")),
                         new AuditEvent("재무검토팀", "ABC 배부 기준을 검토했습니다.", "ABC", LocalDateTime.parse("2026-04-19T14:07:00")),
@@ -214,6 +226,9 @@ public class PortfolioSummaryService {
 
     private HeadquarterSummary summarizeSeedHeadquarter(
             String code, String name, String risk, List<ProjectSeed> seeds) {
+        if (seeds == null || seeds.isEmpty()) {
+            return null;
+        }
         long totalInvestment = seeds.stream().mapToLong(ProjectSeed::investmentKrw).sum();
         long totalExpectedRevenue = seeds.stream().mapToLong(ProjectSeed::expectedRevenueKrw).sum();
         long averageNpv = Math.round(seeds.stream().mapToLong(ProjectSeed::npvKrw).average().orElse(0.0));
@@ -401,6 +416,25 @@ public class PortfolioSummaryService {
     }
 
     private String portfolioStatus(List<ProjectProjection> projects) {
+        if (projects.isEmpty()) {
+            return "검토중";
+        }
+        if (projects.stream().anyMatch(project -> "검토중".equals(project.status()))) {
+            return "검토중";
+        }
+        if (projects.stream().anyMatch(project -> "조건부 진행".equals(project.status()))) {
+            return "조건부 진행";
+        }
+        if (projects.stream().allMatch(project -> "승인".equals(project.status()))) {
+            return "승인";
+        }
+        return "검토중";
+    }
+
+    private String portfolioStatusSeed(List<ProjectSeed> projects) {
+        if (projects.isEmpty()) {
+            return "검토중";
+        }
         if (projects.stream().anyMatch(project -> "검토중".equals(project.status()))) {
             return "검토중";
         }
@@ -414,6 +448,17 @@ public class PortfolioSummaryService {
     }
 
     private String portfolioRisk(List<ProjectProjection> projects) {
+        long highRisk = projects.stream().filter(project -> "높음".equals(project.risk())).count();
+        if (highRisk > Math.max(1, projects.size() / 3)) {
+            return "높음";
+        }
+        if (projects.stream().anyMatch(project -> "중간".equals(project.risk()))) {
+            return "중간";
+        }
+        return "낮음";
+    }
+
+    private String portfolioRiskSeed(List<ProjectSeed> projects) {
         long highRisk = projects.stream().filter(project -> "높음".equals(project.risk())).count();
         if (highRisk > Math.max(1, projects.size() / 3)) {
             return "높음";
