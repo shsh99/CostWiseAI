@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/persistence")
-@PreAuthorize("hasAnyRole('PLANNER', 'FINANCE_REVIEWER', 'EXECUTIVE')")
+@PreAuthorize("hasAnyRole('PLANNER', 'PM', 'FINANCE_REVIEWER', 'ACCOUNTANT', 'EXECUTIVE')")
 public class PersistenceController {
 
     private final PersistenceService persistenceService;

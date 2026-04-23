@@ -4,6 +4,7 @@ import com.costwise.api.dto.audit.AuditLogEntryResponse;
 import com.costwise.api.dto.audit.AuditLogListResponse;
 import com.costwise.api.dto.audit.CreateAuditLogRequest;
 import com.costwise.audit.AuditLogService;
+import com.costwise.persistence.PersistenceService;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.servlet.http.HttpServletRequest;
@@ -26,9 +27,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuditLogController {
 
     private final AuditLogService auditLogService;
+    private final PersistenceService persistenceService;
 
-    public AuditLogController(AuditLogService auditLogService) {
+    public AuditLogController(AuditLogService auditLogService, PersistenceService persistenceService) {
         this.auditLogService = auditLogService;
+        this.persistenceService = persistenceService;
     }
 
     @PostMapping
@@ -37,6 +40,7 @@ public class AuditLogController {
             @Valid @RequestBody CreateAuditLogRequest request,
             Authentication authentication,
             HttpServletRequest httpRequest) {
+        persistenceService.assertProjectAccess(request.projectId());
         String actorRole = resolveActorRole(authentication, request.actorRole());
         String actorId = resolveActorId(authentication, request.actorId());
         return auditLogService.append(new AuditLogService.AppendCommand(
@@ -60,6 +64,7 @@ public class AuditLogController {
             @RequestParam(required = false) Instant to,
             @RequestParam(required = false) Integer limit,
             @RequestParam(required = false) String cursor) {
+        persistenceService.assertProjectAccess(projectId);
         return auditLogService.query(new AuditLogService.QueryCommand(
                 projectId, eventType, from, to, limit, cursor));
     }

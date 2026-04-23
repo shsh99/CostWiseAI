@@ -15,20 +15,28 @@ import java.sql.Statement;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import com.costwise.api.support.JsonFieldReader;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+import com.costwise.security.SupabaseJwtAuthenticationConverter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.security.oauth2.jwt.JwsHeader;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -49,6 +57,20 @@ class PersistenceControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @MockBean
+    private SupabaseJwtAuthenticationConverter jwtAuthenticationConverter;
+
+    @BeforeEach
+    void stubJwtAuthenticationConverter() {
+        when(jwtAuthenticationConverter.convert(any(Jwt.class))).thenAnswer(invocation -> {
+            Jwt jwt = invocation.getArgument(0);
+            String role = jwt.getClaimAsString("role");
+            String authorityRole = toAuthorityRole(role);
+            String principal = firstNonBlank(jwt.getClaimAsString("email"), jwt.getSubject(), jwt.getClaimAsString("sub"));
+            return new JwtAuthenticationToken(jwt, List.of(new SimpleGrantedAuthority("ROLE_" + authorityRole)), principal);
+        });
+    }
 
     @BeforeEach
     void createSchema() throws Exception {
@@ -271,6 +293,139 @@ class PersistenceControllerTest {
     }
 
     @Test
+    void createProjectAcceptsPmRoleClaim() throws Exception {
+        Instant now = Instant.now();
+        String authHeader = bearerToken(token("PM", ISSUER, AUDIENCE, now, now.plusSeconds(3600)));
+
+        mockMvc.perform(post("/api/persistence/projects")
+                        .header("Authorization", authHeader)
+                        .contentType(APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "code": "PJT-TEST-03",
+                                  "name": "PM alias project",
+                                  "businessType": "new_business",
+                                  "description": "pm alias test"
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.code").value("PJT-TEST-03"));
+    }
+
+    @Test
+    void createProjectAcceptsAccountantRoleClaim() throws Exception {
+        Instant now = Instant.now();
+        String authHeader = bearerToken(token("ACCOUNTANT", ISSUER, AUDIENCE, now, now.plusSeconds(3600)));
+
+        mockMvc.perform(post("/api/persistence/projects")
+                        .header("Authorization", authHeader)
+                        .contentType(APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "code": "PJT-TEST-04",
+                                  "name": "Accountant alias project",
+                                  "businessType": "new_business",
+                                  "description": "accountant alias test"
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.code").value("PJT-TEST-04"));
+    }
+
+    @Test
+    void createProjectRejectsScopedPlannerWhenBusinessTypeIsOutsideDivisionClaim() throws Exception {
+        Instant now = Instant.now();
+        String authHeader = bearerToken(token(
+                "PM",
+                ISSUER,
+                AUDIENCE,
+                now,
+                now.plusSeconds(3600),
+                Map.of("division", "언더라이팅본부")));
+
+        mockMvc.perform(post("/api/persistence/projects")
+                        .header("Authorization", authHeader)
+                        .contentType(APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "code": "PJT-TEST-05",
+                                  "name": "Scoped PM denied project",
+                                  "businessType": "영업본부",
+                                  "description": "division mismatch"
+                                }
+                                """))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void projectDetailRejectsScopedPlannerOutsideClaimedDivision() throws Exception {
+        Instant now = Instant.now();
+        String creatorAuth = bearerToken(token("planner", ISSUER, AUDIENCE, now, now.plusSeconds(3600)));
+
+        MvcResult createProjectResult = mockMvc.perform(post("/api/persistence/projects")
+                        .header("Authorization", creatorAuth)
+                        .contentType(APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "code": "PJT-TEST-06",
+                                  "name": "Scoped read deny project",
+                                  "businessType": "영업본부",
+                                  "description": "division scoped read deny"
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        String projectId = JsonFieldReader.read(createProjectResult.getResponse().getContentAsString(), "id");
+        String scopedPmAuth = bearerToken(token(
+                "PM",
+                ISSUER,
+                AUDIENCE,
+                now,
+                now.plusSeconds(3600),
+                Map.of("headquarter", "언더라이팅본부")));
+
+        mockMvc.perform(get("/api/persistence/projects/{projectId}", projectId)
+                        .header("Authorization", scopedPmAuth))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void projectDetailAllowsAccountantAcrossDivisionsWithDivisionClaim() throws Exception {
+        Instant now = Instant.now();
+        String creatorAuth = bearerToken(token("planner", ISSUER, AUDIENCE, now, now.plusSeconds(3600)));
+
+        MvcResult createProjectResult = mockMvc.perform(post("/api/persistence/projects")
+                        .header("Authorization", creatorAuth)
+                        .contentType(APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "code": "PJT-TEST-07",
+                                  "name": "Accountant unrestricted project",
+                                  "businessType": "영업본부",
+                                  "description": "accountant unrestricted"
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        String projectId = JsonFieldReader.read(createProjectResult.getResponse().getContentAsString(), "id");
+        String accountantAuth = bearerToken(token(
+                "ACCOUNTANT",
+                ISSUER,
+                AUDIENCE,
+                now,
+                now.plusSeconds(3600),
+                Map.of("division_code", "UND")));
+
+        mockMvc.perform(get("/api/persistence/projects/{projectId}", projectId)
+                        .header("Authorization", accountantAuth))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(projectId))
+                .andExpect(jsonPath("$.businessType").value("영업본부"));
+    }
+
+    @Test
     void deleteScenarioRemovesItFromProjectDetail() throws Exception {
         Instant now = Instant.now();
         String authHeader = bearerToken(token("planner", ISSUER, AUDIENCE, now, now.plusSeconds(3600)));
@@ -322,18 +477,47 @@ class PersistenceControllerTest {
     }
 
     private String token(String role, String issuer, String audience, Instant issuedAt, Instant expiresAt) {
+        return token(role, issuer, audience, issuedAt, expiresAt, Map.of());
+    }
+
+    private String token(
+            String role,
+            String issuer,
+            String audience,
+            Instant issuedAt,
+            Instant expiresAt,
+            Map<String, Object> extraClaims) {
         SecretKey secretKey = new SecretKeySpec(Base64.getDecoder().decode(SECRET_BASE64), "HmacSHA256");
         JwtEncoder encoder = new NimbusJwtEncoder(new ImmutableSecret<>(secretKey));
-        JwtClaimsSet claims = JwtClaimsSet.builder()
+        JwtClaimsSet.Builder claimsBuilder = JwtClaimsSet.builder()
                 .issuer(issuer)
                 .subject("user-123")
                 .audience(List.of(audience))
                 .issuedAt(issuedAt)
                 .expiresAt(expiresAt)
                 .claim("email", role + "@example.com")
-                .claim("role", role)
-                .build();
+                .claim("role", role);
+        extraClaims.forEach(claimsBuilder::claim);
+        JwtClaimsSet claims = claimsBuilder.build();
         return encoder.encode(JwtEncoderParameters.from(JwsHeader.with(MacAlgorithm.HS256).build(), claims))
                 .getTokenValue();
+    }
+
+    private String toAuthorityRole(String role) {
+        return switch (role == null ? "" : role.trim().toLowerCase()) {
+            case "pm", "planner" -> "PLANNER";
+            case "accountant", "finance_reviewer" -> "FINANCE_REVIEWER";
+            case "executive", "auditor", "admin" -> "EXECUTIVE";
+            default -> role == null ? "EXECUTIVE" : role.trim().toUpperCase();
+        };
+    }
+
+    private String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (value != null && !value.trim().isBlank()) {
+                return value.trim();
+            }
+        }
+        return null;
     }
 }

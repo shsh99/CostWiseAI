@@ -1,5 +1,10 @@
 package com.costwise.api.audit;
 
+import static org.hamcrest.Matchers.nullValue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -7,23 +12,22 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static org.hamcrest.Matchers.nullValue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
 import com.costwise.api.dto.audit.CreateAuditLogRequest;
+import com.costwise.api.support.JsonFieldReader;
+import com.costwise.audit.AuditLogService;
+import com.costwise.security.SupabaseJwtAuthenticationConverter;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
-import java.time.Instant;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
+import java.time.Instant;
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
-import com.costwise.audit.AuditLogService;
-import com.costwise.api.support.JsonFieldReader;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,15 +35,27 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Bean;
+import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.security.oauth2.jwt.JwsHeader;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -61,10 +77,46 @@ class AuditLogControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
+    @MockBean
+    private SupabaseJwtAuthenticationConverter jwtAuthenticationConverter;
+
+    @TestConfiguration
+    static class AuditLogSecurityTestConfiguration {
+
+        @Bean
+        @Order(0)
+        SecurityFilterChain auditLogSecurityFilterChain(
+                HttpSecurity http,
+                JwtDecoder jwtDecoder,
+                SupabaseJwtAuthenticationConverter jwtAuthenticationConverter) throws Exception {
+            return http
+                    .securityMatcher("/api/audit-logs", "/api/audit-logs/**")
+                    .csrf(AbstractHttpConfigurer::disable)
+                    .exceptionHandling(ex -> ex.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
+                    .authorizeHttpRequests(auth -> auth.anyRequest().hasAnyRole("EXECUTIVE", "AUDITOR", "ADMIN"))
+                    .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt
+                            .decoder(jwtDecoder)
+                            .jwtAuthenticationConverter(jwtAuthenticationConverter)))
+                    .build();
+        }
+    }
+
+    @BeforeEach
+    void stubJwtAuthenticationConverter() {
+        when(jwtAuthenticationConverter.convert(any(Jwt.class))).thenAnswer(invocation -> {
+            Jwt jwt = invocation.getArgument(0);
+            String role = jwt.getClaimAsString("role");
+            String authorityRole = toAuthorityRole(role);
+            String principal = firstNonBlank(jwt.getClaimAsString("email"), jwt.getSubject(), jwt.getClaimAsString("sub"));
+            return new JwtAuthenticationToken(jwt, List.of(new SimpleGrantedAuthority("ROLE_" + authorityRole)), principal);
+        });
+    }
+
     @Test
     void appendDoesNotCollectAuthorizationHeaderInRequestContext() {
         AuditLogService auditLogService = mock(AuditLogService.class);
-        AuditLogController controller = new AuditLogController(auditLogService);
+        com.costwise.persistence.PersistenceService persistenceService = mock(com.costwise.persistence.PersistenceService.class);
+        AuditLogController controller = new AuditLogController(auditLogService, persistenceService);
         MockHttpServletRequest httpRequest = new MockHttpServletRequest();
         httpRequest.addHeader("Authorization", "Bearer raw-header-value");
         httpRequest.addHeader("X-Request-Id", "req-unit");
@@ -104,7 +156,25 @@ class AuditLogControllerTest {
                         "sa",
                         "");
                 Statement statement = connection.createStatement()) {
+            statement.execute("drop table if exists projects");
             statement.execute("drop table if exists audit_logs");
+            statement.execute("""
+                    create table projects (
+                      id uuid primary key,
+                      code text not null unique,
+                      name text not null,
+                      business_type text not null,
+                      status text not null default 'draft',
+                      description text,
+                      created_at timestamp not null default current_timestamp
+                    )
+                    """);
+            statement.execute("""
+                    insert into projects (id, code, name, business_type, status, description, created_at)
+                    values
+                    ('10000000-0000-0000-0000-000000000001', 'UND-PRJ-001', 'Underwriting Project', '언더라이팅본부', 'in_review', 'seed project', timestamp '2026-04-20 09:00:00'),
+                    ('10000000-0000-0000-0000-000000000002', 'SALES-PRJ-001', 'Sales Project', '영업본부', 'in_review', 'seed project', timestamp '2026-04-20 09:10:00')
+                    """);
             statement.execute("""
                     create table audit_logs (
                       id bigint generated by default as identity primary key,
@@ -151,7 +221,7 @@ class AuditLogControllerTest {
                                   },
                                   "occurredAt": "2026-04-20T10:00:00Z"
                                 }
-                """))
+                                """))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.actorRole").value("EXECUTIVE"))
                 .andExpect(jsonPath("$.actorId").value("executive@example.com"))
@@ -242,6 +312,93 @@ class AuditLogControllerTest {
     }
 
     @Test
+    void queryAllowsAuditorRole() throws Exception {
+        Instant now = Instant.now();
+        mockMvc.perform(get("/api/audit-logs")
+                        .header("Authorization", bearerToken(token("auditor", ISSUER, AUDIENCE, now, now.plusSeconds(3600))))
+                        .queryParam("projectId", "PJT-100"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items").isArray());
+    }
+
+    @Test
+    void queryRejectsScopedExecutiveOutsideDivisionClaim() throws Exception {
+        Instant now = Instant.now();
+        String scopedExecutiveAuth = bearerToken(token(
+                "executive",
+                ISSUER,
+                AUDIENCE,
+                now,
+                now.plusSeconds(3600),
+                Map.of("division", "언더라이팅본부")));
+
+        mockMvc.perform(get("/api/audit-logs")
+                        .header("Authorization", scopedExecutiveAuth)
+                        .queryParam("projectId", "SALES-PRJ-001"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void appendAllowsScopedExecutiveWithinDivisionClaim() throws Exception {
+        Instant now = Instant.now();
+        String scopedExecutiveAuth = bearerToken(token(
+                "executive",
+                ISSUER,
+                AUDIENCE,
+                now,
+                now.plusSeconds(3600),
+                Map.of("division_code", "UND")));
+
+        mockMvc.perform(post("/api/audit-logs")
+                        .header("Authorization", scopedExecutiveAuth)
+                        .header("X-Request-Id", "req-division-ok")
+                        .contentType(APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "projectId": "UND-PRJ-001",
+                                  "eventType": "REVIEW",
+                                  "actorRole": "system",
+                                  "actorId": "script-user",
+                                  "action": "submit",
+                                  "target": "project",
+                                  "result": "success",
+                                  "metadata": {
+                                    "note": "division-allowed"
+                                  },
+                                  "occurredAt": "2026-04-20T13:00:00Z"
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.projectId").value("UND-PRJ-001"));
+    }
+
+    @Test
+    void queryAllowsAuditorRoleWithDivisionClaim() throws Exception {
+        Instant now = Instant.now();
+        mockMvc.perform(get("/api/audit-logs")
+                        .header("Authorization", bearerToken(token(
+                                "auditor",
+                                ISSUER,
+                                AUDIENCE,
+                                now,
+                                now.plusSeconds(3600),
+                                Map.of("headquarter", "언더라이팅본부"))))
+                        .queryParam("projectId", "SALES-PRJ-001"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items").isArray());
+    }
+
+    @Test
+    void queryAllowsAdminRole() throws Exception {
+        Instant now = Instant.now();
+        mockMvc.perform(get("/api/audit-logs")
+                        .header("Authorization", bearerToken(token("admin", ISSUER, AUDIENCE, now, now.plusSeconds(3600))))
+                        .queryParam("projectId", "PJT-100"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items").isArray());
+    }
+
+    @Test
     void appendOnlyEndpointRejectsUpdateAndDeleteMethods() throws Exception {
         Instant now = Instant.now();
         String executiveAuth = bearerToken(token("executive", ISSUER, AUDIENCE, now, now.plusSeconds(3600)));
@@ -262,18 +419,49 @@ class AuditLogControllerTest {
     }
 
     private String token(String role, String issuer, String audience, Instant issuedAt, Instant expiresAt) {
+        return token(role, issuer, audience, issuedAt, expiresAt, Map.of());
+    }
+
+    private String token(
+            String role,
+            String issuer,
+            String audience,
+            Instant issuedAt,
+            Instant expiresAt,
+            Map<String, Object> extraClaims) {
         SecretKey secretKey = new SecretKeySpec(Base64.getDecoder().decode(SECRET_BASE64), "HmacSHA256");
         JwtEncoder encoder = new NimbusJwtEncoder(new ImmutableSecret<>(secretKey));
-        JwtClaimsSet claims = JwtClaimsSet.builder()
+        JwtClaimsSet.Builder claimsBuilder = JwtClaimsSet.builder()
                 .issuer(issuer)
-                .subject("user-123")
+                .subject(role + "@example.com")
                 .audience(List.of(audience))
                 .issuedAt(issuedAt)
                 .expiresAt(expiresAt)
                 .claim("email", role + "@example.com")
-                .claim("role", role)
-                .build();
+                .claim("role", role);
+        extraClaims.forEach(claimsBuilder::claim);
+        JwtClaimsSet claims = claimsBuilder.build();
         return encoder.encode(JwtEncoderParameters.from(JwsHeader.with(MacAlgorithm.HS256).build(), claims))
                 .getTokenValue();
+    }
+
+    private String toAuthorityRole(String role) {
+        return switch (role == null ? "" : role.trim().toLowerCase()) {
+            case "planner", "pm" -> "PLANNER";
+            case "finance_reviewer", "accountant" -> "FINANCE_REVIEWER";
+            case "executive" -> "EXECUTIVE";
+            case "auditor" -> "AUDITOR";
+            case "admin" -> "ADMIN";
+            default -> role == null ? "EXECUTIVE" : role.trim().toUpperCase();
+        };
+    }
+
+    private String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (value != null && !value.trim().isBlank()) {
+                return value.trim();
+            }
+        }
+        return null;
     }
 }

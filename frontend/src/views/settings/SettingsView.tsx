@@ -1,4 +1,5 @@
 import type { RoleInsight, Role } from '../../app/portfolioData';
+import { getRoleLabel } from '../../features/auth/permissions';
 import { InfoTile } from '../../shared/components/InfoTile';
 import { Panel } from '../../shared/components/Panel';
 
@@ -12,7 +13,7 @@ export function SettingsView({ selectedRole, selectedInsight }: SettingsViewProp
     <section className="settings-grid">
       <Panel title="Role context" subtitle="역할 전환은 탐색 계층과 분리된 설정/선호 영역에 둡니다.">
         <div className="preference-stack">
-          <InfoTile label="현재 역할" value={selectedRole} />
+          <InfoTile label="현재 역할" value={getRoleLabel(selectedRole)} />
           <InfoTile label="기본 진입" value="Portfolio overview" />
           <InfoTile label="선호 워크스페이스" value="Management Accounting / Financial Evaluation" />
         </div>

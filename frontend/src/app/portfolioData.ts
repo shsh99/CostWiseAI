@@ -1,4 +1,9 @@
-export type Role = '원가담당자' | '재무검토자' | '본부장' | '임원';
+export type Role =
+  | 'ADMIN'
+  | 'EXECUTIVE'
+  | 'PM'
+  | 'ACCOUNTANT'
+  | 'AUDITOR';
 
 export type RiskLevel = '낮음' | '중간' | '높음';
 
@@ -444,6 +449,11 @@ export const navigationItems = [
     description: '가치평가와 투자 판단 워크스페이스입니다.'
   },
   {
+    key: 'users',
+    label: 'Users',
+    description: '사용자 권한과 계정 상태를 운영합니다.'
+  },
+  {
     key: 'reviews',
     label: 'Reviews',
     description: '가정값과 감사 이력을 검토합니다.'
@@ -496,7 +506,31 @@ export const emptyPortfolioSummary: PortfolioSummary = {
 };
 
 export const roleInsights: Record<Role, RoleInsight> = {
-  원가담당자: {
+  ADMIN: {
+    headline: '권한과 운영 흐름을 함께 관리하며 전체 포트폴리오를 조율합니다.',
+    summary:
+      '역할별 탐색 범위와 프로젝트 운영 흐름을 함께 보며, 필요 시 운영 기준과 컨텍스트를 조정합니다.',
+    decisionFocus: '권한 정책, 운영 안정성, 예외 대응',
+    riskWatch: '역할 경계가 불명확하면 승인 근거와 편집 책임이 섞일 수 있습니다.',
+    nextAction: '운영 정책 점검 및 권한 예외 검토'
+  },
+  EXECUTIVE: {
+    headline: '전체 포트폴리오를 보고 최종 승인 방향을 정합니다.',
+    summary:
+      '5개 본부 20개 프로젝트를 한눈에 보고 승인, 조건부 진행, 보류를 빠르게 구분합니다.',
+    decisionFocus: '총 투자액, 평균 NPV, 승인 대기 프로젝트',
+    riskWatch: '감사 로그가 부족하면 승인 근거가 남지 않을 수 있습니다.',
+    nextAction: '최종 승인 또는 보류 의사결정'
+  },
+  PM: {
+    headline: '담당 프로젝트와 본부 우선순위를 빠르게 조정합니다.',
+    summary:
+      '본부별 프로젝트 수, 투자 규모, 평균 NPV를 비교하고 어떤 프로젝트를 먼저 추진할지 판단합니다.',
+    decisionFocus: '프로젝트 우선순위, 본부 포트폴리오, 일정 리스크',
+    riskWatch: '본부 단위 맥락 없이 개별 프로젝트만 보면 우선순위가 왜곡될 수 있습니다.',
+    nextAction: '우선순위 코멘트 정리 및 프로젝트 조정'
+  },
+  ACCOUNTANT: {
     headline: '5개 본부의 원가가 활동 기준에 맞게 배분되는지 확인합니다.',
     summary:
       '본부별 배부 기준, 비용풀, 활동량이 서로 맞물리는지 보고 원가 왜곡이 없는지 점검합니다.',
@@ -504,29 +538,13 @@ export const roleInsights: Record<Role, RoleInsight> = {
     riskWatch: '배부 기준이 단순하면 본부별 비교가 왜곡될 수 있습니다.',
     nextAction: '배부 기준 조정 후 재배분 요청'
   },
-  재무검토자: {
-    headline: 'DCF와 시나리오를 보고 투자 타당성을 점검합니다.',
+  AUDITOR: {
+    headline: '가정값과 이력 증적을 읽기 전용으로 점검합니다.',
     summary:
-      'NPV, IRR, 회수기간을 검토하고 낙관/기준/비관 시나리오 차이가 허용 가능한지 확인합니다.',
-    decisionFocus: '현금흐름 가정, 할인율, 회수기간',
-    riskWatch: '가정값이 흔들리면 순현재가치가 급격히 바뀔 수 있습니다.',
-    nextAction: '시나리오별 재평가 요청'
-  },
-  본부장: {
-    headline: '자기 본부의 프로젝트 우선순위를 빠르게 봅니다.',
-    summary:
-      '본부별 프로젝트 수, 투자 규모, 평균 NPV를 비교하고 본부 내에서 어떤 사업을 먼저 추진할지 판단합니다.',
-    decisionFocus: '본부 포트폴리오, 우선순위, 리스크',
-    riskWatch: '본부 단위로 보지 않으면 투자 우선순위가 흐려질 수 있습니다.',
-    nextAction: '본부별 우선순위 코멘트 작성'
-  },
-  임원: {
-    headline: '전체 포트폴리오를 보고 최종 승인 방향을 정합니다.',
-    summary:
-      '5개 본부 20개 프로젝트를 한눈에 보고 승인, 조건부 진행, 보류를 빠르게 구분합니다.',
-    decisionFocus: '총 투자액, 평균 NPV, 승인 대기 프로젝트',
-    riskWatch: '감사 로그가 부족하면 승인 근거가 남지 않을 수 있습니다.',
-    nextAction: '최종 승인 또는 보류 의사결정'
+      '감사 로그, 검토 상태, 승인 근거를 분리해서 보고 변경 없이 증적과 맥락이 일치하는지 확인합니다.',
+    decisionFocus: '감사 이력, 승인 근거, 변경 추적',
+    riskWatch: '운영 화면에서 수정 권한이 섞이면 감사 독립성이 약해질 수 있습니다.',
+    nextAction: '증적 검토 결과 기록 및 후속 확인 요청'
   }
 };
 
@@ -539,6 +557,52 @@ const apiAccessToken =
   import.meta.env.VITE_SUPABASE_ACCESS_TOKEN ??
   '';
 
+export type CreateProjectRequest = {
+  code: string;
+  name: string;
+  businessType: string;
+  description: string;
+};
+
+export type CreateProjectResponse = {
+  id: string;
+  code: string;
+  name: string;
+  businessType: string;
+  status: string;
+  description?: string;
+  createdAt?: string;
+};
+
+export type UserAccount = {
+  id: string;
+  email: string;
+  displayName: string;
+  role: string;
+  division: string;
+  status: string;
+  mfaEnabled: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type UpsertUserRequest = {
+  email: string;
+  displayName: string;
+  role: string;
+  division: string;
+  status: string;
+  mfaEnabled: boolean;
+};
+
+export type ApiError = Error & {
+  status?: number;
+};
+
+export function isForbiddenApiError(error: unknown): error is ApiError {
+  return extractApiErrorStatus(error) === 403;
+}
+
 export async function loadPortfolioSummary(): Promise<{
   summary: PortfolioSummary;
   source: DataSource;
@@ -546,7 +610,10 @@ export async function loadPortfolioSummary(): Promise<{
   try {
     const response = await apiFetch('/api/portfolio/summary');
     if (!response.ok) {
-      throw new Error(`Portfolio summary request failed: ${response.status}`);
+      throw createApiError(
+        `Portfolio summary request failed: ${response.status}`,
+        response.status
+      );
     }
 
     return {
@@ -579,8 +646,12 @@ export async function loadProjectDetail(project: ProjectSummary): Promise<{
     ]);
 
     if (!detailResponse.ok || !valuationResponse.ok) {
-      throw new Error(
-        `Project detail request failed: ${detailResponse.status}/${valuationResponse.status}`
+      const failedStatus = !detailResponse.ok
+        ? detailResponse.status
+        : valuationResponse.status;
+      throw createApiError(
+        `Project detail request failed: ${detailResponse.status}/${valuationResponse.status}`,
+        failedStatus
       );
     }
 
@@ -604,12 +675,27 @@ export async function loadAuditEvents(project: ProjectSummary): Promise<{
 }> {
   const projectId = project.projectId ?? project.code;
 
+  return loadAuditEventsByProjectId(projectId, 20);
+}
+
+export async function loadAuditEventsByProjectId(
+  projectId: string,
+  limit = 20
+): Promise<{
+  events: AuditEvent[];
+  source: DataSource;
+}> {
+  const resolvedLimit = Number.isFinite(limit) ? Math.max(1, Math.round(limit)) : 20;
+
   try {
     const response = await apiFetch(
-      `/api/audit-logs?projectId=${encodeURIComponent(projectId)}&limit=20`
+      `/api/audit-logs?projectId=${encodeURIComponent(projectId)}&limit=${resolvedLimit}`
     );
     if (!response.ok) {
-      throw new Error(`Audit log request failed: ${response.status}`);
+      throw createApiError(
+        `Audit log request failed: ${response.status}`,
+        response.status
+      );
     }
 
     const payload = (await response.json()) as AuditLogListApiResponse;
@@ -620,6 +706,125 @@ export async function loadAuditEvents(project: ProjectSummary): Promise<{
     };
   } catch (error) {
     throw toApiError('감사 이력을 불러오지 못했습니다.', error);
+  }
+}
+
+export async function loadUsers(): Promise<UserAccount[]> {
+  try {
+    const response = await apiFetch('/api/users');
+    if (!response.ok) {
+      const errorMessage = await readApiErrorMessage(response);
+      throw createApiError(
+        errorMessage ?? `Users list request failed: ${response.status}`,
+        response.status
+      );
+    }
+
+    return (await response.json()) as UserAccount[];
+  } catch (error) {
+    throw toApiError('사용자 목록을 불러오지 못했습니다.', error);
+  }
+}
+
+export async function createUserAccount(
+  request: UpsertUserRequest
+): Promise<UserAccount> {
+  try {
+    const response = await apiFetch('/api/users', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(request)
+    });
+
+    if (!response.ok) {
+      const errorMessage = await readApiErrorMessage(response);
+      throw createApiError(
+        errorMessage ?? `User create request failed: ${response.status}`,
+        response.status
+      );
+    }
+
+    return (await response.json()) as UserAccount;
+  } catch (error) {
+    throw toApiError('사용자를 생성하지 못했습니다.', error);
+  }
+}
+
+export async function updateUserAccount(
+  userId: string,
+  request: UpsertUserRequest
+): Promise<UserAccount> {
+  try {
+    const response = await apiFetch(`/api/users/${encodeURIComponent(userId)}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(request)
+    });
+
+    if (!response.ok) {
+      const errorMessage = await readApiErrorMessage(response);
+      throw createApiError(
+        errorMessage ?? `User update request failed: ${response.status}`,
+        response.status
+      );
+    }
+
+    return (await response.json()) as UserAccount;
+  } catch (error) {
+    throw toApiError('사용자 정보를 수정하지 못했습니다.', error);
+  }
+}
+
+export async function deleteUserAccount(userId: string): Promise<void> {
+  try {
+    const response = await apiFetch(`/api/users/${encodeURIComponent(userId)}`, {
+      method: 'DELETE'
+    });
+
+    if (!response.ok) {
+      const errorMessage = await readApiErrorMessage(response);
+      throw createApiError(
+        errorMessage ?? `User delete request failed: ${response.status}`,
+        response.status
+      );
+    }
+  } catch (error) {
+    throw toApiError('사용자를 삭제하지 못했습니다.', error);
+  }
+}
+
+export async function createProject(
+  request: CreateProjectRequest
+): Promise<CreateProjectResponse> {
+  try {
+    const response = await apiFetch('/api/persistence/projects', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(request)
+    });
+
+    if (!response.ok) {
+      const errorMessage = await readApiErrorMessage(response);
+      throw createApiError(
+        errorMessage ?? `Project create request failed: ${response.status}`,
+        response.status
+      );
+    }
+
+    const createdProject = (await response.json()) as CreateProjectResponse;
+    if (!createdProject.id) {
+      throw new Error('Project create response is missing id.');
+    }
+
+    return createdProject;
+  } catch (error) {
+    throw toApiError('프로젝트를 생성하지 못했습니다.', error);
   }
 }
 
@@ -744,14 +949,44 @@ function normalizePortfolioSummary(
   };
 }
 
-function apiFetch(path: string) {
-  const headers = new Headers();
-  headers.set('Accept', 'application/json');
+function apiFetch(
+  path: string,
+  init?: {
+    method?: string;
+    headers?: Headers | Record<string, string>;
+    body?: string;
+  }
+) {
+  const headers = new Headers(init?.headers);
+  if (!headers.has('Accept')) {
+    headers.set('Accept', 'application/json');
+  }
   if (apiAccessToken.trim()) {
     headers.set('Authorization', `Bearer ${apiAccessToken.trim()}`);
   }
 
-  return fetch(`${apiBaseUrl}${path}`, { headers });
+  return fetch(`${apiBaseUrl}${path}`, {
+    ...init,
+    headers
+  });
+}
+
+async function readApiErrorMessage(response: Response) {
+  const rawText = await response.text();
+  if (!rawText.trim()) {
+    return null;
+  }
+
+  try {
+    const payload = JSON.parse(rawText) as Record<string, unknown>;
+    const candidate =
+      payload.message ?? payload.error ?? payload.detail ?? payload.title;
+    return typeof candidate === 'string' && candidate.trim()
+      ? candidate.trim()
+      : rawText.trim();
+  } catch {
+    return rawText.trim();
+  }
 }
 
 type ProjectDetailApiResponse = {
@@ -1168,11 +1403,29 @@ function buildDetailDefaultsFromProject(
 }
 
 function toApiError(message: string, error: unknown) {
-  if (error instanceof Error && error.message) {
-    return new Error(`${message} (${error.message})`);
+  const detail =
+    error instanceof Error && error.message ? ` (${error.message})` : '';
+  return createApiError(`${message}${detail}`, extractApiErrorStatus(error));
+}
+
+function createApiError(message: string, status?: number): ApiError {
+  const apiError = new Error(message) as ApiError;
+  if (typeof status === 'number' && Number.isFinite(status)) {
+    apiError.status = status;
   }
 
-  return new Error(message);
+  return apiError;
+}
+
+function extractApiErrorStatus(error: unknown): number | undefined {
+  if (!error || typeof error !== 'object') {
+    return undefined;
+  }
+
+  const status = (error as { status?: unknown }).status;
+  return typeof status === 'number' && Number.isFinite(status)
+    ? status
+    : undefined;
 }
 
 function seedIndex(projectCode: string) {

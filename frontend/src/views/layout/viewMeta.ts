@@ -28,6 +28,12 @@ export const viewMeta: Record<
     description: '투자 타당성, 시나리오, 리스크를 프로젝트 단위로 읽습니다.',
     breadcrumb: ['Platform', 'Workspaces', 'Financial Evaluation']
   },
+  users: {
+    eyebrow: 'Identity operations',
+    title: 'User directory and access controls',
+    description: '사용자 계정 CRUD와 권한 운영 로그를 한 화면에서 관리합니다.',
+    breadcrumb: ['Platform', 'Users']
+  },
   reviews: {
     eyebrow: 'Review history',
     title: 'Assumptions and review evidence',
