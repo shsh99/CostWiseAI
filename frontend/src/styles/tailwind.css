@@ -3,7 +3,22 @@
 @tailwind utilities;
 
 @layer base {
+  *,
+  ::before,
+  ::after {
+    box-sizing: border-box;
+  }
+
+  html,
+  body,
+  #root {
+    min-height: 100%;
+  }
+
   body {
-    @apply bg-cw-page text-cw-text;
+    @apply m-0 bg-cw-page text-cw-text;
+    font-family:
+      'SUIT Variable', 'Pretendard Variable', 'Pretendard',
+      'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
   }
 }
