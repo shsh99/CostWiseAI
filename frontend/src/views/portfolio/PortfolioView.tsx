@@ -975,8 +975,8 @@ export function PortfolioView({
   return (
     <section className="portfolio-grid portfolio-grid--operations">
       <Panel
-        title="Portfolio overview"
-        subtitle="본부 수준 상태를 먼저 읽고, 아래 운영 허브에서 프로젝트별 워크스페이스로 이동합니다."
+        title="프로젝트"
+        subtitle="20여개 프로젝트 동시 평가·관리"
       >
         {portfolioStatus === 'loading' && !hasHeadquarters ? (
           <div className="audit-state" role="status">
@@ -1074,8 +1074,8 @@ export function PortfolioView({
       </Panel>
 
       <Panel
-        title="Project operations"
-        subtitle="촘촘한 필터와 운영 테이블로 대상을 좁히고, 상세 허브 모달에서 필요한 워크스페이스로 진입합니다."
+        title="프로젝트 목록"
+        subtitle="필터/검색 후 상세 분석으로 진입합니다."
       >
         {isErrorWithoutData ? (
           <div className="empty-state">
@@ -1099,7 +1099,7 @@ export function PortfolioView({
             <div className="portfolio-ops__header">
               <div className="portfolio-ops__title">
                 <p className="portfolio-ops__eyebrow">Project operations</p>
-                <h3>프로젝트 운영 허브</h3>
+                <h3>프로젝트 관리</h3>
                 <p>
                   탐색 조건을 빠르게 조합하고, 행 선택 후 상세 허브에서
                   컨텍스트 선택과 워크스페이스 진입을 마무리합니다.
@@ -1196,7 +1196,7 @@ export function PortfolioView({
                 className="portfolio-filter-strip__group"
                 aria-label="빠른 필터"
               >
-                <span className="portfolio-filter-strip__label">Quick</span>
+                <span className="portfolio-filter-strip__label">빠른 필터</span>
                 {explorerQuickFilterOptions.map((filter) => (
                   <button
                     key={filter.key}
@@ -1219,7 +1219,7 @@ export function PortfolioView({
                 className="portfolio-filter-strip__group"
                 aria-label="상태 필터"
               >
-                <span className="portfolio-filter-strip__label">Status</span>
+                <span className="portfolio-filter-strip__label">상태</span>
                 {projectStatusFilterOptions.map((filter) => (
                   <button
                     key={filter.key}
@@ -1239,7 +1239,7 @@ export function PortfolioView({
                 className="portfolio-filter-strip__group"
                 aria-label="본부 필터"
               >
-                <span className="portfolio-filter-strip__label">HQ</span>
+                <span className="portfolio-filter-strip__label">본부</span>
                 {renderedHeadquarterOptions.map((headquarter) => (
                   <button
                     key={headquarter}

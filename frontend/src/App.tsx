@@ -35,6 +35,7 @@ import { DashboardView } from './views/dashboard/DashboardView';
 import { TaskSidebar } from './views/layout/TaskSidebar';
 import { TaskTopbar } from './views/layout/TaskTopbar';
 import { viewMeta } from './views/layout/viewMeta';
+import { LoginView } from './views/auth/LoginView';
 import { PortfolioView } from './views/portfolio/PortfolioView';
 import { ReviewsView } from './views/reviews/ReviewsView';
 import { SettingsView } from './views/settings/SettingsView';
@@ -42,6 +43,41 @@ import { UsersView } from './views/users/UsersView';
 import { WorkspaceView } from './views/workspace/WorkspaceView';
 
 type WorkspaceTabKey = (typeof detailTabs)[number]['key'];
+
+type AuthSession = {
+  username: string;
+  displayName: string;
+  role: Role;
+};
+
+type DemoAccount = AuthSession & { password: string };
+
+const demoAccounts: DemoAccount[] = [
+  {
+    username: 'admin',
+    password: 'admin123',
+    displayName: '시스템 관리자',
+    role: 'ADMIN'
+  },
+  {
+    username: 'cfo',
+    password: 'user123',
+    displayName: '본부장',
+    role: 'EXECUTIVE'
+  },
+  {
+    username: 'analyst',
+    password: 'user123',
+    displayName: '원가 담당',
+    role: 'ACCOUNTANT'
+  },
+  {
+    username: 'viewer',
+    password: 'user123',
+    displayName: '감사 담당',
+    role: 'AUDITOR'
+  }
+];
 
 export function App() {
   const initialExplorerState = useMemo(
@@ -53,7 +89,21 @@ export function App() {
       new URLSearchParams(window.location.search).get('project')?.trim() ?? '',
     []
   );
-  const [selectedRole, setSelectedRole] = useState<Role>('EXECUTIVE');
+  const [session, setSession] = useState<AuthSession | null>(() => {
+    try {
+      const raw = window.localStorage.getItem('costwise_session');
+      if (!raw) {
+        return null;
+      }
+      const parsed = JSON.parse(raw) as AuthSession;
+      return parsed?.role ? parsed : null;
+    } catch {
+      return null;
+    }
+  });
+  const [selectedRole, setSelectedRole] = useState<Role>(
+    session?.role ?? 'EXECUTIVE'
+  );
   const [activeView, setActiveView] = useState<NavigationKey>(
     initialExplorerState.view
   );
@@ -585,6 +635,13 @@ export function App() {
   }, [activeView, selectedRole]);
 
   useEffect(() => {
+    if (!session) {
+      return;
+    }
+    setSelectedRole(session.role);
+  }, [session]);
+
+  useEffect(() => {
     if (activeView === 'accounting') {
       setActiveWorkspaceTab('allocation');
       return;
@@ -672,8 +729,37 @@ export function App() {
     }
   }
 
+  function handleLogin(username: string, password: string) {
+    const resolved = demoAccounts.find(
+      (account) => account.username === username && account.password === password
+    );
+
+    if (!resolved) {
+      return false;
+    }
+
+    const nextSession: AuthSession = {
+      username: resolved.username,
+      displayName: resolved.displayName,
+      role: resolved.role
+    };
+    window.localStorage.setItem('costwise_session', JSON.stringify(nextSession));
+    setSession(nextSession);
+    setSelectedRole(nextSession.role);
+    return true;
+  }
+
+  function handleLogout() {
+    window.localStorage.removeItem('costwise_session');
+    setSession(null);
+  }
+
+  if (!session) {
+    return <LoginView onLogin={handleLogin} />;
+  }
+
   return (
-    <div className="app-shell app-shell--task-first">
+    <div className="app-shell app-shell--finops">
       <a className="skip-link" href="#main-content">
         본문으로 건너뛰기
       </a>
@@ -684,21 +770,22 @@ export function App() {
         onChangeView={setActiveView}
       />
 
-      <div className="workspace workspace--task-first">
-      <TaskTopbar
-        selectedRole={selectedRole}
-        onChangeRole={setSelectedRole}
-        divisionScope={divisionScope}
-        divisionOptions={divisionOptions}
-        onChangeDivision={setSelectedDivision}
-        source={source}
-        projectCount={scopedPortfolio.overview.projectCount}
-        conditionalCount={scopedPortfolio.overview.conditionalCount}
-        selectedProject={selectedProject}
-        meta={currentViewMeta}
-      />
+      <div className="workspace workspace--finops">
+        <TaskTopbar
+          selectedRole={selectedRole}
+          username={session.displayName}
+          divisionScope={divisionScope}
+          divisionOptions={divisionOptions}
+          onChangeDivision={setSelectedDivision}
+          source={source}
+          projectCount={scopedPortfolio.overview.projectCount}
+          conditionalCount={scopedPortfolio.overview.conditionalCount}
+          selectedProject={selectedProject}
+          meta={currentViewMeta}
+          onLogout={handleLogout}
+        />
 
-        <main id="main-content" className="content content--task-first">
+        <main id="main-content" className="content content--finops">
           {activeView === 'dashboard' ? (
             <DashboardView
               decisionSignals={decisionSignals}
@@ -759,7 +846,7 @@ export function App() {
             />
           ) : null}
 
-          {activeView === 'reviews' ? (
+          {activeView === 'audit' ? (
             <ReviewsView
               portfolio={scopedPortfolio}
               auditEvents={auditEvents}

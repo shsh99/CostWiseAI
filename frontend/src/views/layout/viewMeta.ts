@@ -5,45 +5,45 @@ export const viewMeta: Record<
   { eyebrow: string; title: string; description: string; breadcrumb: string[] }
 > = {
   dashboard: {
-    eyebrow: 'Executive overview',
-    title: 'Task-first decision shell',
-    description: '플랫폼 진입 즉시 포트폴리오 상태와 다음 작업 경로를 이해하도록 셸을 재구성했습니다.',
-    breadcrumb: ['Platform', 'Dashboard']
+    eyebrow: '대시보드',
+    title: '대시보드',
+    description: '전사 KPI와 리스크 분포를 확인합니다.',
+    breadcrumb: ['메인', '대시보드']
   },
   portfolio: {
-    eyebrow: 'Portfolio queue',
-    title: 'Portfolio as the default landing context',
-    description: '프로젝트를 한곳에서 검토하고, 필요한 워크스페이스로 의도적으로 진입합니다.',
-    breadcrumb: ['Platform', 'Portfolio']
+    eyebrow: '프로젝트',
+    title: '프로젝트',
+    description: '프로젝트 목록과 상태를 필터링하여 관리합니다.',
+    breadcrumb: ['프로젝트·평가', '프로젝트']
   },
   accounting: {
-    eyebrow: 'Workspace',
-    title: 'Management accounting workspace',
-    description: '선택된 프로젝트의 원가·배분 맥락만 집중해서 봅니다.',
-    breadcrumb: ['Platform', 'Workspaces', 'Management Accounting']
+    eyebrow: '원가·관리회계',
+    title: '원가·관리회계',
+    description: '원가 집계와 표준원가 차이를 분석합니다.',
+    breadcrumb: ['원가·관리회계', '원가 집계·분석']
   },
   valuation: {
-    eyebrow: 'Workspace',
-    title: 'Financial evaluation workspace',
-    description: '투자 타당성, 시나리오, 리스크를 프로젝트 단위로 읽습니다.',
-    breadcrumb: ['Platform', 'Workspaces', 'Financial Evaluation']
+    eyebrow: '프로젝트·평가',
+    title: '가치평가',
+    description: '프로젝트 가치평가와 리스크 지표를 확인합니다.',
+    breadcrumb: ['프로젝트·평가', '가치평가']
   },
   users: {
-    eyebrow: 'Identity operations',
-    title: 'User directory and access controls',
-    description: '사용자 계정 CRUD와 권한 운영 로그를 한 화면에서 관리합니다.',
-    breadcrumb: ['Platform', 'Users']
+    eyebrow: '시스템',
+    title: '사용자 관리',
+    description: '사용자 권한과 계정 상태를 관리합니다.',
+    breadcrumb: ['시스템', '사용자 관리']
   },
-  reviews: {
-    eyebrow: 'Review history',
-    title: 'Assumptions and review evidence',
-    description: '가정값과 감사 흐름을 별도 검토 레이어로 분리했습니다.',
-    breadcrumb: ['Platform', 'Reviews']
+  audit: {
+    eyebrow: '시스템',
+    title: '감사 로그',
+    description: '시스템 활동 이력을 조회합니다.',
+    breadcrumb: ['시스템', '감사 로그']
   },
   settings: {
-    eyebrow: 'Administration',
-    title: 'Role and workspace preferences',
-    description: '역할과 선호 컨텍스트는 글로벌 네비게이션과 분리된 설정 영역으로 둡니다.',
-    breadcrumb: ['Platform', 'Settings']
+    eyebrow: '시스템',
+    title: '사용 가이드',
+    description: '역할별 사용 절차를 확인합니다.',
+    breadcrumb: ['시스템', '사용 가이드']
   }
 };
