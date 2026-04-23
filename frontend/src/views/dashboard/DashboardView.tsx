@@ -140,17 +140,20 @@ export function DashboardView({
 
       <section className="grid grid-cols-[2fr_1fr] gap-4 max-[1280px]:grid-cols-1">
         <Panel title="월별 원가 추이 (실적 vs 표준)" subtitle="우선순위 프로젝트 기준">
-          <ol className="audit-list audit-list--wide">
+          <ol className="m-0 grid list-none gap-3 p-0">
             {priorityProjects.slice(0, 5).map((project) => (
-              <li key={project.code}>
-                <strong>
+              <li
+                key={project.code}
+                className="grid gap-1.5 rounded-[18px] border border-[rgba(123,137,167,0.12)] bg-[#f8faff] px-4 py-3.5"
+              >
+                <strong className="text-[0.95rem] font-semibold text-[#20293d]">
                   {project.code} · {project.name}
                 </strong>
-                <span>
+                <span className="m-0 leading-relaxed text-[#707a92]">
                   투자 {formatKrwCompact(project.investmentKrw)} / NPV{' '}
                   {formatKrwCompact(project.npvKrw)}
                 </span>
-                <small>
+                <small className="text-[#707a92]">
                   IRR {formatPercent(project.irr)} · 회수 {project.paybackYears.toFixed(1)}년
                 </small>
               </li>
@@ -159,17 +162,20 @@ export function DashboardView({
         </Panel>
 
         <Panel title="다음 의사결정" subtitle="역할 기반 현재 포커스">
-          <article className="workflow-note">
-            <strong>{selectedInsight.decisionFocus}</strong>
-            <p>{selectedInsight.summary}</p>
-            <p>{selectedInsight.nextAction}</p>
+          <article className="grid gap-2 rounded-[20px] border border-[rgba(123,137,167,0.12)] bg-[#f9fafc] p-[18px]">
+            <strong className="text-[0.95rem] font-semibold text-[#20293d]">
+              {selectedInsight.decisionFocus}
+            </strong>
+            <p className="m-0 leading-relaxed text-[#707a92]">{selectedInsight.summary}</p>
+            <p className="m-0 leading-relaxed text-[#707a92]">{selectedInsight.nextAction}</p>
           </article>
-          <div className="table-actions">
+          <div className="flex flex-wrap gap-2.5">
             {priorityProjects.slice(0, 2).map((project) => (
               <button
                 key={project.code}
                 type="button"
                 onClick={() => onOpenWorkspace('accounting', project.code)}
+                className="rounded-[14px] border border-[rgba(79,103,246,0.18)] bg-[rgba(79,103,246,0.08)] px-3 py-2.5 text-sm font-bold text-[#3d52dc] transition-colors hover:bg-[rgba(79,103,246,0.14)]"
               >
                 {project.code} 원가 분석
               </button>

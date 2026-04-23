@@ -64,6 +64,24 @@ export function WorkspaceView({
   onRetryDetailLoad
 }: WorkspaceViewProps) {
   const hasSelectedProject = Boolean(selectedProject);
+  const statusCardClass =
+    'rounded-2xl border border-[#d8e2f2] bg-[#f8fbff] px-5 py-4 text-[#34496d] shadow-[0_6px_18px_rgba(24,40,71,0.06)]';
+  const emptyStateClass =
+    'rounded-2xl border border-dashed border-[#cfdcf0] bg-white px-5 py-6 text-[#34496d] shadow-[0_4px_14px_rgba(24,40,71,0.04)]';
+  const emptyStateButtonClass =
+    'mt-3 inline-flex items-center rounded-xl border border-[#b9c9e4] bg-white px-3 py-2 text-sm font-semibold text-[#2f4570] transition hover:bg-[#f3f7ff]';
+  const tableShellClass =
+    'overflow-x-auto rounded-2xl border border-[#d7e1f1] bg-white shadow-[0_6px_20px_rgba(24,40,71,0.05)]';
+  const tableClass = 'min-w-full border-separate border-spacing-0 text-sm text-[#2b3f63]';
+  const kpiGridClass = 'grid gap-3 sm:grid-cols-2 xl:grid-cols-4';
+  const dominantSurfaceClass =
+    'rounded-2xl border border-[#d7e1f1] bg-white p-4 shadow-[0_8px_24px_rgba(24,40,71,0.06)]';
+  const supportGridClass = 'grid gap-4 lg:grid-cols-2';
+  const workflowNoteClass =
+    'rounded-2xl border border-[#d7e1f1] bg-white p-4 text-[#34496d] shadow-[0_6px_18px_rgba(24,40,71,0.05)]';
+  const listClass = 'mt-3 grid gap-2';
+  const listItemClass =
+    'rounded-xl border border-[#e0e8f5] bg-[#f9fbff] px-3 py-2 text-sm text-[#41557b]';
 
   if (activeView === 'accounting') {
     const allocationRows = selectedDetail?.allocation.rules ?? [];
@@ -96,17 +114,27 @@ export function WorkspaceView({
         </header>
 
         {detailStatus === 'loading' ? (
-          <div className="audit-state" role="status">
-            <strong>원가 상세 데이터를 불러오는 중입니다.</strong>
-            <p>프로젝트 배부 규칙과 집계 데이터를 확인하고 있습니다.</p>
+          <div className={statusCardClass} role="status">
+            <strong className="block text-[0.98rem] font-semibold text-[#1d2f52]">
+              원가 상세 데이터를 불러오는 중입니다.
+            </strong>
+            <p className="mt-1 text-sm">
+              프로젝트 배부 규칙과 집계 데이터를 확인하고 있습니다.
+            </p>
           </div>
         ) : null}
 
         {detailStatus === 'error' ? (
-          <div className="empty-state">
-            <strong>원가 데이터를 불러오지 못했습니다.</strong>
-            <p>{detailError ?? '잠시 후 다시 시도하세요.'}</p>
-            <button type="button" onClick={onRetryDetailLoad}>
+          <div className={emptyStateClass}>
+            <strong className="block text-[1rem] font-semibold text-[#1d2f52]">
+              원가 데이터를 불러오지 못했습니다.
+            </strong>
+            <p className="mt-1 text-sm">{detailError ?? '잠시 후 다시 시도하세요.'}</p>
+            <button
+              type="button"
+              onClick={onRetryDetailLoad}
+              className={emptyStateButtonClass}
+            >
               다시 시도
             </button>
           </div>
@@ -115,16 +143,16 @@ export function WorkspaceView({
         {hasSelectedProject && detailStatus === 'ready' && selectedDetail ? (
           <>
             <Panel title="본부별 원가 차이분석 (실제 vs 표준)" subtitle="선택 프로젝트 기준 배부 규칙">
-              <div className="table-shell">
-                <table className="data-table">
-                  <thead>
+              <div className={tableShellClass}>
+                <table className={tableClass}>
+                  <thead className="bg-[#f1f5fc] text-xs uppercase tracking-[0.03em] text-[#5a7096]">
                     <tr>
-                      <th>본부</th>
-                      <th>실제원가</th>
-                      <th>표준원가</th>
-                      <th>차이</th>
-                      <th>차이율</th>
-                      <th>판정</th>
+                      <th className="border-b border-[#d7e1f1] px-4 py-3 text-left font-semibold">본부</th>
+                      <th className="border-b border-[#d7e1f1] px-4 py-3 text-left font-semibold">실제원가</th>
+                      <th className="border-b border-[#d7e1f1] px-4 py-3 text-left font-semibold">표준원가</th>
+                      <th className="border-b border-[#d7e1f1] px-4 py-3 text-left font-semibold">차이</th>
+                      <th className="border-b border-[#d7e1f1] px-4 py-3 text-left font-semibold">차이율</th>
+                      <th className="border-b border-[#d7e1f1] px-4 py-3 text-left font-semibold">판정</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -136,18 +164,28 @@ export function WorkspaceView({
                           : (diff / rule.costPoolAmount) * 100;
                       return (
                         <tr key={`${rule.departmentCode}-${rule.costPoolName}`}>
-                          <td>{rule.departmentCode}</td>
-                          <td>{formatKrwCompact(rule.allocatedAmount)}</td>
-                          <td>{formatKrwCompact(rule.costPoolAmount)}</td>
-                          <td className={diff > 0 ? 'text-danger' : 'text-success'}>
+                          <td className="border-b border-[#e5ecf8] px-4 py-3">{rule.departmentCode}</td>
+                          <td className="border-b border-[#e5ecf8] px-4 py-3">{formatKrwCompact(rule.allocatedAmount)}</td>
+                          <td className="border-b border-[#e5ecf8] px-4 py-3">{formatKrwCompact(rule.costPoolAmount)}</td>
+                          <td
+                            className={`border-b border-[#e5ecf8] px-4 py-3 ${diff > 0 ? 'text-[#d14343]' : 'text-[#198b63]'}`}
+                          >
                             {diff > 0 ? '+' : ''}
                             {formatKrwCompact(diff)}
                           </td>
-                          <td className={rate > 0 ? 'text-danger' : 'text-success'}>
+                          <td
+                            className={`border-b border-[#e5ecf8] px-4 py-3 ${rate > 0 ? 'text-[#d14343]' : 'text-[#198b63]'}`}
+                          >
                             {rate.toFixed(2)}%
                           </td>
-                          <td>
-                            <span className={`status-pill status-pill--${rate > 0 ? 'high' : 'low'}`}>
+                          <td className="border-b border-[#e5ecf8] px-4 py-3">
+                            <span
+                              className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${
+                                rate > 0
+                                  ? 'border-[#f7caca] bg-[#fff0f0] text-[#b64040]'
+                                  : 'border-[#b9ecd8] bg-[#ecfbf4] text-[#1f8a63]'
+                              }`}
+                            >
                               {rate > 0 ? '불리' : '양호'}
                             </span>
                           </td>
@@ -213,9 +251,13 @@ export function WorkspaceView({
         ) : null}
 
         {!hasSelectedProject && detailStatus !== 'loading' ? (
-          <div className="empty-state">
-            <strong>선택된 프로젝트가 없습니다.</strong>
-            <p>프로젝트 목록에서 대상을 선택하면 원가 집계·분석 화면이 활성화됩니다.</p>
+          <div className={emptyStateClass}>
+            <strong className="block text-[1rem] font-semibold text-[#1d2f52]">
+              선택된 프로젝트가 없습니다.
+            </strong>
+            <p className="mt-1 text-sm">
+              프로젝트 목록에서 대상을 선택하면 원가 집계·분석 화면이 활성화됩니다.
+            </p>
           </div>
         ) : null}
       </section>
@@ -223,82 +265,87 @@ export function WorkspaceView({
   }
 
   return (
-    <section className="workspace-stage cockpit-stage">
+    <section className="grid gap-4">
       <div
-        className="workspace-stage__summary cockpit-summary-strip"
+        className="rounded-2xl border border-[#d7e1f1] bg-white p-5 shadow-[0_8px_22px_rgba(24,40,71,0.06)]"
         aria-label="프로젝트 요약 스트립"
       >
-        <div className="cockpit-summary-strip__intro">
-          <p className="workspace-stage__eyebrow">
+        <div className="grid gap-4 lg:grid-cols-[1.6fr_1fr]">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.06em] text-[#6881aa]">
             Financial Evaluation
-          </p>
-          <h2>{selectedProject?.name ?? '선택된 프로젝트 없음'}</h2>
-          <p>
-            {hasSelectedProject && detailStatus === 'ready' && selectedDetail
-              ? `${selectedProject?.headquarter} · ${selectedDetail.assetCategory} · ${selectedDetail.headline}`
-              : hasSelectedProject
-                ? `${selectedProject?.headquarter} · API 상세 데이터 동기화 중`
-                : '포트폴리오에서 프로젝트를 먼저 선택하세요.'}
-          </p>
-        </div>
-        <div
-          className="cockpit-summary-strip__focus"
-          aria-label="핵심 신호와 다음 행동"
-        >
-          <div className="workspace-stage__meta cockpit-summary-strip__kpis">
-            {selectedWorkspaceKpis.map((item) => (
-              <InfoTile
-                key={item.label}
-                label={item.label}
-                value={item.value}
-              />
-            ))}
-            <InfoTile
-              label="다음 단계"
-              value={selectedDetail?.workflow.nextStep ?? '-'}
-            />
+            </p>
+            <h2 className="mt-2 text-2xl font-bold text-[#182847]">
+              {selectedProject?.name ?? '선택된 프로젝트 없음'}
+            </h2>
+            <p className="mt-2 text-sm text-[#5f7498]">
+              {hasSelectedProject && detailStatus === 'ready' && selectedDetail
+                ? `${selectedProject?.headquarter} · ${selectedDetail.assetCategory} · ${selectedDetail.headline}`
+                : hasSelectedProject
+                  ? `${selectedProject?.headquarter} · API 상세 데이터 동기화 중`
+                  : '포트폴리오에서 프로젝트를 먼저 선택하세요.'}
+            </p>
           </div>
-          <article className="cockpit-next-action">
-            <span>Next action</span>
-            <strong>
-              {selectedDetail?.workflow.nextStep ?? '검토 단계 확인 필요'}
-            </strong>
-            <p>{cockpitNextAction}</p>
-          </article>
+          <div className="grid gap-3" aria-label="핵심 신호와 다음 행동">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {selectedWorkspaceKpis.map((item) => (
+                <InfoTile
+                  key={item.label}
+                  label={item.label}
+                  value={item.value}
+                />
+              ))}
+              <InfoTile
+                label="다음 단계"
+                value={selectedDetail?.workflow.nextStep ?? '-'}
+              />
+            </div>
+            <article className="rounded-xl border border-[#d5e0f1] bg-[#f7faff] p-4 text-[#34496d]">
+              <span className="text-xs font-semibold uppercase tracking-[0.04em] text-[#6881aa]">
+                Next action
+              </span>
+              <strong className="mt-1 block text-base text-[#1f3458]">
+                {selectedDetail?.workflow.nextStep ?? '검토 단계 확인 필요'}
+              </strong>
+              <p className="mt-1 text-sm">{cockpitNextAction}</p>
+            </article>
+          </div>
         </div>
       </div>
 
-      <div className="cockpit-meta-band" aria-label="요약 메타 정보">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="요약 메타 정보">
         {cockpitMetaItems.map((item) => (
           <InfoTile key={item.label} label={item.label} value={item.value} />
         ))}
       </div>
-      <div className="cockpit-scan-rail" aria-label="의사결정 스캔 경로">
-        <article className="cockpit-scan-rail__step">
-          <span>01</span>
-          <strong>Focus signal</strong>
-          <p>
+      <div className="grid gap-3 md:grid-cols-3" aria-label="의사결정 스캔 경로">
+        <article className="rounded-2xl border border-[#d7e1f1] bg-white p-4 shadow-[0_6px_18px_rgba(24,40,71,0.05)]">
+          <span className="text-xs font-semibold text-[#6c83ab]">01</span>
+          <strong className="mt-1 block text-[#1f3458]">Focus signal</strong>
+          <p className="mt-1 text-sm text-[#4a6087]">
             {selectedProject
               ? `${selectedProject.name} 핵심 KPI를 먼저 확인합니다.`
               : '프로젝트를 선택하세요.'}
           </p>
         </article>
-        <article className="cockpit-scan-rail__step">
-          <span>02</span>
-          <strong>Decision point</strong>
-          <p>
+        <article className="rounded-2xl border border-[#d7e1f1] bg-white p-4 shadow-[0_6px_18px_rgba(24,40,71,0.05)]">
+          <span className="text-xs font-semibold text-[#6c83ab]">02</span>
+          <strong className="mt-1 block text-[#1f3458]">Decision point</strong>
+          <p className="mt-1 text-sm text-[#4a6087]">
             {selectedDetail?.workflow.nextStep ?? '다음 결정을 확인합니다.'}
           </p>
         </article>
-        <article className="cockpit-scan-rail__step">
-          <span>03</span>
-          <strong>Validation</strong>
-          <p>탭별 근거를 확인한 뒤 승인/보류를 확정합니다.</p>
+        <article className="rounded-2xl border border-[#d7e1f1] bg-white p-4 shadow-[0_6px_18px_rgba(24,40,71,0.05)]">
+          <span className="text-xs font-semibold text-[#6c83ab]">03</span>
+          <strong className="mt-1 block text-[#1f3458]">Validation</strong>
+          <p className="mt-1 text-sm text-[#4a6087]">
+            탭별 근거를 확인한 뒤 승인/보류를 확정합니다.
+          </p>
         </article>
       </div>
 
       <div
-        className="cockpit-tabs"
+        className="rounded-2xl border border-[#d7e1f1] bg-white p-2 shadow-[0_6px_18px_rgba(24,40,71,0.05)]"
         role="tablist"
         aria-label="프로젝트 분석 탭"
       >
@@ -315,7 +362,11 @@ export function WorkspaceView({
               aria-controls={panelId}
               aria-selected={selected}
               tabIndex={selected ? 0 : -1}
-              className={`cockpit-tab ${selected ? 'cockpit-tab--active' : ''}`}
+              className={`inline-flex min-w-[100px] items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
+                selected
+                  ? 'bg-[#2b4dbf] text-white shadow-[0_6px_14px_rgba(43,77,191,0.25)]'
+                  : 'text-[#445b83] hover:bg-[#f1f5fc]'
+              }`}
               onClick={() => onChangeWorkspaceTab(tab.key)}
               onKeyDown={(event) => onWorkspaceTabKeydown(event, index)}
             >
@@ -329,39 +380,57 @@ export function WorkspaceView({
         id={`workspace-panel-${activeWorkspaceTab}`}
         role="tabpanel"
         aria-labelledby={`workspace-tab-${activeWorkspaceTab}`}
-        className="cockpit-panel-shell"
+        className="grid gap-4 rounded-2xl border border-[#d7e1f1] bg-[#f7faff] p-4 shadow-[0_8px_22px_rgba(24,40,71,0.06)]"
       >
         {!hasSelectedProject ? (
-          <div className="empty-state">
-            <strong>선택된 프로젝트가 없습니다.</strong>
-            <p>
+          <div className={emptyStateClass}>
+            <strong className="block text-[1rem] font-semibold text-[#1d2f52]">
+              선택된 프로젝트가 없습니다.
+            </strong>
+            <p className="mt-1 text-sm">
               Portfolio 화면에서 프로젝트를 선택하면 상세 분석을 표시합니다.
             </p>
           </div>
         ) : null}
 
         {hasSelectedProject && detailStatus === 'loading' ? (
-          <div className="audit-state" role="status">
-            <strong>프로젝트 상세 데이터를 불러오는 중입니다.</strong>
-            <p>원가, 가치평가, 리스크 정보를 API에서 조회하고 있습니다.</p>
+          <div className={statusCardClass} role="status">
+            <strong className="block text-[0.98rem] font-semibold text-[#1d2f52]">
+              프로젝트 상세 데이터를 불러오는 중입니다.
+            </strong>
+            <p className="mt-1 text-sm">
+              원가, 가치평가, 리스크 정보를 API에서 조회하고 있습니다.
+            </p>
           </div>
         ) : null}
 
         {hasSelectedProject && detailStatus === 'error' ? (
-          <div className="empty-state">
-            <strong>프로젝트 상세를 불러오지 못했습니다.</strong>
-            <p>{detailError ?? 'API 상태를 확인한 뒤 다시 시도하세요.'}</p>
-            <button type="button" onClick={onRetryDetailLoad}>
+          <div className={emptyStateClass}>
+            <strong className="block text-[1rem] font-semibold text-[#1d2f52]">
+              프로젝트 상세를 불러오지 못했습니다.
+            </strong>
+            <p className="mt-1 text-sm">{detailError ?? 'API 상태를 확인한 뒤 다시 시도하세요.'}</p>
+            <button
+              type="button"
+              onClick={onRetryDetailLoad}
+              className={emptyStateButtonClass}
+            >
               다시 시도
             </button>
           </div>
         ) : null}
 
         {hasSelectedProject && detailStatus === 'ready' && !selectedDetail ? (
-          <div className="empty-state">
-            <strong>표시할 프로젝트 상세가 없습니다.</strong>
-            <p>프로젝트 데이터 구조를 확인한 뒤 다시 시도하세요.</p>
-            <button type="button" onClick={onRetryDetailLoad}>
+          <div className={emptyStateClass}>
+            <strong className="block text-[1rem] font-semibold text-[#1d2f52]">
+              표시할 프로젝트 상세가 없습니다.
+            </strong>
+            <p className="mt-1 text-sm">프로젝트 데이터 구조를 확인한 뒤 다시 시도하세요.</p>
+            <button
+              type="button"
+              onClick={onRetryDetailLoad}
+              className={emptyStateButtonClass}
+            >
               다시 시도
             </button>
           </div>
@@ -369,7 +438,7 @@ export function WorkspaceView({
 
         {activeWorkspaceTab === 'allocation' && selectedDetail ? (
           <>
-            <section className="cockpit-kpi-group" aria-label="배분 핵심 지표">
+            <section className={kpiGridClass} aria-label="배분 핵심 지표">
               <InfoTile
                 label="배분 원가"
                 value={formatKrwCompact(
@@ -396,7 +465,7 @@ export function WorkspaceView({
               />
             </section>
             <section
-              className="cockpit-dominant-surface"
+              className={dominantSurfaceClass}
               aria-label="배분 비교 surface"
             >
               <DecisionBarChart
@@ -407,7 +476,7 @@ export function WorkspaceView({
               />
             </section>
             <section
-              className="cockpit-support-grid"
+              className={supportGridClass}
               aria-label="배분 해석 및 다음 행동"
             >
               <DecisionSummary
@@ -427,29 +496,32 @@ export function WorkspaceView({
                 ]}
               />
             </section>
-            <section className="cockpit-support-grid" aria-label="배부 기준과 변경 이력">
-              <article className="workflow-note">
+            <section className={supportGridClass} aria-label="배부 기준과 변경 이력">
+              <article className={workflowNoteClass}>
                 <strong>계산 근거</strong>
-                <p>{selectedDetail.allocation.allocationBasis}</p>
-                <p>{selectedDetail.allocation.calculationTrace}</p>
+                <p className="mt-2 text-sm">{selectedDetail.allocation.allocationBasis}</p>
+                <p className="mt-1 text-sm">{selectedDetail.allocation.calculationTrace}</p>
               </article>
-              <article className="workflow-note">
+              <article className={workflowNoteClass}>
                 <strong>최근 변경 이력</strong>
                 {selectedDetail.allocation.changeHistory.length === 0 ? (
-                  <p>기록된 변경 이력이 없습니다.</p>
+                  <p className="mt-2 text-sm">기록된 변경 이력이 없습니다.</p>
                 ) : (
-                  <ol className="audit-list">
+                  <ol className={listClass}>
                     {selectedDetail.allocation.changeHistory
                       .slice(0, 5)
                       .map((history) => (
                         <li
                           key={`${history.at}-${history.actor}-${history.action}`}
+                          className={listItemClass}
                         >
-                          <strong>{history.actor}</strong>
-                          <span>
+                          <strong className="block text-[#1f3458]">{history.actor}</strong>
+                          <span className="mt-1 block">
                             {history.action} · {history.comment || '-'}
                           </span>
-                          <small>{new Date(history.at).toLocaleString()}</small>
+                          <small className="mt-1 block text-xs text-[#6c82aa]">
+                            {new Date(history.at).toLocaleString()}
+                          </small>
                         </li>
                       ))}
                   </ol>
@@ -457,23 +529,23 @@ export function WorkspaceView({
               </article>
             </section>
             <section
-              className="cockpit-dominant-surface"
+              className={dominantSurfaceClass}
               aria-label="배부 규칙 상세"
             >
               <h3>배부 규칙 상세</h3>
               {selectedDetail.allocation.rules.length === 0 ? (
                 <p>배부 규칙 상세 데이터가 없습니다.</p>
               ) : (
-                <div className="table-shell">
-                  <table className="data-table">
-                    <thead>
+                <div className={tableShellClass}>
+                  <table className={tableClass}>
+                    <thead className="bg-[#f1f5fc] text-xs uppercase tracking-[0.03em] text-[#5a7096]">
                       <tr>
-                        <th>부서</th>
-                        <th>비용풀</th>
-                        <th>카테고리</th>
-                        <th>배부 기준</th>
-                        <th>배부율</th>
-                        <th>배부원가</th>
+                        <th className="border-b border-[#d7e1f1] px-4 py-3 text-left font-semibold">부서</th>
+                        <th className="border-b border-[#d7e1f1] px-4 py-3 text-left font-semibold">비용풀</th>
+                        <th className="border-b border-[#d7e1f1] px-4 py-3 text-left font-semibold">카테고리</th>
+                        <th className="border-b border-[#d7e1f1] px-4 py-3 text-left font-semibold">배부 기준</th>
+                        <th className="border-b border-[#d7e1f1] px-4 py-3 text-left font-semibold">배부율</th>
+                        <th className="border-b border-[#d7e1f1] px-4 py-3 text-left font-semibold">배부원가</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -481,12 +553,12 @@ export function WorkspaceView({
                         <tr
                           key={`${rule.departmentCode}-${rule.costPoolName}-${rule.basis}`}
                         >
-                          <td>{rule.departmentCode}</td>
-                          <td>{rule.costPoolName}</td>
-                          <td>{rule.costPoolCategory}</td>
-                          <td>{rule.basis}</td>
-                          <td>{formatPercent(rule.allocationRate)}</td>
-                          <td>{formatKrwCompact(rule.allocatedAmount)}</td>
+                          <td className="border-b border-[#e5ecf8] px-4 py-3">{rule.departmentCode}</td>
+                          <td className="border-b border-[#e5ecf8] px-4 py-3">{rule.costPoolName}</td>
+                          <td className="border-b border-[#e5ecf8] px-4 py-3">{rule.costPoolCategory}</td>
+                          <td className="border-b border-[#e5ecf8] px-4 py-3">{rule.basis}</td>
+                          <td className="border-b border-[#e5ecf8] px-4 py-3">{formatPercent(rule.allocationRate)}</td>
+                          <td className="border-b border-[#e5ecf8] px-4 py-3">{formatKrwCompact(rule.allocatedAmount)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -500,7 +572,7 @@ export function WorkspaceView({
         {activeWorkspaceTab === 'valuation' && selectedDetail ? (
           <>
             <section
-              className="cockpit-kpi-group"
+              className={kpiGridClass}
               aria-label="가치평가 핵심 지표"
             >
               <InfoTile
@@ -521,7 +593,7 @@ export function WorkspaceView({
               />
             </section>
             <section
-              className="cockpit-dominant-surface"
+              className={dominantSurfaceClass}
               aria-label="시나리오 가치 비교 surface"
             >
               <DecisionBarChart
@@ -532,7 +604,7 @@ export function WorkspaceView({
               />
             </section>
             <section
-              className="cockpit-support-grid"
+              className={supportGridClass}
               aria-label="가치평가 보조 정보"
             >
               <DecisionSummary
@@ -560,30 +632,32 @@ export function WorkspaceView({
                 value={`${selectedDetail.valuation.convexity}`}
               />
             </section>
-            <section className="cockpit-support-grid" aria-label="평가 근거와 시나리오 가정">
-              <article className="workflow-note">
+            <section className={supportGridClass} aria-label="평가 근거와 시나리오 가정">
+              <article className={workflowNoteClass}>
                 <strong>평가 근거</strong>
-                <p>
+                <p className="mt-2 text-sm">
                   할인율 {formatPercent(selectedDetail.valuation.discountRate)} ·
                   리스크 프리미엄{' '}
                   {formatPercent(selectedDetail.valuation.riskPremium)}
                 </p>
-                <p>{selectedDetail.valuation.interpretation}</p>
+                <p className="mt-1 text-sm">{selectedDetail.valuation.interpretation}</p>
               </article>
-              <article className="workflow-note">
+              <article className={workflowNoteClass}>
                 <strong>시나리오 가정</strong>
                 {selectedDetail.valuation.assumptions.length === 0 ? (
-                  <p>등록된 시나리오 가정이 없습니다.</p>
+                  <p className="mt-2 text-sm">등록된 시나리오 가정이 없습니다.</p>
                 ) : (
-                  <ol className="audit-list">
+                  <ol className={listClass}>
                     {selectedDetail.valuation.assumptions.map((item) => (
-                      <li key={`${item.label}-${item.note}`}>
-                        <strong>{item.label}</strong>
-                        <span>
+                      <li key={`${item.label}-${item.note}`} className={listItemClass}>
+                        <strong className="block text-[#1f3458]">{item.label}</strong>
+                        <span className="mt-1 block">
                           NPV {formatKrwCompact(item.npvKrw)} · 확률{' '}
                           {formatPercent(item.probability)}
                         </span>
-                        <small>{item.note || '-'}</small>
+                        <small className="mt-1 block text-xs text-[#6c82aa]">
+                          {item.note || '-'}
+                        </small>
                       </li>
                     ))}
                   </ol>
@@ -596,7 +670,7 @@ export function WorkspaceView({
         {activeWorkspaceTab === 'risk' && selectedDetail ? (
           <>
             <section
-              className="cockpit-kpi-group"
+              className={kpiGridClass}
               aria-label="리스크 핵심 지표"
             >
               <InfoTile
@@ -617,7 +691,7 @@ export function WorkspaceView({
               />
             </section>
             <section
-              className="cockpit-dominant-surface"
+              className={dominantSurfaceClass}
               aria-label="하방 노출 surface"
             >
               <DecisionBarChart
@@ -627,7 +701,7 @@ export function WorkspaceView({
                 summary={`VaR 대비 하방 격차 ${formatKrwCompact(riskGuardrailGap)}`}
               />
             </section>
-            <section className="cockpit-support-grid" aria-label="리스크 해석">
+            <section className={supportGridClass} aria-label="리스크 해석">
               <DecisionSummary
                 title="리스크 의미"
                 items={[
@@ -651,7 +725,7 @@ export function WorkspaceView({
         {activeWorkspaceTab === 'workflow' && selectedDetail ? (
           <>
             <section
-              className="cockpit-kpi-group"
+              className={kpiGridClass}
               aria-label="워크플로우 핵심 지표"
             >
               <InfoTile
@@ -669,17 +743,17 @@ export function WorkspaceView({
               />
             </section>
             <section
-              className="cockpit-dominant-surface"
+              className={dominantSurfaceClass}
               aria-label="워크플로우 진행 surface"
             >
-              <div className="workflow-steps">
+              <div className="grid gap-2 sm:grid-cols-4">
                 {(['기획', '검토', '승인', '보류'] as const).map((step) => (
                   <div
                     key={step}
-                    className={`workflow-step ${
+                    className={`rounded-xl border px-3 py-2 text-center text-sm font-semibold transition ${
                       selectedDetail.workflow.currentStage === step
-                        ? 'workflow-step--active'
-                        : ''
+                        ? 'border-[#2b4dbf] bg-[#2b4dbf] text-white shadow-[0_6px_14px_rgba(43,77,191,0.25)]'
+                        : 'border-[#d5e0f1] bg-[#f8fbff] text-[#41557b]'
                     }`}
                   >
                     {step}
@@ -688,16 +762,16 @@ export function WorkspaceView({
               </div>
             </section>
             <section
-              className="cockpit-support-grid"
+              className={supportGridClass}
               aria-label="워크플로우 상세"
             >
-              <article className="workflow-note">
+              <article className={workflowNoteClass}>
                 <strong>승인 코멘트</strong>
-                <p>{selectedDetail.workflow.executiveComment}</p>
+                <p className="mt-2 text-sm">{selectedDetail.workflow.executiveComment}</p>
               </article>
-              <article className="workflow-note">
+              <article className={workflowNoteClass}>
                 <strong>다음 행동</strong>
-                <p>{selectedInsight.nextAction}</p>
+                <p className="mt-2 text-sm">{selectedInsight.nextAction}</p>
               </article>
             </section>
           </>

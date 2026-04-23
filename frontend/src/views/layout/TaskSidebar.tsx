@@ -80,7 +80,7 @@ export function TaskSidebar({
               ) : null}
               <button
                 type="button"
-                className={`flex w-full items-center gap-3 rounded-lg px-4 py-2.5 text-left text-sm font-medium transition-colors ${
+                className={`flex w-full items-center gap-3 rounded-lg border-0 bg-transparent px-4 py-2.5 text-left text-sm font-medium transition-colors ${
                   activeView === item.key
                     ? 'bg-[linear-gradient(90deg,#2666e2_0%,#1ab3dc_100%)] text-white'
                     : 'text-[#cbd5e1] hover:bg-white/10 hover:text-white'

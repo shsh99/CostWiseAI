@@ -83,7 +83,7 @@ export function TaskTopbar({
           </div>
           <span className="text-[0.8rem] text-[#6c7e9f]">{now}</span>
           <button
-            className="bg-transparent text-[0.8rem] font-bold text-[#4c5f85]"
+            className="border-0 bg-transparent text-[0.8rem] font-bold text-[#4c5f85]"
             type="button"
             onClick={onLogout}
           >
