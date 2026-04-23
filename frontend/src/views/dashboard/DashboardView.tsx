@@ -1,7 +1,6 @@
 /* eslint-disable no-unused-vars */
 import { formatKrwCompact, formatPercent } from '../../app/format';
 import type { PortfolioSummary, ProjectSummary, RoleInsight } from '../../app/portfolioData';
-import { MetricCard } from '../../shared/components/MetricCard';
 import { Panel } from '../../shared/components/Panel';
 
 type DashboardViewProps = {
@@ -13,117 +12,171 @@ type DashboardViewProps = {
 };
 
 export function DashboardView({
-  decisionSignals,
-  selectedInsight,
   portfolio,
+  selectedInsight,
   priorityProjects,
   onOpenWorkspace
 }: DashboardViewProps) {
+  const riskCounts = portfolio.projects.reduce(
+    (acc, project) => {
+      if (project.risk === '높음') {
+        acc.high += 1;
+      } else if (project.risk === '중간') {
+        acc.mid += 1;
+      } else {
+        acc.low += 1;
+      }
+      return acc;
+    },
+    { high: 0, mid: 0, low: 0 }
+  );
+
+  const totalRiskCount = Math.max(
+    1,
+    riskCounts.high + riskCounts.mid + riskCounts.low
+  );
+
   return (
-    <>
-      <section className="hero-strip hero-strip--workspace" aria-label="현재 방향">
-        <div className="hero-strip__content">
-          <p className="hero-strip__eyebrow">Default landing</p>
-          <h2>포트폴리오에서 시작하고, 프로젝트 워크스페이스로 내려갑니다.</h2>
-          <p>
-            현재 셸은 플랫폼, 포트폴리오, 프로젝트 워크스페이스를 같은 캔버스에 섞지 않습니다.
-            먼저 상태를 파악하고, 필요한 프로젝트만 선택해 관리회계 또는 재무평가 워크스페이스로 진입합니다.
+    <section>
+      <header className="mb-3.5 flex items-baseline justify-between gap-4">
+        <div>
+          <h2 className="m-0 text-[1.9rem] font-bold text-[#182847]">통합 대시보드</h2>
+          <p className="mt-1 text-[#607397]">전사 5개 본부 · 프로젝트 원가/평가 현황</p>
+        </div>
+      </header>
+
+      <section
+        className="mb-4 grid grid-cols-4 gap-3.5 max-[1280px]:grid-cols-2"
+        aria-label="핵심 지표"
+      >
+        <article className="rounded-[14px] border border-cw-cardBorder bg-white p-5">
+          <span className="text-sm font-semibold text-[#5f7399]">운영 본부</span>
+          <strong className="mt-2 block text-[1.85rem] font-bold text-[#172747]">
+            {portfolio.overview.headquarterCount}
+          </strong>
+          <p className="mt-2 text-sm text-[#7589ad]">5개 본부 가동중</p>
+        </article>
+        <article className="rounded-[14px] border border-cw-cardBorder bg-white p-5">
+          <span className="text-sm font-semibold text-[#5f7399]">활성 프로젝트</span>
+          <strong className="mt-2 block text-[1.85rem] font-bold text-[#172747]">
+            {portfolio.overview.projectCount}
+          </strong>
+          <p className="mt-2 text-sm text-[#7589ad]">총 20여개 동시 운영</p>
+        </article>
+        <article className="rounded-[14px] border border-cw-cardBorder bg-white p-5">
+          <span className="text-sm font-semibold text-[#5f7399]">총 예산</span>
+          <strong className="mt-2 block text-[1.85rem] font-bold text-[#172747]">
+            {formatKrwCompact(portfolio.overview.totalInvestmentKrw)}
+          </strong>
+          <p className="mt-2 text-sm text-[#7589ad]">
+            집행 기준 {formatKrwCompact(portfolio.overview.totalExpectedRevenueKrw)}
           </p>
-          <div className="hero-strip__chips">
-            {decisionSignals.map((signal) => (
-              <div key={signal.label} className="hero-chip">
-                <span>{signal.label}</span>
-                <strong>{signal.value}</strong>
-              </div>
-            ))}
+        </article>
+        <article className="rounded-[14px] border border-cw-cardBorder bg-white p-5">
+          <span className="text-sm font-semibold text-[#5f7399]">미확인 경보</span>
+          <strong className="mt-2 block text-[1.85rem] font-bold text-[#172747]">
+            {portfolio.overview.conditionalCount}
+          </strong>
+          <p className="mt-2 text-sm text-[#7589ad]">클릭하여 확인</p>
+        </article>
+      </section>
+
+      <section className="mb-4 grid grid-cols-[2fr_1fr] gap-4 max-[1280px]:grid-cols-1">
+        <Panel title="본부별 예산 vs 집행" subtitle="본부 단위 집행 차이를 비교합니다.">
+          <div className="grid gap-2.5">
+            {portfolio.headquarters.map((headquarter) => {
+              const ratio = Math.min(
+                100,
+                Math.round(
+                  (headquarter.totalExpectedRevenueKrw /
+                    Math.max(1, headquarter.totalInvestmentKrw)) *
+                    100
+                )
+              );
+              return (
+                <article key={headquarter.code} className="grid gap-2">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <strong>{headquarter.name}</strong>
+                    <span className="text-[0.88rem] text-[#7388ac]">
+                      예산 {formatKrwCompact(headquarter.totalInvestmentKrw)} · 집행{' '}
+                      {formatKrwCompact(headquarter.totalExpectedRevenueKrw)}
+                    </span>
+                  </div>
+                  <div
+                    className="h-3 overflow-hidden rounded-full bg-[#edf2fa]"
+                    aria-hidden="true"
+                  >
+                    <span
+                      className="block h-full rounded-full bg-[linear-gradient(90deg,#3f79ea,#1db0db)]"
+                      style={{ width: `${ratio}%` }}
+                    />
+                  </div>
+                </article>
+              );
+            })}
           </div>
-        </div>
-        <div className="hero-strip__status">
-          <div className="hero-strip__note">
-            <span>Current focus</span>
+        </Panel>
+
+        <Panel title="리스크 분포" subtitle="프로젝트 리스크 등급 분포">
+          <div className="grid justify-items-center gap-3 py-2.5" aria-label="리스크 도넛">
+            <div
+              className="relative h-[220px] w-[220px] rounded-full after:absolute after:inset-[30px] after:rounded-full after:bg-white after:content-['']"
+              style={{
+                background: `conic-gradient(
+                #ef4444 0% ${(riskCounts.high / totalRiskCount) * 100}%,
+                #f59e0b ${(riskCounts.high / totalRiskCount) * 100}% ${((riskCounts.high + riskCounts.mid) / totalRiskCount) * 100}%,
+                #22c55e ${((riskCounts.high + riskCounts.mid) / totalRiskCount) * 100}% 100%
+              )`
+              }}
+            />
+            <div className="flex flex-wrap justify-center gap-2.5 text-[0.86rem] font-bold text-[#546991]">
+              <span>CRITICAL {riskCounts.high}</span>
+              <span>MEDIUM {riskCounts.mid}</span>
+              <span>LOW {riskCounts.low}</span>
+            </div>
+          </div>
+        </Panel>
+      </section>
+
+      <section className="grid grid-cols-[2fr_1fr] gap-4 max-[1280px]:grid-cols-1">
+        <Panel title="월별 원가 추이 (실적 vs 표준)" subtitle="우선순위 프로젝트 기준">
+          <ol className="audit-list audit-list--wide">
+            {priorityProjects.slice(0, 5).map((project) => (
+              <li key={project.code}>
+                <strong>
+                  {project.code} · {project.name}
+                </strong>
+                <span>
+                  투자 {formatKrwCompact(project.investmentKrw)} / NPV{' '}
+                  {formatKrwCompact(project.npvKrw)}
+                </span>
+                <small>
+                  IRR {formatPercent(project.irr)} · 회수 {project.paybackYears.toFixed(1)}년
+                </small>
+              </li>
+            ))}
+          </ol>
+        </Panel>
+
+        <Panel title="다음 의사결정" subtitle="역할 기반 현재 포커스">
+          <article className="workflow-note">
             <strong>{selectedInsight.decisionFocus}</strong>
-            <small>{selectedInsight.nextAction}</small>
-          </div>
-        </div>
-      </section>
-
-      <section className="metrics metrics--hero" aria-label="핵심 KPI">
-        <MetricCard
-          label="총 투자액"
-          value={formatKrwCompact(portfolio.overview.totalInvestmentKrw)}
-          detail="포트폴리오 기준"
-          tone="primary"
-        />
-        <MetricCard
-          label="평균 NPV"
-          value={formatKrwCompact(portfolio.overview.averageNpvKrw)}
-          detail="프로젝트 사업성 평균"
-          tone="success"
-        />
-        <MetricCard
-          label="평균 IRR"
-          value={formatPercent(portfolio.overview.averageIrr)}
-          detail="기준 시나리오 가중 평균"
-          tone="warning"
-        />
-        <MetricCard
-          label="승인 완료"
-          value={`${portfolio.overview.approvedCount}건`}
-          detail="최종 승인된 프로젝트"
-          tone="primary"
-        />
-      </section>
-
-      <section className="dashboard-grid">
-        <Panel title="Priority queue" subtitle="다음 검토 대상을 빠르게 고르고 워크스페이스로 진입합니다.">
-          <div className="queue-list">
-            {priorityProjects.map((project) => (
-              <article key={project.code} className="queue-card">
-                <div>
-                  <span className="queue-card__eyebrow">
-                    {project.rank}위 · {project.headquarter}
-                  </span>
-                  <strong>{project.name}</strong>
-                  <p>
-                    {project.assetCategory} · {project.status} · NPV {formatKrwCompact(project.npvKrw)}
-                  </p>
-                </div>
-                <div className="queue-card__actions">
-                  <button type="button" onClick={() => onOpenWorkspace('accounting', project.code)}>
-                    관리회계 열기
-                  </button>
-                  <button type="button" onClick={() => onOpenWorkspace('valuation', project.code)}>
-                    재무평가 열기
-                  </button>
-                </div>
-              </article>
+            <p>{selectedInsight.summary}</p>
+            <p>{selectedInsight.nextAction}</p>
+          </article>
+          <div className="table-actions">
+            {priorityProjects.slice(0, 2).map((project) => (
+              <button
+                key={project.code}
+                type="button"
+                onClick={() => onOpenWorkspace('accounting', project.code)}
+              >
+                {project.code} 원가 분석
+              </button>
             ))}
           </div>
         </Panel>
-
-        <Panel
-          title="Workspace lanes"
-          subtitle="동일한 프로젝트를 역할과 의사결정 목적에 따라 다른 워크스페이스로 읽습니다."
-        >
-          <div className="lane-grid">
-            <article className="lane-card lane-card--accounting">
-              <span>Management Accounting</span>
-              <strong>원가 구조와 배분 기준 확인</strong>
-              <p>활동 기준 원가, 배분 차이, 효율 격차를 프로젝트별로 분리해 봅니다.</p>
-            </article>
-            <article className="lane-card lane-card--valuation">
-              <span>Financial Evaluation</span>
-              <strong>투자 타당성과 시나리오 판단</strong>
-              <p>NPV, IRR, 회수기간과 시나리오 비교를 프로젝트 단위로 읽습니다.</p>
-            </article>
-            <article className="lane-card lane-card--review">
-              <span>Review Layer</span>
-              <strong>가정값과 감사 근거 추적</strong>
-              <p>검토 흐름과 이력은 별도 레이어에서 확인해 네비게이션과 경쟁하지 않게 합니다.</p>
-            </article>
-          </div>
-        </Panel>
       </section>
-    </>
+    </section>
   );
 }

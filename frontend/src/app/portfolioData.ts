@@ -430,38 +430,43 @@ const projectSeeds: ProjectSeed[] = [
 export const navigationItems = [
   {
     key: 'dashboard',
-    label: 'Dashboard',
-    description: 'Executive overview와 우선 신호를 먼저 봅니다.'
+    label: '대시보드',
+    description: '전사 KPI와 우선 신호를 먼저 확인합니다.'
   },
   {
     key: 'portfolio',
-    label: 'Portfolio',
-    description: '프로젝트 풀과 진입 대상을 정리합니다.'
+    label: '프로젝트 목록',
+    description: '프로젝트 필터/검색/상세 진입'
   },
   {
     key: 'accounting',
-    label: 'Management Accounting',
-    description: '원가·배분 관점의 프로젝트 워크스페이스입니다.'
+    label: '원가 집계·분석',
+    description: '원가 집계와 표준원가 차이분석'
   },
   {
     key: 'valuation',
-    label: 'Financial Evaluation',
+    label: '가치평가',
     description: '가치평가와 투자 판단 워크스페이스입니다.'
   },
   {
+    key: 'risk',
+    label: '리스크/VaR',
+    description: '프로젝트 리스크와 VaR 지표를 확인합니다.'
+  },
+  {
     key: 'users',
-    label: 'Users',
+    label: '사용자 관리',
     description: '사용자 권한과 계정 상태를 운영합니다.'
   },
   {
-    key: 'reviews',
-    label: 'Reviews',
-    description: '가정값과 감사 이력을 검토합니다.'
+    key: 'audit',
+    label: '감사 로그',
+    description: '감사 로그와 증적 이력을 조회합니다.'
   },
   {
     key: 'settings',
-    label: 'Settings',
-    description: '역할과 선호 컨텍스트를 조정합니다.'
+    label: '사용 가이드',
+    description: '역할별 사용 흐름 안내'
   }
 ] as const;
 

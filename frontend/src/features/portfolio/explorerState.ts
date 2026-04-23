@@ -29,8 +29,8 @@ export function parseExplorerState(search: string): {
   const rawProjectCode = query.get('project');
 
   const view: NavigationKey =
-    rawView && navigationItems.some((item) => item.key === rawView)
-      ? (rawView as NavigationKey)
+    rawView && navigationItems.some((item) => item.key === normalizeLegacyView(rawView))
+      ? (normalizeLegacyView(rawView) as NavigationKey)
       : 'dashboard';
   const sort: ExplorerSortKey = isExplorerSortKey(rawSort) ? rawSort : defaultExplorerSort;
   const quickFilter: ExplorerQuickFilterKey = isExplorerQuickFilterKey(rawQuickFilter)
@@ -48,6 +48,14 @@ export function parseExplorerState(search: string): {
     headquarter,
     projectCode
   };
+}
+
+function normalizeLegacyView(view: string) {
+  if (view === 'reviews') {
+    return 'audit';
+  }
+
+  return view;
 }
 
 export function statusTone(status: ProjectStatus) {

@@ -13,11 +13,12 @@ import {
   type DecisionBarItem
 } from '../../features/workspace/decisionVisuals';
 import { InfoTile } from '../../shared/components/InfoTile';
+import { Panel } from '../../shared/components/Panel';
 
 type WorkspaceTabKey = (typeof detailTabs)[number]['key'];
 
 type WorkspaceViewProps = {
-  activeView: 'accounting' | 'valuation';
+  activeView: 'accounting' | 'valuation' | 'risk';
   selectedProject: ProjectSummary | null;
   selectedDetail: ProjectDetail | null;
   detailStatus: 'idle' | 'loading' | 'ready' | 'error';
@@ -64,6 +65,163 @@ export function WorkspaceView({
 }: WorkspaceViewProps) {
   const hasSelectedProject = Boolean(selectedProject);
 
+  if (activeView === 'accounting') {
+    const allocationRows = selectedDetail?.allocation.rules ?? [];
+
+    return (
+      <section>
+        <header className="mb-3.5 flex items-center justify-between gap-4">
+          <div>
+            <h2 className="m-0 text-[1.9rem] font-bold text-[#182847]">
+              원가 집계·분석
+            </h2>
+            <p className="mt-1 text-[#607397]">
+              본부/프로젝트별 원가 집계 및 표준원가 차이분석
+            </p>
+          </div>
+          <div className="flex items-center gap-2.5">
+            <button
+              className="rounded-[10px] border border-[#cbd6ea] bg-white px-3.5 py-2.5 font-bold text-[#2f4570]"
+              type="button"
+            >
+              CSV
+            </button>
+            <button
+              className="rounded-[10px] bg-[#2b4dbf] px-3.5 py-2.5 font-extrabold text-white"
+              type="button"
+            >
+              + 원가 입력
+            </button>
+          </div>
+        </header>
+
+        {detailStatus === 'loading' ? (
+          <div className="audit-state" role="status">
+            <strong>원가 상세 데이터를 불러오는 중입니다.</strong>
+            <p>프로젝트 배부 규칙과 집계 데이터를 확인하고 있습니다.</p>
+          </div>
+        ) : null}
+
+        {detailStatus === 'error' ? (
+          <div className="empty-state">
+            <strong>원가 데이터를 불러오지 못했습니다.</strong>
+            <p>{detailError ?? '잠시 후 다시 시도하세요.'}</p>
+            <button type="button" onClick={onRetryDetailLoad}>
+              다시 시도
+            </button>
+          </div>
+        ) : null}
+
+        {hasSelectedProject && detailStatus === 'ready' && selectedDetail ? (
+          <>
+            <Panel title="본부별 원가 차이분석 (실제 vs 표준)" subtitle="선택 프로젝트 기준 배부 규칙">
+              <div className="table-shell">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>본부</th>
+                      <th>실제원가</th>
+                      <th>표준원가</th>
+                      <th>차이</th>
+                      <th>차이율</th>
+                      <th>판정</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {allocationRows.map((rule) => {
+                      const diff = rule.allocatedAmount - rule.costPoolAmount;
+                      const rate =
+                        rule.costPoolAmount === 0
+                          ? 0
+                          : (diff / rule.costPoolAmount) * 100;
+                      return (
+                        <tr key={`${rule.departmentCode}-${rule.costPoolName}`}>
+                          <td>{rule.departmentCode}</td>
+                          <td>{formatKrwCompact(rule.allocatedAmount)}</td>
+                          <td>{formatKrwCompact(rule.costPoolAmount)}</td>
+                          <td className={diff > 0 ? 'text-danger' : 'text-success'}>
+                            {diff > 0 ? '+' : ''}
+                            {formatKrwCompact(diff)}
+                          </td>
+                          <td className={rate > 0 ? 'text-danger' : 'text-success'}>
+                            {rate.toFixed(2)}%
+                          </td>
+                          <td>
+                            <span className={`status-pill status-pill--${rate > 0 ? 'high' : 'low'}`}>
+                              {rate > 0 ? '불리' : '양호'}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </Panel>
+
+            <section className="grid grid-cols-[2fr_1fr] gap-4 max-[1280px]:grid-cols-1">
+              <Panel title="본부별 원가 구성" subtitle="배부원가 기준 막대 비교">
+                <div className="grid gap-2.5">
+                  {allocationRows.map((rule) => {
+                    const maxAmount = Math.max(
+                      1,
+                      ...allocationRows.map((row) => row.allocatedAmount)
+                    );
+                    const width = Math.round((rule.allocatedAmount / maxAmount) * 100);
+                    return (
+                      <article key={`${rule.departmentCode}-${rule.basis}`} className="grid gap-2">
+                        <div className="flex items-baseline justify-between gap-3">
+                          <strong>{rule.departmentCode}</strong>
+                          <span className="text-[0.88rem] text-[#7388ac]">
+                            {formatKrwCompact(rule.allocatedAmount)}
+                          </span>
+                        </div>
+                        <div className="h-3 overflow-hidden rounded-full bg-[#edf2fa]">
+                          <span
+                            className="block h-full rounded-full bg-[linear-gradient(90deg,#3f79ea,#1db0db)]"
+                            style={{ width: `${width}%` }}
+                          />
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              </Panel>
+
+              <Panel title="원가 배분 시뮬레이터" subtitle="간단 배분 입력 폼">
+                <div className="grid gap-2.5">
+                  <input
+                    className="w-full rounded-[10px] border border-[#cbd6ea] px-3 py-2.5"
+                    type="number"
+                    placeholder="배분할 총 금액 (예: 100000000)"
+                  />
+                  <textarea
+                    className="w-full rounded-[10px] border border-[#cbd6ea] px-3 py-2.5"
+                    rows={6}
+                    defaultValue='{"PRJ-001":30,"PRJ-002":20,"PRJ-003":50}'
+                  />
+                  <button
+                    className="rounded-[10px] bg-[#2b4dbf] px-3 py-[11px] font-extrabold text-white"
+                    type="button"
+                  >
+                    배분 계산
+                  </button>
+                </div>
+              </Panel>
+            </section>
+          </>
+        ) : null}
+
+        {!hasSelectedProject && detailStatus !== 'loading' ? (
+          <div className="empty-state">
+            <strong>선택된 프로젝트가 없습니다.</strong>
+            <p>프로젝트 목록에서 대상을 선택하면 원가 집계·분석 화면이 활성화됩니다.</p>
+          </div>
+        ) : null}
+      </section>
+    );
+  }
+
   return (
     <section className="workspace-stage cockpit-stage">
       <div
@@ -72,9 +230,7 @@ export function WorkspaceView({
       >
         <div className="cockpit-summary-strip__intro">
           <p className="workspace-stage__eyebrow">
-            {activeView === 'accounting'
-              ? 'Management Accounting'
-              : 'Financial Evaluation'}
+            Financial Evaluation
           </p>
           <h2>{selectedProject?.name ?? '선택된 프로젝트 없음'}</h2>
           <p>
