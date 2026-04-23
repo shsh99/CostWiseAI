@@ -45,8 +45,8 @@ export function TaskTopbar({
       <div className="topbar__cluster">
         <span className="topbar-system-pill">
           {source === 'api'
-            ? `${projectCount}개 프로젝트`
-            : `API 일부 제한 · ${projectCount}개 프로젝트`}
+            ? `CostWise · ${projectCount}개 프로젝트`
+            : `CostWise API 일부 제한 · ${projectCount}개 프로젝트`}
         </span>
         {divisionScope ? (
           <label className="topbar-division-scope">
@@ -70,7 +70,7 @@ export function TaskTopbar({
           <div className="topbar-user__avatar">{username.charAt(0)}</div>
           <div>
             <strong>{username}</strong>
-            <small>{getRoleLabel(selectedRole)}</small>
+            <small>{getRoleLabel(selectedRole)} · 원가·평가 통합관리</small>
           </div>
           <button type="button" onClick={onLogout}>
             로그아웃

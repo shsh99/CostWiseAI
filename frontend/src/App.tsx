@@ -56,25 +56,25 @@ const demoAccounts: DemoAccount[] = [
   {
     username: 'admin',
     password: 'admin123',
-    displayName: '시스템 관리자',
+    displayName: 'CostWise 관리자',
     role: 'ADMIN'
   },
   {
     username: 'cfo',
     password: 'user123',
-    displayName: '본부장',
+    displayName: '원가·평가 본부장',
     role: 'EXECUTIVE'
   },
   {
     username: 'analyst',
     password: 'user123',
-    displayName: '원가 담당',
+    displayName: '원가·평가 담당',
     role: 'ACCOUNTANT'
   },
   {
     username: 'viewer',
     password: 'user123',
-    displayName: '감사 담당',
+    displayName: '감사/열람 담당',
     role: 'AUDITOR'
   }
 ];
@@ -150,6 +150,12 @@ export function App() {
   const [selectedDivision, setSelectedDivision] = useState<string | null>(null);
   const [activeWorkspaceTab, setActiveWorkspaceTab] =
     useState<WorkspaceTabKey>('allocation');
+
+  useEffect(() => {
+    document.title = session
+      ? 'CostWise | 원가·평가 통합관리'
+      : 'CostWise 로그인 | 원가·평가 통합관리';
+  }, [session]);
 
   useEffect(() => {
     let cancelled = false;

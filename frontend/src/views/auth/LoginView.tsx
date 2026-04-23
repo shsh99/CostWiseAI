@@ -26,13 +26,13 @@ export function LoginView({ onLogin }: LoginViewProps) {
       <section className="auth-card" aria-label="로그인">
         <header className="auth-card__header">
           <div className="auth-brand">
-            <div className="auth-brand__icon">↗</div>
+            <div className="auth-brand__icon">CW</div>
             <div>
-              <strong>FinOps</strong>
+              <strong>CostWise</strong>
               <p>원가·평가 통합관리 플랫폼</p>
             </div>
           </div>
-          <p>금융자산 운용본부의 원가관리와 금융상품 가치평가를 한눈에.</p>
+          <p>프로젝트 원가관리와 금융상품 가치평가를 하나의 운영 흐름으로 관리합니다.</p>
         </header>
 
         <form className="auth-card__body" onSubmit={handleSubmit}>
@@ -65,10 +65,10 @@ export function LoginView({ onLogin }: LoginViewProps) {
 
           <section className="auth-demo">
             <strong>테스트 계정</strong>
-            <p>관리자: admin / admin123</p>
-            <p>매니저: cfo / user123</p>
-            <p>분석가: analyst / user123</p>
-            <p>조회자: viewer / user123</p>
+            <p>CostWise 관리자: admin / admin123</p>
+            <p>본부장/임원: cfo / user123</p>
+            <p>원가 담당: analyst / user123</p>
+            <p>감사/열람: viewer / user123</p>
           </section>
         </form>
       </section>

@@ -40,9 +40,9 @@ export function TaskSidebar({
   return (
     <aside className="sidebar sidebar--finops">
       <div className="brand brand--finops">
-        <div className="brand__mark brand__mark--finops">↗</div>
+        <div className="brand__mark brand__mark--finops">CW</div>
         <div>
-          <strong>FinOps</strong>
+          <strong>CostWise</strong>
           <p>원가·평가 통합관리</p>
         </div>
       </div>
