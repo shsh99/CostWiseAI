@@ -43,11 +43,11 @@ export function TaskTopbar({
       </div>
 
       <div className="topbar__cluster">
-        <div className="topbar-kpis" aria-label="운영 지표">
-          <span>{source === 'api' ? 'API 연동' : 'API 일부 제한'}</span>
-          <span>{projectCount}개 프로젝트</span>
-          <span>{conditionalCount}개 승인 대기</span>
-        </div>
+        <span className="topbar-system-pill">
+          {source === 'api'
+            ? `${projectCount}개 프로젝트`
+            : `API 일부 제한 · ${projectCount}개 프로젝트`}
+        </span>
         {divisionScope ? (
           <label className="topbar-division-scope">
             <span>본부 범위</span>
@@ -76,15 +76,6 @@ export function TaskTopbar({
             로그아웃
           </button>
         </div>
-        {selectedProject ? (
-          <div className="project-context">
-            <span>선택 프로젝트</span>
-            <strong>{selectedProject.name}</strong>
-            <small>
-              {selectedProject.code} · {selectedProject.headquarter} · {selectedProject.status}
-            </small>
-          </div>
-        ) : null}
       </div>
     </header>
   );

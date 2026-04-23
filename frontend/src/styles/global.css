@@ -2786,13 +2786,13 @@ textarea {
 
 .brand--finops strong {
   color: #fff;
-  font-size: 2.1rem;
+  font-size: 2rem;
 }
 
 .brand--finops p {
   margin: 0;
   color: #8fa7d3;
-  font-size: 1.15rem;
+  font-size: 1rem;
 }
 
 .nav--finops {
@@ -2804,7 +2804,8 @@ textarea {
 .nav__section {
   margin: 14px 10px 6px;
   color: #6f84b1;
-  font-size: 1.4rem;
+  font-size: 0.86rem;
+  letter-spacing: 0.08em;
   font-weight: 800;
 }
 
@@ -2816,8 +2817,8 @@ textarea {
   gap: 12px;
   text-align: left;
   border-radius: 14px;
-  padding: 14px 14px;
-  font-size: 1.95rem;
+  padding: 11px 14px;
+  font-size: 1rem;
   font-weight: 700;
   color: #d6e1fb;
   background: transparent;
@@ -2829,7 +2830,7 @@ textarea {
 }
 
 .nav__icon {
-  width: 28px;
+  width: 20px;
   text-align: center;
   opacity: 0.95;
 }
@@ -2844,7 +2845,7 @@ textarea {
   z-index: 10;
   border-bottom: 1px solid #d4dceb;
   background: #f8fbff;
-  padding: 18px 30px;
+  padding: 14px 24px;
   display: flex;
   justify-content: space-between;
   gap: 18px;
@@ -2855,12 +2856,12 @@ textarea {
   margin: 0 0 4px;
   color: #6c7e9f;
   letter-spacing: 0;
-  font-size: 1rem;
+  font-size: 0.92rem;
 }
 
 .topbar--finops h1 {
   margin: 0;
-  font-size: 1.65rem;
+  font-size: 1.35rem;
   color: #1b2944;
 }
 
@@ -2869,19 +2870,13 @@ textarea {
   color: #62759a;
 }
 
-.topbar-kpis {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.topbar-kpis span {
+.topbar-system-pill {
   background: #eff4fb;
   border: 1px solid #d8e0ef;
   color: #556a93;
   border-radius: 999px;
-  padding: 7px 12px;
-  font-size: 0.84rem;
+  padding: 6px 10px;
+  font-size: 0.8rem;
   font-weight: 700;
 }
 
@@ -2910,13 +2905,14 @@ textarea {
 
 .topbar-user strong {
   display: block;
-  font-size: 0.96rem;
+  font-size: 0.9rem;
   color: #182844;
 }
 
 .topbar-user small {
   display: block;
   color: #62759a;
+  font-size: 0.8rem;
 }
 
 .topbar-user button {
@@ -2925,10 +2921,11 @@ textarea {
   color: #4c5f85;
   font-weight: 700;
   cursor: pointer;
+  font-size: 0.84rem;
 }
 
 .content--finops {
-  padding: 22px 26px 30px;
+  padding: 18px 22px 26px;
 }
 
 .finops-page-header {
@@ -2941,7 +2938,7 @@ textarea {
 
 .finops-page-header h2 {
   margin: 0;
-  font-size: 2rem;
+  font-size: 1.9rem;
   color: #182847;
 }
 
@@ -2977,7 +2974,7 @@ textarea {
 .finops-kpi-card strong {
   display: block;
   margin-top: 8px;
-  font-size: 2.2rem;
+  font-size: 1.9rem;
   color: #172747;
 }
 
