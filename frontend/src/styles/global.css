@@ -2859,16 +2859,19 @@ textarea {
 }
 
 .app-shell--finops {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
   min-height: 100vh;
   background: #eef2f8;
 }
 
 .sidebar--finops {
-  width: 320px;
+  width: 260px;
   min-height: 100vh;
-  background: linear-gradient(180deg, #0b1738 0%, #0a1f52 58%, #0f2a62 100%);
+  background: linear-gradient(180deg, #1e1b4b 0%, #312e81 100%);
   padding: 20px 12px 16px;
-  border-right: 1px solid rgba(136, 153, 196, 0.22);
+  border-right: 1px solid rgba(136, 153, 196, 0.2);
+  box-shadow: 2px 0 20px rgba(0, 0, 0, 0.1);
 }
 
 .brand--finops {
@@ -2910,7 +2913,7 @@ textarea {
 .nav__section {
   margin: 14px 10px 6px;
   color: #6f84b1;
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   letter-spacing: 0.08em;
   font-weight: 800;
 }
@@ -2920,13 +2923,13 @@ textarea {
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   text-align: left;
-  border-radius: 14px;
-  padding: 10px 12px;
-  font-size: 0.92rem;
-  font-weight: 700;
-  color: #d6e1fb;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #cbd5e1;
   background: transparent;
 }
 
@@ -2951,29 +2954,24 @@ textarea {
   z-index: 10;
   border-bottom: 1px solid #d4dceb;
   background: #f8fbff;
-  padding: 12px 20px;
+  padding: 10px 16px;
   display: flex;
   justify-content: space-between;
-  gap: 14px;
-  align-items: flex-start;
+  gap: 12px;
+  align-items: center;
 }
 
 .topbar--finops .topbar__eyebrow {
-  margin: 0 0 4px;
+  margin: 0;
   color: #6c7e9f;
   letter-spacing: 0;
-  font-size: 0.86rem;
+  font-size: 0.95rem;
+  font-weight: 700;
 }
 
-.topbar--finops h1 {
-  margin: 0;
-  font-size: 1.18rem;
-  color: #1b2944;
-}
-
-.topbar--finops .topbar__description {
-  margin: 4px 0 0;
-  color: #62759a;
+.topbar--finops .topbar__context {
+  display: flex;
+  align-items: center;
 }
 
 .topbar-system-pill {
@@ -2981,21 +2979,34 @@ textarea {
   border: 1px solid #d8e0ef;
   color: #556a93;
   border-radius: 999px;
-  padding: 6px 10px;
+  padding: 6px 12px;
   font-size: 0.8rem;
   font-weight: 700;
 }
 
+.topbar__cluster {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
 .topbar-user {
-  margin-top: 10px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  margin-top: 0;
 }
 
 .topbar-user__bell {
-  color: #e03a3a;
-  font-size: 0.86rem;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
 }
 
 .topbar-user__avatar {
@@ -3019,6 +3030,12 @@ textarea {
   display: block;
   color: #62759a;
   font-size: 0.76rem;
+  letter-spacing: 0.05em;
+}
+
+.topbar-user__date {
+  color: #6c7e9f;
+  font-size: 0.8rem;
 }
 
 .topbar-user button {
@@ -3066,27 +3083,42 @@ textarea {
 
 .finops-kpi-card {
   background: #fff;
-  border: 1px solid #d9e1ef;
+  border: 1px solid #e2e8f0;
   border-radius: 14px;
-  padding: 18px;
+  padding: 20px;
 }
 
 .finops-kpi-card span {
   color: #5f7399;
-  font-size: 0.9rem;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .finops-kpi-card strong {
   display: block;
   margin-top: 8px;
-  font-size: 1.9rem;
+  font-size: 1.85rem;
   color: #172747;
 }
 
 .finops-kpi-card p {
   margin: 8px 0 0;
   color: #7589ad;
+  font-size: 14px;
+}
+
+.content--finops .panel {
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  box-shadow: none;
+}
+
+.content--finops .panel__header {
+  padding: 20px 20px 0;
+}
+
+.content--finops .panel__body {
+  padding: 20px;
 }
 
 .finops-dashboard-grid {

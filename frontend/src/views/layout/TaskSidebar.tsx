@@ -14,7 +14,7 @@ const sectionLabelByKey: Partial<Record<NavigationKey, string>> = {
   accounting: '원가/관리회계',
   portfolio: '프로젝트·평가',
   valuation: '프로젝트·평가',
-  users: '시스템',
+  risk: '프로젝트·평가',
   audit: '시스템',
   settings: '시스템'
 };
@@ -24,7 +24,7 @@ const iconByKey: Partial<Record<NavigationKey, string>> = {
   portfolio: '▣',
   accounting: '◍',
   valuation: '⌬',
-  users: '◉',
+  risk: '◉',
   audit: '◈',
   settings: '⚙'
 };
@@ -35,6 +35,20 @@ export function TaskSidebar({
   onChangeView
 }: TaskSidebarProps) {
   const visibleNavigationItems = getNavigationItemsForRole(selectedRole);
+  const navigationOrder: NavigationKey[] = [
+    'dashboard',
+    'accounting',
+    'portfolio',
+    'valuation',
+    'risk',
+    'audit',
+    'settings'
+  ];
+  const orderedNavigationItems = navigationOrder
+    .map((key) => visibleNavigationItems.find((item) => item.key === key))
+    .filter(
+      (item): item is (typeof visibleNavigationItems)[number] => Boolean(item)
+    );
   const renderedSections = new Set<string>();
 
   return (
@@ -48,7 +62,7 @@ export function TaskSidebar({
       </div>
 
       <nav className="nav nav--finops" aria-label="메뉴">
-        {visibleNavigationItems.map((item) => {
+        {orderedNavigationItems.map((item) => {
           const section = sectionLabelByKey[item.key] ?? '메뉴';
           const showSection = !renderedSections.has(section);
           if (showSection) {

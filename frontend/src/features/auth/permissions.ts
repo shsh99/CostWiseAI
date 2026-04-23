@@ -19,11 +19,11 @@ const roleLabels: Record<Role, string> = {
 };
 
 const menuAccessByRole: Record<Role, readonly MenuAccessKey[]> = {
-  ADMIN: ['dashboard', 'portfolio', 'accounting', 'valuation', 'users', 'audit', 'settings'],
-  EXECUTIVE: ['dashboard', 'portfolio', 'accounting', 'valuation', 'settings'],
-  PM: ['dashboard', 'portfolio', 'accounting', 'valuation', 'settings'],
-  ACCOUNTANT: ['dashboard', 'portfolio', 'accounting', 'valuation', 'settings'],
-  AUDITOR: ['dashboard', 'portfolio', 'accounting', 'valuation', 'users', 'audit', 'settings']
+  ADMIN: ['dashboard', 'portfolio', 'accounting', 'valuation', 'risk', 'users', 'audit', 'settings'],
+  EXECUTIVE: ['dashboard', 'portfolio', 'accounting', 'valuation', 'risk', 'settings'],
+  PM: ['dashboard', 'portfolio', 'accounting', 'valuation', 'risk', 'settings'],
+  ACCOUNTANT: ['dashboard', 'portfolio', 'accounting', 'valuation', 'risk', 'settings'],
+  AUDITOR: ['dashboard', 'portfolio', 'accounting', 'valuation', 'risk', 'users', 'audit', 'settings']
 };
 
 const projectWriteRoles = new Set<Role>(['ADMIN', 'PM', 'ACCOUNTANT']);

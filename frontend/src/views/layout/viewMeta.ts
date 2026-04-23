@@ -28,6 +28,12 @@ export const viewMeta: Record<
     description: '프로젝트 가치평가와 리스크 지표를 확인합니다.',
     breadcrumb: ['프로젝트·평가', '가치평가']
   },
+  risk: {
+    eyebrow: '프로젝트·평가',
+    title: '리스크/VaR',
+    description: '프로젝트 리스크 등급과 VaR 기준을 확인합니다.',
+    breadcrumb: ['프로젝트·평가', '리스크/VaR']
+  },
   users: {
     eyebrow: '시스템',
     title: '사용자 관리',

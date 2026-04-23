@@ -449,6 +449,11 @@ export const navigationItems = [
     description: '가치평가와 투자 판단 워크스페이스입니다.'
   },
   {
+    key: 'risk',
+    label: '리스크/VaR',
+    description: '프로젝트 리스크와 VaR 지표를 확인합니다.'
+  },
+  {
     key: 'users',
     label: '사용자 관리',
     description: '사용자 권한과 계정 상태를 운영합니다.'

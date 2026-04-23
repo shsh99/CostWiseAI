@@ -34,18 +34,19 @@ export function TaskTopbar({
   meta,
   onLogout
 }: TaskTopbarProps) {
+  const now = new Date().toLocaleString('sv-SE').replace('T', ' ');
+  const pendingCount = Math.max(0, conditionalCount);
+
   return (
     <header className="topbar topbar--finops">
       <div className="topbar__context">
         <p className="topbar__eyebrow">{meta.eyebrow}</p>
-        <h1>{meta.title}</h1>
-        <p className="topbar__description">{meta.description}</p>
       </div>
 
       <div className="topbar__cluster">
         <span className="topbar-system-pill">
           {source === 'api'
-            ? `CostWise · ${projectCount}개 프로젝트`
+            ? `${projectCount}개 프로젝트`
             : `CostWise API 일부 제한 · ${projectCount}개 프로젝트`}
         </span>
         {divisionScope ? (
@@ -64,14 +65,15 @@ export function TaskTopbar({
           </label>
         ) : null}
         <div className="topbar-user">
-          <span className="topbar-user__bell" aria-hidden="true">
-            ●
+          <span className="topbar-user__bell" aria-label={`알림 ${pendingCount}건`}>
+            {pendingCount}
           </span>
           <div className="topbar-user__avatar">{username.charAt(0)}</div>
           <div>
             <strong>{username}</strong>
-            <small>{getRoleLabel(selectedRole)} · 원가·평가 통합관리</small>
+            <small>{getRoleLabel(selectedRole).toUpperCase()}</small>
           </div>
+          <span className="topbar-user__date">{now}</span>
           <button type="button" onClick={onLogout}>
             로그아웃
           </button>

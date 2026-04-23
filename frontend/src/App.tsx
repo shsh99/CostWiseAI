@@ -655,6 +655,11 @@ export function App() {
 
     if (activeView === 'valuation') {
       setActiveWorkspaceTab('valuation');
+      return;
+    }
+
+    if (activeView === 'risk') {
+      setActiveWorkspaceTab('risk');
     }
   }, [activeView]);
 
@@ -828,7 +833,7 @@ export function App() {
             />
           ) : null}
 
-          {activeView === 'accounting' || activeView === 'valuation' ? (
+          {activeView === 'accounting' || activeView === 'valuation' || activeView === 'risk' ? (
             <WorkspaceView
               activeView={activeView}
               selectedProject={selectedProject}

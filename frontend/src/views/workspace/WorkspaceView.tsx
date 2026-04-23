@@ -18,7 +18,7 @@ import { Panel } from '../../shared/components/Panel';
 type WorkspaceTabKey = (typeof detailTabs)[number]['key'];
 
 type WorkspaceViewProps = {
-  activeView: 'accounting' | 'valuation';
+  activeView: 'accounting' | 'valuation' | 'risk';
   selectedProject: ProjectSummary | null;
   selectedDetail: ProjectDetail | null;
   detailStatus: 'idle' | 'loading' | 'ready' | 'error';
