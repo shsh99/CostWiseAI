@@ -19,11 +19,11 @@ const roleLabels: Record<Role, string> = {
 };
 
 const menuAccessByRole: Record<Role, readonly MenuAccessKey[]> = {
-  ADMIN: ['dashboard', 'portfolio', 'accounting', 'valuation', 'reviews', 'settings'],
-  EXECUTIVE: ['dashboard', 'portfolio', 'valuation', 'reviews', 'settings'],
+  ADMIN: ['dashboard', 'portfolio', 'accounting', 'valuation', 'users', 'reviews', 'settings'],
+  EXECUTIVE: ['dashboard', 'portfolio', 'valuation', 'users', 'reviews', 'settings'],
   PM: ['dashboard', 'portfolio', 'accounting', 'valuation', 'reviews', 'settings'],
   ACCOUNTANT: ['portfolio', 'accounting', 'reviews', 'settings'],
-  AUDITOR: ['portfolio', 'reviews', 'settings']
+  AUDITOR: ['portfolio', 'users', 'reviews', 'settings']
 };
 
 const projectWriteRoles = new Set<Role>(['ADMIN', 'PM', 'ACCOUNTANT']);
@@ -47,6 +47,10 @@ export function getDefaultMenuForRole(role: Role): MenuAccessKey {
 
 export function canWriteProjects(role: Role) {
   return projectWriteRoles.has(role);
+}
+
+export function canManageUsers(role: Role) {
+  return role === 'ADMIN';
 }
 
 export function isDivisionScopedRole(role: Role) {

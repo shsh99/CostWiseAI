@@ -38,6 +38,7 @@ import { viewMeta } from './views/layout/viewMeta';
 import { PortfolioView } from './views/portfolio/PortfolioView';
 import { ReviewsView } from './views/reviews/ReviewsView';
 import { SettingsView } from './views/settings/SettingsView';
+import { UsersView } from './views/users/UsersView';
 import { WorkspaceView } from './views/workspace/WorkspaceView';
 
 type WorkspaceTabKey = (typeof detailTabs)[number]['key'];
@@ -767,6 +768,14 @@ export function App() {
               auditError={auditError}
               selectedProjectName={selectedProject?.name ?? null}
               onRetryAuditLoad={retryAuditLoad}
+            />
+          ) : null}
+
+          {activeView === 'users' ? (
+            <UsersView
+              selectedRole={selectedRole}
+              divisionScope={divisionScope}
+              divisionOptions={divisionOptions}
             />
           ) : null}
 

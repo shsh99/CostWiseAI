@@ -449,6 +449,11 @@ export const navigationItems = [
     description: '가치평가와 투자 판단 워크스페이스입니다.'
   },
   {
+    key: 'users',
+    label: 'Users',
+    description: '사용자 권한과 계정 상태를 운영합니다.'
+  },
+  {
     key: 'reviews',
     label: 'Reviews',
     description: '가정값과 감사 이력을 검토합니다.'
@@ -569,6 +574,27 @@ export type CreateProjectResponse = {
   createdAt?: string;
 };
 
+export type UserAccount = {
+  id: string;
+  email: string;
+  displayName: string;
+  role: string;
+  division: string;
+  status: string;
+  mfaEnabled: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type UpsertUserRequest = {
+  email: string;
+  displayName: string;
+  role: string;
+  division: string;
+  status: string;
+  mfaEnabled: boolean;
+};
+
 export type ApiError = Error & {
   status?: number;
 };
@@ -649,9 +675,21 @@ export async function loadAuditEvents(project: ProjectSummary): Promise<{
 }> {
   const projectId = project.projectId ?? project.code;
 
+  return loadAuditEventsByProjectId(projectId, 20);
+}
+
+export async function loadAuditEventsByProjectId(
+  projectId: string,
+  limit = 20
+): Promise<{
+  events: AuditEvent[];
+  source: DataSource;
+}> {
+  const resolvedLimit = Number.isFinite(limit) ? Math.max(1, Math.round(limit)) : 20;
+
   try {
     const response = await apiFetch(
-      `/api/audit-logs?projectId=${encodeURIComponent(projectId)}&limit=20`
+      `/api/audit-logs?projectId=${encodeURIComponent(projectId)}&limit=${resolvedLimit}`
     );
     if (!response.ok) {
       throw createApiError(
@@ -668,6 +706,94 @@ export async function loadAuditEvents(project: ProjectSummary): Promise<{
     };
   } catch (error) {
     throw toApiError('감사 이력을 불러오지 못했습니다.', error);
+  }
+}
+
+export async function loadUsers(): Promise<UserAccount[]> {
+  try {
+    const response = await apiFetch('/api/users');
+    if (!response.ok) {
+      const errorMessage = await readApiErrorMessage(response);
+      throw createApiError(
+        errorMessage ?? `Users list request failed: ${response.status}`,
+        response.status
+      );
+    }
+
+    return (await response.json()) as UserAccount[];
+  } catch (error) {
+    throw toApiError('사용자 목록을 불러오지 못했습니다.', error);
+  }
+}
+
+export async function createUserAccount(
+  request: UpsertUserRequest
+): Promise<UserAccount> {
+  try {
+    const response = await apiFetch('/api/users', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(request)
+    });
+
+    if (!response.ok) {
+      const errorMessage = await readApiErrorMessage(response);
+      throw createApiError(
+        errorMessage ?? `User create request failed: ${response.status}`,
+        response.status
+      );
+    }
+
+    return (await response.json()) as UserAccount;
+  } catch (error) {
+    throw toApiError('사용자를 생성하지 못했습니다.', error);
+  }
+}
+
+export async function updateUserAccount(
+  userId: string,
+  request: UpsertUserRequest
+): Promise<UserAccount> {
+  try {
+    const response = await apiFetch(`/api/users/${encodeURIComponent(userId)}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(request)
+    });
+
+    if (!response.ok) {
+      const errorMessage = await readApiErrorMessage(response);
+      throw createApiError(
+        errorMessage ?? `User update request failed: ${response.status}`,
+        response.status
+      );
+    }
+
+    return (await response.json()) as UserAccount;
+  } catch (error) {
+    throw toApiError('사용자 정보를 수정하지 못했습니다.', error);
+  }
+}
+
+export async function deleteUserAccount(userId: string): Promise<void> {
+  try {
+    const response = await apiFetch(`/api/users/${encodeURIComponent(userId)}`, {
+      method: 'DELETE'
+    });
+
+    if (!response.ok) {
+      const errorMessage = await readApiErrorMessage(response);
+      throw createApiError(
+        errorMessage ?? `User delete request failed: ${response.status}`,
+        response.status
+      );
+    }
+  } catch (error) {
+    throw toApiError('사용자를 삭제하지 못했습니다.', error);
   }
 }
 
