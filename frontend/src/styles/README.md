@@ -1,3 +1,5 @@
 # styles
 
-Global styling and design tokens live here.
+Tailwind entry and base styles live here.
+
+- `tailwind.css`: Tailwind directives and minimal base layer.
