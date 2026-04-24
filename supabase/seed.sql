@@ -167,7 +167,7 @@ select
   category,
   amount,
   'KRW',
-  description
+  p.description
 from (
   select
     sp.id,

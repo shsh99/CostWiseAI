@@ -58,6 +58,7 @@ This is the canonical entry point for the repository. Start here, then follow th
 - Do not edit `harness_tmp/`.
 - Do not change unrelated files.
 - Do not commit unverified changes.
+- Do not bypass verification shortcuts such as `--no-verify`; fix the root cause and make checks pass.
 - Do not expose secrets or service keys to the browser.
 - Do not open a PR without the required dev log for a non-trivial change.
 
