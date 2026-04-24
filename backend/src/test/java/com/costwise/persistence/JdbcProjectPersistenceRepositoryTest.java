@@ -120,6 +120,104 @@ class JdbcProjectPersistenceRepositoryTest {
     }
 
     @Test
+    void multipleScenarioAnalysesRemainReadableFromSingleProjectDetailLookup() throws Exception {
+        String jdbcUrl = "jdbc:h2:mem:persistence-multi-scenario;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE";
+        createSchema(jdbcUrl);
+        AuditPersistenceProperties properties = new AuditPersistenceProperties(null, jdbcUrl, "sa", "", "disable");
+
+        PersistenceService service = new PersistenceService(new JdbcProjectPersistenceRepository(properties));
+        var project = service.createProject(new CreateProjectRequest(
+                "PJT-DB-MULTI",
+                "복수 시나리오 프로젝트",
+                "new_business",
+                "multi scenario analysis"));
+        var base = service.createScenario(project.id(), new CreateScenarioRequest("Base", "기준", true, true));
+        var stress = service.createScenario(project.id(), new CreateScenarioRequest("Stress", "스트레스", false, true));
+
+        service.upsertAnalysis(project.id(), base.id(), new AnalysisUpsertRequest(
+                List.of(new AnalysisUpsertRequest.AllocationRuleInput(
+                        "D-BASE",
+                        "manual",
+                        new BigDecimal("1.000000"),
+                        new BigDecimal("900000.00"),
+                        "기준 공통비",
+                        "shared",
+                        new BigDecimal("900000.00"))),
+                List.of(new AnalysisUpsertRequest.CashFlowInput(
+                        0,
+                        "현재",
+                        "2026",
+                        new BigDecimal("450000.00"),
+                        new BigDecimal("-200000.00"),
+                        BigDecimal.ZERO,
+                        new BigDecimal("0.080000"))),
+                new AnalysisUpsertRequest.ValuationInput(
+                        new BigDecimal("0.080000"),
+                        new BigDecimal("250000.00"),
+                        new BigDecimal("0.110000"),
+                        new BigDecimal("2.20"),
+                        "recommend",
+                        JsonNodeFactory.instance.objectNode().put("tag", "base")),
+                new AnalysisUpsertRequest.ApprovalInput(
+                        "planner",
+                        "base-user",
+                        "allocated",
+                        "base 반영",
+                        "in_review")));
+
+        service.upsertAnalysis(project.id(), stress.id(), new AnalysisUpsertRequest(
+                List.of(new AnalysisUpsertRequest.AllocationRuleInput(
+                        "D-STRESS",
+                        "manual",
+                        new BigDecimal("1.000000"),
+                        new BigDecimal("1200000.00"),
+                        "스트레스 공통비",
+                        "shared",
+                        new BigDecimal("1200000.00"))),
+                List.of(new AnalysisUpsertRequest.CashFlowInput(
+                        0,
+                        "현재",
+                        "2026",
+                        new BigDecimal("300000.00"),
+                        new BigDecimal("-250000.00"),
+                        BigDecimal.ZERO,
+                        new BigDecimal("0.090000"))),
+                new AnalysisUpsertRequest.ValuationInput(
+                        new BigDecimal("0.090000"),
+                        new BigDecimal("50000.00"),
+                        new BigDecimal("0.070000"),
+                        new BigDecimal("3.80"),
+                        "review",
+                        JsonNodeFactory.instance.objectNode().put("tag", "stress")),
+                new AnalysisUpsertRequest.ApprovalInput(
+                        "planner",
+                        "stress-user",
+                        "evaluated",
+                        "stress 반영",
+                        "in_review")));
+
+        var detail = service.getProjectDetail(project.id());
+
+        assertThat(detail.scenarios()).hasSize(2);
+        var baseDetail = detail.scenarios().stream()
+                .filter(scenario -> scenario.id().equals(base.id()))
+                .findFirst()
+                .orElseThrow();
+        var stressDetail = detail.scenarios().stream()
+                .filter(scenario -> scenario.id().equals(stress.id()))
+                .findFirst()
+                .orElseThrow();
+        assertThat(baseDetail.allocationRules()).hasSize(1);
+        assertThat(baseDetail.allocationRules().getFirst().departmentCode()).isEqualTo("D-BASE");
+        assertThat(baseDetail.valuation()).isNotNull();
+        assertThat(baseDetail.valuation().assumptions().path("tag").asText()).isEqualTo("base");
+        assertThat(stressDetail.cashFlows()).hasSize(1);
+        assertThat(stressDetail.cashFlows().getFirst().netCashFlow()).isEqualByComparingTo("50000.00");
+        assertThat(stressDetail.valuation()).isNotNull();
+        assertThat(stressDetail.valuation().assumptions().path("tag").asText()).isEqualTo("stress");
+    }
+
+    @Test
     void projectAndScenarioCrudUseDatabaseState() throws Exception {
         String jdbcUrl = "jdbc:h2:mem:persistence-crud;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE";
         createSchema(jdbcUrl);

@@ -333,10 +333,14 @@ public class JdbcProjectPersistenceRepository implements ProjectPersistenceRepos
 
     @Override
     public AnalysisRecord findAnalysis(String projectId, String scenarioId) {
-        return new AnalysisRecord(
-                listAllocationRules(projectId, scenarioId),
-                listCashFlows(projectId, scenarioId),
-                findValuation(projectId, scenarioId).orElse(null));
+        try (Connection connection = openConnection()) {
+            return new AnalysisRecord(
+                    listAllocationRules(connection, projectId, scenarioId),
+                    listCashFlows(connection, projectId, scenarioId),
+                    findValuation(connection, projectId, scenarioId).orElse(null));
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to find analysis", exception);
+        }
     }
 
     @Override
@@ -540,6 +544,15 @@ public class JdbcProjectPersistenceRepository implements ProjectPersistenceRepos
     }
 
     private List<AllocationRuleRecord> listAllocationRules(String projectId, String scenarioId) {
+        try (Connection connection = openConnection()) {
+            return listAllocationRules(connection, projectId, scenarioId);
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to list allocation rules", exception);
+        }
+    }
+
+    private List<AllocationRuleRecord> listAllocationRules(
+            Connection connection, String projectId, String scenarioId) {
         String sql = """
                 select d.code as department_code,
                        ar.basis,
@@ -548,15 +561,14 @@ public class JdbcProjectPersistenceRepository implements ProjectPersistenceRepos
                        cp.name as cost_pool_name,
                        cp.category as cost_pool_category,
                        cp.amount as cost_pool_amount
-                  from allocation_rules ar
-                  join departments d on d.id = ar.department_id
-                  join cost_pools cp on cp.id = ar.cost_pool_id
+                 from allocation_rules ar
+                 join departments d on d.id = ar.department_id
+                 join cost_pools cp on cp.id = ar.cost_pool_id
                  where ar.project_id = ?
                    and ar.scenario_id = ?
                  order by ar.created_at asc, d.code asc, cp.name asc
                 """;
-        try (Connection connection = openConnection();
-                PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setObject(1, uuid(projectId));
             statement.setObject(2, uuid(scenarioId));
             try (ResultSet resultSet = statement.executeQuery()) {
@@ -579,6 +591,14 @@ public class JdbcProjectPersistenceRepository implements ProjectPersistenceRepos
     }
 
     private List<CashFlowRecord> listCashFlows(String projectId, String scenarioId) {
+        try (Connection connection = openConnection()) {
+            return listCashFlows(connection, projectId, scenarioId);
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to list cash flows", exception);
+        }
+    }
+
+    private List<CashFlowRecord> listCashFlows(Connection connection, String projectId, String scenarioId) {
         String sql = """
                 select period_no,
                        period_label,
@@ -593,8 +613,7 @@ public class JdbcProjectPersistenceRepository implements ProjectPersistenceRepos
                    and scenario_id = ?
                  order by period_no asc
                 """;
-        try (Connection connection = openConnection();
-                PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setObject(1, uuid(projectId));
             statement.setObject(2, uuid(scenarioId));
             try (ResultSet resultSet = statement.executeQuery()) {
@@ -618,14 +637,21 @@ public class JdbcProjectPersistenceRepository implements ProjectPersistenceRepos
     }
 
     private Optional<ValuationRecord> findValuation(String projectId, String scenarioId) {
+        try (Connection connection = openConnection()) {
+            return findValuation(connection, projectId, scenarioId);
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to find valuation", exception);
+        }
+    }
+
+    private Optional<ValuationRecord> findValuation(Connection connection, String projectId, String scenarioId) {
         String sql = """
                 select discount_rate, npv, irr, payback_period, decision, assumptions
                   from valuation_results
                  where project_id = ?
                    and scenario_id = ?
                 """;
-        try (Connection connection = openConnection();
-                PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setObject(1, uuid(projectId));
             statement.setObject(2, uuid(scenarioId));
             try (ResultSet resultSet = statement.executeQuery()) {
