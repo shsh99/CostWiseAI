@@ -35,6 +35,7 @@ This is the canonical entry point for the repository. Start here, then follow th
 - Keep `main` release-only, `dev` integration-only, and `feat/*` for focused work.
 - Use one worktree per non-trivial `feat/*` branch.
 - Before opening a PR for any non-trivial change, write a dev log entry that explains the worktree comparison and why the chosen option won.
+- If validation is blocked, do not bypass checks with shortcuts like `--no-verify`; find and fix the root cause first.
 
 ## Common Commands
 
