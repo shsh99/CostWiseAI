@@ -1,6 +1,18 @@
 begin;
 
-truncate table workflow_states, approval_logs, valuation_results, cash_flows, allocation_rules, cost_pools, scenarios, departments, projects restart identity cascade;
+truncate table
+  audit_logs,
+  workflow_states,
+  users,
+  approval_logs,
+  valuation_results,
+  cash_flows,
+  allocation_rules,
+  cost_pools,
+  scenarios,
+  departments,
+  projects
+restart identity cascade;
 
 create temporary table seed_departments (
   id uuid primary key,
@@ -11,11 +23,11 @@ create temporary table seed_departments (
 
 insert into seed_departments (id, code, name, sort_order)
 values
-  ('10000000-0000-0000-0000-000000000001', 'UND', '언더라이팅본부', 1),
-  ('10000000-0000-0000-0000-000000000002', 'PROD', '상품개발본부', 2),
-  ('10000000-0000-0000-0000-000000000003', 'SALES', '영업본부', 3),
-  ('10000000-0000-0000-0000-000000000004', 'IT', 'IT본부', 4),
-  ('10000000-0000-0000-0000-000000000005', 'CORP', '경영지원본부', 5);
+  ('10000000-0000-0000-0000-000000000001', 'HQ01', '투자운용본부', 1),
+  ('10000000-0000-0000-0000-000000000002', 'HQ02', '리스크관리본부', 2),
+  ('10000000-0000-0000-0000-000000000003', 'HQ03', '재무회계본부', 3),
+  ('10000000-0000-0000-0000-000000000004', 'HQ04', '금융공학본부', 4),
+  ('10000000-0000-0000-0000-000000000005', 'HQ05', 'IT전략본부', 5);
 
 insert into departments (id, code, name, sort_order)
 select id, code, name, sort_order
@@ -54,26 +66,26 @@ insert into seed_projects (
   base_payback
 )
 values
-  ('20000000-0000-0000-0000-000000000001', 'UND-2026-001', '암보험 신상품 출시', 'UND', 'insurance_product', 'approved', '승인', '중간', 6500000000, 11200000000, 2100000000, 0.182000, 2.80),
-  ('20000000-0000-0000-0000-000000000002', 'UND-2026-002', '인수심사 자동화', 'UND', 'underwriting_process', 'in_review', '조건부 진행', '낮음', 4200000000, 8100000000, 1700000000, 0.171000, 3.10),
-  ('20000000-0000-0000-0000-000000000003', 'UND-2026-003', '위험요율 재설계', 'UND', 'pricing_model', 'in_review', '검토중', '중간', 3100000000, 5900000000, 900000000, 0.129000, 3.80),
-  ('20000000-0000-0000-0000-000000000004', 'UND-2026-004', '사전심사 대시보드', 'UND', 'operations_tool', 'rejected', '보류', '높음', 2800000000, 4700000000, -400000000, 0.094000, 4.60),
-  ('20000000-0000-0000-0000-000000000005', 'PROD-2026-001', '디지털 건강보험', 'PROD', 'insurance_product', 'approved', '승인', '중간', 5400000000, 9800000000, 2400000000, 0.194000, 2.50),
-  ('20000000-0000-0000-0000-000000000006', 'PROD-2026-002', '가족보험 패키지', 'PROD', 'insurance_product', 'in_review', '조건부 진행', '낮음', 4600000000, 8300000000, 1500000000, 0.161000, 3.00),
-  ('20000000-0000-0000-0000-000000000007', 'PROD-2026-003', '특약 정비', 'PROD', 'product_optimization', 'in_review', '검토중', '중간', 3000000000, 4900000000, 300000000, 0.112000, 4.20),
-  ('20000000-0000-0000-0000-000000000008', 'PROD-2026-004', '상품약관 자동화', 'PROD', 'document_automation', 'rejected', '보류', '높음', 2500000000, 4100000000, -700000000, 0.089000, 4.80),
-  ('20000000-0000-0000-0000-000000000009', 'SALES-2026-001', 'GA 영업지원 포털', 'SALES', 'sales_channel', 'approved', '승인', '중간', 4900000000, 9500000000, 1900000000, 0.168000, 2.90),
-  ('20000000-0000-0000-0000-000000000010', 'SALES-2026-002', '설계사 리드분배', 'SALES', 'sales_automation', 'in_review', '조건부 진행', '낮음', 3800000000, 7200000000, 1100000000, 0.143000, 3.40),
-  ('20000000-0000-0000-0000-000000000011', 'SALES-2026-003', '모바일 견적 고도화', 'SALES', 'sales_automation', 'in_review', '검토중', '중간', 3100000000, 5600000000, 200000000, 0.108000, 4.10),
-  ('20000000-0000-0000-0000-000000000012', 'SALES-2026-004', '채널 수익성 분석', 'SALES', 'profitability_analysis', 'rejected', '보류', '높음', 2700000000, 4300000000, -900000000, 0.081000, 5.00),
-  ('20000000-0000-0000-0000-000000000013', 'IT-2026-001', '디지털 플랫폼 구축', 'IT', 'platform', 'approved', '승인', '중간', 7800000000, 13600000000, 3500000000, 0.207000, 2.30),
-  ('20000000-0000-0000-0000-000000000014', 'IT-2026-002', '마이데이터 연계', 'IT', 'data_integration', 'in_review', '조건부 진행', '낮음', 5900000000, 10700000000, 2000000000, 0.176000, 2.80),
-  ('20000000-0000-0000-0000-000000000015', 'IT-2026-003', '데이터허브 확장', 'IT', 'data_platform', 'in_review', '검토중', '중간', 4300000000, 7400000000, 800000000, 0.131000, 3.70),
-  ('20000000-0000-0000-0000-000000000016', 'IT-2026-004', '콜센터 고도화', 'IT', 'operations_tool', 'rejected', '보류', '높음', 3900000000, 6200000000, -1100000000, 0.079000, 5.20),
-  ('20000000-0000-0000-0000-000000000017', 'CORP-2026-001', '원가배분 체계개편', 'CORP', 'cost_accounting', 'in_review', '검토중', '낮음', 2900000000, 5300000000, 600000000, 0.122000, 3.90),
-  ('20000000-0000-0000-0000-000000000018', 'CORP-2026-002', '감사로그 표준화', 'CORP', 'governance', 'in_review', '조건부 진행', '낮음', 2400000000, 4500000000, 400000000, 0.117000, 4.00),
-  ('20000000-0000-0000-0000-000000000019', 'CORP-2026-003', '성과관리 대시보드', 'CORP', 'performance_management', 'in_review', '검토중', '중간', 3200000000, 5100000000, -300000000, 0.097000, 4.40),
-  ('20000000-0000-0000-0000-000000000020', 'CORP-2026-004', '권한통제 재설계', 'CORP', 'security_control', 'rejected', '보류', '높음', 2100000000, 3700000000, -1200000000, 0.074000, 5.60);
+  ('20000000-0000-0000-0000-000000000001', 'PJ-2026-001', '삼성전자 주식 포트폴리오', 'HQ01', 'equity', 'approved', '승인', '중간', 800000000, 1120000000, 120000000, 0.142000, 2.80),
+  ('20000000-0000-0000-0000-000000000002', 'PJ-2026-002', 'KOSPI200 ETF 운용', 'HQ01', 'equity', 'approved', '승인', '중간', 500000000, 750000000, 75000000, 0.118000, 3.00),
+  ('20000000-0000-0000-0000-000000000003', 'PJ-2026-003', '국고채 10년 포트폴리오', 'HQ01', 'bond', 'approved', '승인', '낮음', 1200000000, 1800000000, 180000000, 0.065000, 4.20),
+  ('20000000-0000-0000-0000-000000000004', 'PJ-2026-004', '해외 채권형 펀드', 'HQ01', 'fund', 'approved', '승인', '중간', 900000000, 1400000000, 95000000, 0.081000, 4.00),
+  ('20000000-0000-0000-0000-000000000005', 'PJ-2026-005', '신용리스크 측정 엔진', 'HQ02', 'risk_project', 'in_review', '조건부 진행', '중간', 650000000, 980000000, 65000000, 0.099000, 3.60),
+  ('20000000-0000-0000-0000-000000000006', 'PJ-2026-006', '금리스왑(IRS) 운용', 'HQ02', 'derivative', 'in_review', '조건부 진행', '중간', 450000000, 680000000, 42000000, 0.072000, 3.90),
+  ('20000000-0000-0000-0000-000000000007', 'PJ-2026-007', 'FX 옵션 북', 'HQ02', 'derivative', 'in_review', '검토중', '높음', 300000000, 480000000, 18000000, 0.054000, 4.40),
+  ('20000000-0000-0000-0000-000000000008', 'PJ-2026-008', 'ALM 모델 고도화', 'HQ02', 'risk_project', 'draft', '검토중', '중간', 400000000, 520000000, 25000000, 0.063000, 4.60),
+  ('20000000-0000-0000-0000-000000000009', 'PJ-2026-009', 'IFRS17 원가배분', 'HQ03', 'accounting_project', 'in_review', '조건부 진행', '낮음', 550000000, 830000000, 70000000, 0.117000, 3.80),
+  ('20000000-0000-0000-0000-000000000010', 'PJ-2026-010', '관리회계 BI 고도화', 'HQ03', 'accounting_project', 'in_review', '조건부 진행', '낮음', 480000000, 710000000, 64000000, 0.111000, 3.90),
+  ('20000000-0000-0000-0000-000000000011', 'PJ-2026-011', '회사채 AA급 포트폴리오', 'HQ03', 'bond', 'approved', '승인', '중간', 700000000, 980000000, 88000000, 0.069000, 4.10),
+  ('20000000-0000-0000-0000-000000000012', 'PJ-2026-012', '선박유동화 펀드(SPC)', 'HQ03', 'fund', 'rejected', '보류', '높음', 1100000000, 900000000, -150000000, 0.041000, 6.00),
+  ('20000000-0000-0000-0000-000000000013', 'PJ-2026-013', '파생상품 가치평가 엔진', 'HQ04', 'valuation_project', 'approved', '승인', '중간', 850000000, 1250000000, 130000000, 0.132000, 3.10),
+  ('20000000-0000-0000-0000-000000000014', 'PJ-2026-014', 'KOSPI 선물 차익거래', 'HQ04', 'derivative', 'approved', '승인', '중간', 600000000, 920000000, 72000000, 0.095000, 3.30),
+  ('20000000-0000-0000-0000-000000000015', 'PJ-2026-015', '주식형 ELS 발행', 'HQ04', 'derivative', 'in_review', '검토중', '높음', 950000000, 1100000000, 115000000, 0.103000, 4.90),
+  ('20000000-0000-0000-0000-000000000016', 'PJ-2026-016', '리스크 시나리오 시뮬레이터', 'HQ04', 'risk_project', 'in_review', '검토중', '중간', 520000000, 740000000, 52000000, 0.088000, 4.30),
+  ('20000000-0000-0000-0000-000000000017', 'PJ-2026-017', '인터페이스 통합관리 플랫폼', 'HQ05', 'it_project', 'in_review', '조건부 진행', '낮음', 780000000, 1120000000, 98000000, 0.124000, 3.50),
+  ('20000000-0000-0000-0000-000000000018', 'PJ-2026-018', '감사로그 중앙화 시스템', 'HQ05', 'it_project', 'in_review', '조건부 진행', '낮음', 420000000, 680000000, 55000000, 0.119000, 3.70),
+  ('20000000-0000-0000-0000-000000000019', 'PJ-2026-019', 'AI 기반 이상거래 탐지', 'HQ05', 'it_project', 'draft', '검토중', '중간', 680000000, 920000000, 84000000, 0.127000, 4.10),
+  ('20000000-0000-0000-0000-000000000020', 'PJ-2026-020', '테슬라 해외주식 포트폴리오', 'HQ01', 'equity', 'approved', '승인', '높음', 650000000, 950000000, 95000000, 0.126000, 3.60);
 
 insert into projects (id, code, name, business_type, status, description)
 select
@@ -217,9 +229,9 @@ from (
       when cp.name = '인력 표준원가' then 0.112500::numeric
       when cp.name = '본부 공통원가' and d.code = sp.department_code then 0.400000::numeric
       when cp.name = '본부 공통원가' then 0.150000::numeric
-      when cp.name = '내부대체가액-플랫폼' and sp.department_code = 'IT' and d.code = 'IT' then 0.600000::numeric
-      when cp.name = '내부대체가액-플랫폼' and sp.department_code = 'IT' then 0.100000::numeric
-      when cp.name = '내부대체가액-플랫폼' and d.code = 'IT' then 0.350000::numeric
+      when cp.name = '내부대체가액-플랫폼' and sp.department_code = 'HQ05' and d.code = 'HQ05' then 0.600000::numeric
+      when cp.name = '내부대체가액-플랫폼' and sp.department_code = 'HQ05' then 0.100000::numeric
+      when cp.name = '내부대체가액-플랫폼' and d.code = 'HQ05' then 0.350000::numeric
       when cp.name = '내부대체가액-플랫폼' and d.code = sp.department_code then 0.250000::numeric
       when cp.name = '내부대체가액-플랫폼' then 0.133333::numeric
       when cp.name = '외부벤더원가' and d.code = sp.department_code then 0.700000::numeric
@@ -420,5 +432,76 @@ from (
   ) as ev(event_code, actor_role, actor_name, action, comment, offset_interval)
 ) audit_rows
 order by project_id, created_at;
+
+insert into users (id, email, display_name, role, division, status, mfa_enabled)
+values
+  ('40000000-0000-0000-0000-000000000001', 'admin@costwise.local', '시스템 관리자', 'ADMIN', '전사', 'ACTIVE', true),
+  ('40000000-0000-0000-0000-000000000002', 'exec.hq01@costwise.local', '투자운용 본부장', 'EXECUTIVE', '투자운용본부', 'ACTIVE', true),
+  ('40000000-0000-0000-0000-000000000003', 'pm.hq04@costwise.local', '금융공학 PM', 'PM', '금융공학본부', 'ACTIVE', false),
+  ('40000000-0000-0000-0000-000000000004', 'acct.hq03@costwise.local', '재무회계 담당', 'ACCOUNTANT', '재무회계본부', 'ACTIVE', false),
+  ('40000000-0000-0000-0000-000000000005', 'audit@costwise.local', '감사 담당', 'AUDITOR', '전사', 'ACTIVE', false);
+
+insert into workflow_states (project_id, status, last_action, updated_at)
+select
+  sp.id::text,
+  case
+    when sp.workflow_status = 'approved' then 'APPROVED'
+    when sp.workflow_status = 'rejected' then 'REJECTED'
+    when sp.workflow_status = 'draft' then 'DRAFT'
+    else 'REVIEW'
+  end,
+  case
+    when sp.workflow_status = 'approved' then 'APPROVE'
+    when sp.workflow_status = 'rejected' then 'REJECT'
+    when sp.workflow_status = 'draft' then 'INIT'
+    else 'REQUEST_REVIEW'
+  end,
+  timestamp with time zone '2026-04-24 09:00:00+09' + ((row_number() over (order by sp.code) - 1) * interval '10 minute')
+from seed_projects sp;
+
+insert into audit_logs (
+  project_id,
+  event_type,
+  actor_role,
+  actor_id,
+  action,
+  target,
+  result,
+  metadata,
+  request_context,
+  occurred_at
+)
+select
+  sp.id::text,
+  'PROJECT_WORKFLOW',
+  case
+    when sp.workflow_status = 'approved' then 'executive'
+    when sp.workflow_status = 'rejected' then 'executive'
+    else 'finance_reviewer'
+  end,
+  case
+    when sp.workflow_status = 'approved' then 'exec.hq01'
+    when sp.workflow_status = 'rejected' then 'exec.hq01'
+    else 'review.bot'
+  end,
+  case
+    when sp.workflow_status = 'approved' then 'APPROVE'
+    when sp.workflow_status = 'rejected' then 'REJECT'
+    when sp.workflow_status = 'draft' then 'CREATE'
+    else 'REVIEW'
+  end,
+  '/api/projects/' || sp.id::text || '/workflow',
+  'SUCCESS',
+  jsonb_build_object(
+    'projectCode', sp.code,
+    'displayStatus', sp.display_status,
+    'riskLevel', sp.risk_level
+  )::text,
+  jsonb_build_object(
+    'source', 'supabase-seed',
+    'seedVersion', '2026-04-24-ref-webapp'
+  )::text,
+  timestamp with time zone '2026-04-24 09:30:00+09' + ((row_number() over (order by sp.code) - 1) * interval '7 minute')
+from seed_projects sp;
 
 commit;

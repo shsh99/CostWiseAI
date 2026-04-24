@@ -338,6 +338,11 @@ public class PortfolioSummaryService {
             case "SALES" -> "영업본부";
             case "IT" -> "IT본부";
             case "CORP" -> "경영지원본부";
+            case "HQ01" -> "투자운용본부";
+            case "HQ02" -> "리스크관리본부";
+            case "HQ03" -> "재무회계본부";
+            case "HQ04" -> "금융공학본부";
+            case "HQ05" -> "IT전략본부";
             default -> "경영지원본부";
         };
     }
@@ -476,6 +481,11 @@ public class PortfolioSummaryService {
             case "영업본부" -> "SALES";
             case "IT본부" -> "IT";
             case "경영지원본부" -> "CORP";
+            case "투자운용본부" -> "HQ01";
+            case "리스크관리본부" -> "HQ02";
+            case "재무회계본부" -> "HQ03";
+            case "금융공학본부" -> "HQ04";
+            case "IT전략본부" -> "HQ05";
             default -> "CORP";
         };
     }

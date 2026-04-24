@@ -1,1 +1,13 @@
-truncate table workflow_states, approval_logs, valuation_results, cash_flows, allocation_rules, cost_pools, scenarios, departments, projects restart identity cascade;
+truncate table
+  audit_logs,
+  workflow_states,
+  users,
+  approval_logs,
+  valuation_results,
+  cash_flows,
+  allocation_rules,
+  cost_pools,
+  scenarios,
+  departments,
+  projects
+restart identity cascade;
