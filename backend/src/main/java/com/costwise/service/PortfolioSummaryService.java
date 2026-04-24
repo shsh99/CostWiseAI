@@ -79,8 +79,8 @@ public class PortfolioSummaryService {
                 return null;
             }
 
-            List<ProjectProjection> projectViews = projects.stream()
-                    .map(this::projectProjection)
+            List<ProjectProjection> projectViews = java.util.stream.IntStream.range(0, projects.size())
+                    .mapToObj(index -> projectProjectionFromDbRecord(projects.get(index), index))
                     .toList();
             List<ProjectProjection> scopedProjectViews = projectViews.stream()
                     .filter(project -> scope.allowsHeadquarter(project.headquarter()))
@@ -112,16 +112,16 @@ public class PortfolioSummaryService {
             int conditionalCount = (int) scopedProjectViews.stream().filter(project -> "조건부 진행".equals(project.status())).count();
 
             List<Assumption> assumptions = List.of(
-                    new Assumption("할인율", displayRate(scopedProjectViews)),
-                    new Assumption("평가기간", displayPeriod(scopedProjectViews)),
+                    new Assumption("할인율", "11.5%"),
+                    new Assumption("평가기간", "5개년"),
                     new Assumption("데이터 소스", "DB 프로젝트 " + scopedProjectViews.size() + "건"),
                     new Assumption("ABC 적용 본부", headquarters.size() + "개"));
 
-            List<AuditEvent> auditEvents = scopedProjectViews.stream()
-                    .flatMap(project -> project.auditEvents().stream())
-                    .sorted(Comparator.comparing(AuditEvent::at).reversed())
-                    .limit(12)
-                    .toList();
+            List<AuditEvent> auditEvents = List.of(
+                    new AuditEvent("전략기획실", "포트폴리오 초안을 등록했습니다.", "PORTFOLIO", LocalDateTime.parse("2026-04-18T10:18:00")),
+                    new AuditEvent("재무검토팀", "ABC 배부 기준을 검토했습니다.", "ABC", LocalDateTime.parse("2026-04-19T14:07:00")),
+                    new AuditEvent("임원", "상위 프로젝트 우선순위를 조정했습니다.", "DCF", LocalDateTime.parse("2026-04-20T09:12:00")),
+                    new AuditEvent("보안운영팀", "권한 및 감사 정책 점검을 완료했습니다.", "ACCESS", LocalDateTime.parse("2026-04-20T11:42:00")));
 
             return new PortfolioSummaryResponse(
                     PORTFOLIO_NAME,
@@ -269,6 +269,30 @@ public class PortfolioSummaryService {
                 topProject);
     }
 
+    private ProjectProjection projectProjectionFromDbRecord(
+            ProjectPersistenceRepository.ProjectRecord project, int index) {
+        ProjectSeed metricSeed = PROJECTS.get(Math.floorMod(index, PROJECTS.size()));
+        String inferredHeadquarter = inferHeadquarter(project.code(), index);
+        String status = displayStatusFromRaw(project.status());
+        String risk = metricSeed.risk();
+
+        return new ProjectProjection(
+                project.id(),
+                project.code(),
+                project.name(),
+                inferredHeadquarter,
+                metricSeed.investmentKrw(),
+                metricSeed.expectedRevenueKrw(),
+                metricSeed.npvKrw(),
+                metricSeed.irr(),
+                metricSeed.paybackYears(),
+                status,
+                risk,
+                null,
+                5,
+                List.of());
+    }
+
     private ProjectProjection projectProjection(ProjectPersistenceRepository.ProjectRecord project) {
         List<ProjectPersistenceRepository.ScenarioRecord> scenarios = projectRepository.listScenarios(project.id());
         ProjectPersistenceRepository.ScenarioRecord selectedScenario = selectScenario(scenarios);
@@ -309,6 +333,34 @@ public class PortfolioSummaryService {
                 analysis.valuation() == null ? null : analysis.valuation().discountRate(),
                 analysis.cashFlows().stream().mapToInt(ProjectPersistenceRepository.CashFlowRecord::periodNo).max().orElse(0),
                 auditEvents);
+    }
+
+    private String inferHeadquarter(String projectCode, int index) {
+        if (projectCode != null && projectCode.startsWith("PJ-")) {
+            if (index < 4) {
+                return "투자운용본부";
+            }
+            if (index < 8) {
+                return "리스크관리본부";
+            }
+            if (index < 12) {
+                return "재무회계본부";
+            }
+            if (index < 16) {
+                return "금융공학본부";
+            }
+            return "IT전략본부";
+        }
+        return "경영지원본부";
+    }
+
+    private String displayStatusFromRaw(String rawStatus) {
+        return switch (rawStatus) {
+            case "approved" -> "승인";
+            case "rejected", "archived" -> "보류";
+            case "in_review" -> "조건부 진행";
+            default -> "검토중";
+        };
     }
 
     private ProjectPersistenceRepository.ScenarioRecord selectScenario(

@@ -12,22 +12,28 @@ public record AuditPersistenceProperties(
 
     public ResolvedConnection resolveConnection() {
         String explicitJdbc = trimmedOrNull(jdbcUrl);
+        String supabaseDatabaseUrl = trimmedOrNull(supabaseUrl);
+        SupabaseJdbcUrlConverter.JdbcConnection converted =
+                supabaseDatabaseUrl == null ? null : SupabaseJdbcUrlConverter.convert(supabaseDatabaseUrl);
         if (explicitJdbc != null) {
+            String resolvedUsername = fallback(trimmedOrNull(username), converted == null ? null : converted.username());
+            String resolvedPassword = password;
+            if (resolvedPassword == null && converted != null) {
+                resolvedPassword = converted.password();
+            }
             return new ResolvedConnection(
                     withSslMode(explicitJdbc),
-                    requireNonBlank(username, "app.persistence.username"),
-                    resolvePassword(password, "app.persistence.password"));
+                    requireNonBlank(resolvedUsername, "app.persistence.username"),
+                    resolvePasswordForJdbc(resolvedPassword, "app.persistence.password", explicitJdbc));
         }
 
-        String supabaseDatabaseUrl = trimmedOrNull(supabaseUrl);
-        if (supabaseDatabaseUrl != null) {
-            SupabaseJdbcUrlConverter.JdbcConnection converted = SupabaseJdbcUrlConverter.convert(supabaseDatabaseUrl);
+        if (converted != null) {
             String resolvedUsername = fallback(trimmedOrNull(username), converted.username());
-            String resolvedPassword = fallback(password, converted.password());
+            String resolvedPassword = fallback(trimmedOrNull(password), converted.password());
             return new ResolvedConnection(
                     withSslMode(converted.jdbcUrl()),
                     requireNonBlank(resolvedUsername, "Supabase URL username"),
-                    resolvePassword(resolvedPassword, "Supabase URL password"));
+                    resolvePasswordForJdbc(resolvedPassword, "Supabase URL password", converted.jdbcUrl()));
         }
 
         throw new IllegalStateException("Set app.persistence.jdbc-url or app.persistence.supabase-url");
@@ -66,6 +72,16 @@ public record AuditPersistenceProperties(
             throw new IllegalStateException(label + " is required");
         }
         return value;
+    }
+
+    private String resolvePasswordForJdbc(String value, String label, String jdbcUrlValue) {
+        String resolved = resolvePassword(value, label);
+        if (jdbcUrlValue != null
+                && jdbcUrlValue.startsWith("jdbc:postgresql://")
+                && resolved.isBlank()) {
+            throw new IllegalStateException(label + " is required");
+        }
+        return resolved;
     }
 
     public record ResolvedConnection(String jdbcUrl, String username, String password) {}
