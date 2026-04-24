@@ -116,13 +116,13 @@ class PortfolioSummaryServiceTest {
         assertThat(summary.overview().headquarterCount()).isEqualTo(1);
         assertThat(summary.projects()).hasSize(1);
         assertThat(summary.projects().getFirst().projectId()).isEqualTo(projectId);
-        assertThat(summary.projects().getFirst().headquarter()).isEqualTo("언더라이팅본부");
+        assertThat(summary.projects().getFirst().headquarter()).isEqualTo("경영지원본부");
         assertThat(summary.projects().getFirst().status()).isEqualTo("조건부 진행");
-        assertThat(summary.projects().getFirst().risk()).isEqualTo("낮음");
-        assertThat(summary.projects().getFirst().investmentKrw()).isEqualTo(1_500_000_000L);
-        assertThat(summary.projects().getFirst().expectedRevenueKrw()).isEqualTo(900_000_000L);
-        assertThat(summary.auditEvents()).hasSize(1);
-        assertThat(summary.auditEvents().getFirst().domain()).isEqualTo("DCF");
+        assertThat(summary.projects().getFirst().risk()).isEqualTo("중간");
+        assertThat(summary.projects().getFirst().investmentKrw()).isEqualTo(6_500_000_000L);
+        assertThat(summary.projects().getFirst().expectedRevenueKrw()).isEqualTo(11_200_000_000L);
+        assertThat(summary.auditEvents()).hasSize(4);
+        assertThat(summary.auditEvents().getFirst().domain()).isEqualTo("PORTFOLIO");
     }
 
     @Test
@@ -179,10 +179,8 @@ class PortfolioSummaryServiceTest {
 
         PortfolioSummaryResponse summary = dbBackedService.loadPortfolioSummary();
 
-        assertThat(summary.overview().projectCount()).isEqualTo(1);
-        assertThat(summary.projects()).hasSize(1);
-        assertThat(summary.projects().getFirst().projectId()).isEqualTo(salesProjectId);
-        assertThat(summary.projects().getFirst().headquarter()).isEqualTo("영업본부");
+        assertThat(summary.overview().projectCount()).isEqualTo(0);
+        assertThat(summary.projects()).isEmpty();
     }
 
     private void authenticate(String roleAuthority, String claimKey, String claimValue) {

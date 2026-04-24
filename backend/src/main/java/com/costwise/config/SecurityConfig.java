@@ -34,7 +34,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfig {
 
     private static final String INVALID_AUDIENCE_ERROR = "invalid_token";
-    private static final String[] BUSINESS_ROLES = {"PLANNER", "PM", "FINANCE_REVIEWER", "ACCOUNTANT", "EXECUTIVE"};
+    private static final String[] BUSINESS_ROLES =
+            {"ADMIN", "PLANNER", "PM", "FINANCE_REVIEWER", "ACCOUNTANT", "EXECUTIVE"};
     private static final String[] AUDIT_ROLES = {"EXECUTIVE", "AUDITOR", "ADMIN"};
 
     private final JwtSecurityProperties jwtSecurityProperties;
