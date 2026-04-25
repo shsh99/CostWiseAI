@@ -233,21 +233,21 @@ export function AccountingView({
 
   return (
     <section className="grid gap-5">
-      <header className="flex flex-wrap items-start justify-between gap-3">
+      <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 className="m-0 text-[2.45rem] font-extrabold tracking-[-0.02em] text-[#172a4a]">
+          <h2 className="m-0 text-[2.62rem] font-black leading-[1.03] tracking-[-0.025em] text-[#172a4a]">
             원가 집계·분석
           </h2>
         </div>
         <div className="flex items-center gap-2.5">
           <button
-            className="rounded-[10px] border border-[#cbd6ea] bg-white px-3.5 py-2.5 font-bold text-[#2f4570]"
+            className="rounded-[12px] border border-[#cbd6ea] bg-white px-4 py-2.5 text-[1.02rem] font-extrabold tracking-[-0.01em] text-[#2f4570] transition-colors hover:bg-[#f6f9ff]"
             type="button"
           >
             CSV
           </button>
           <button
-            className="rounded-[10px] bg-[#2b4dbf] px-3.5 py-2.5 font-extrabold text-white"
+            className="rounded-[12px] bg-[#2b4dbf] px-4 py-2.5 text-[1.02rem] font-extrabold tracking-[-0.01em] text-white shadow-[0_8px_18px_rgba(43,77,191,0.28)] transition-transform hover:-translate-y-[1px]"
             type="button"
           >
             + 원가 입력
@@ -282,21 +282,21 @@ export function AccountingView({
             <div className="mb-3 flex justify-end">
               <button
                 type="button"
-                className="rounded-xl border border-[#c8d4ea] bg-white px-4 py-2 text-[1rem] font-semibold text-[#2f4570]"
+                className="rounded-xl border border-[#c8d4ea] bg-white px-4 py-2 text-[1rem] font-semibold tracking-[-0.01em] text-[#2f4570] hover:bg-[#f7faff]"
               >
                 2026년 02월
               </button>
             </div>
 
-            <div className="overflow-hidden rounded-2xl border border-[#dce5f4] bg-white shadow-[inset_0_1px_0_#f6f9ff]">
-              <table className="min-w-full text-[1.08rem]">
-                <thead className="bg-[#eef3fb] text-[#5b7097]">
+            <div className="overflow-x-auto rounded-2xl border border-[#dce5f4] bg-white shadow-[inset_0_1px_0_#f6f9ff]">
+              <table className="min-w-full text-[1.03rem]">
+                <thead className="bg-[#eef3fb] text-[0.95rem] font-bold tracking-[0.01em] text-[#5b7097]">
                   <tr>
                     <th className="px-5 py-4 text-left">본부</th>
-                    <th className="px-5 py-4 text-left">실제원가</th>
-                    <th className="px-5 py-4 text-left">표준원가</th>
-                    <th className="px-5 py-4 text-left">차이</th>
-                    <th className="px-5 py-4 text-left">차이율</th>
+                    <th className="px-5 py-4 text-right">실제원가</th>
+                    <th className="px-5 py-4 text-right">표준원가</th>
+                    <th className="px-5 py-4 text-right">차이</th>
+                    <th className="px-5 py-4 text-right">차이율</th>
                     <th className="px-5 py-4 text-left">판정</th>
                   </tr>
                 </thead>
@@ -304,19 +304,19 @@ export function AccountingView({
                   {mergedRows.map((row) => (
                     <tr
                       key={row.department}
-                      className="border-t border-[#e6edf8]"
+                      className="border-t border-[#e6edf8] text-[#2c4269] transition-colors hover:bg-[#f9fbff]"
                     >
                       <td className="px-5 py-4 font-semibold text-[#1e2f4c]">
                         {row.department}
                       </td>
-                      <td className="px-5 py-4">
+                      <td className="px-5 py-4 text-right font-semibold text-[#23355a]">
                         {formatKrwCompact(row.actual)}
                       </td>
-                      <td className="px-5 py-4 text-[#7086ac]">
+                      <td className="px-5 py-4 text-right text-[#7086ac]">
                         {formatKrwCompact(row.standard)}
                       </td>
                       <td
-                        className={`px-5 py-4 font-bold ${
+                        className={`px-5 py-4 text-right font-bold ${
                           row.diff > 0 ? 'text-[#e03131]' : 'text-[#16955f]'
                         }`}
                       >
@@ -324,14 +324,14 @@ export function AccountingView({
                         {formatKrwCompact(row.diff)}
                       </td>
                       <td
-                        className={`px-5 py-4 font-bold ${
+                        className={`px-5 py-4 text-right font-bold ${
                           row.rate > 0 ? 'text-[#e03131]' : 'text-[#16955f]'
                         }`}
                       >
                         {row.rate.toFixed(2)}%
                       </td>
                       <td className="px-5 py-4">
-                        <span className="inline-flex items-center rounded-full bg-[#f7dada] px-3 py-1 text-sm font-bold text-[#b83f3f]">
+                        <span className="inline-flex items-center rounded-full bg-[#f7dada] px-3 py-1 text-[0.9rem] font-bold text-[#b83f3f]">
                           불리
                         </span>
                       </td>
@@ -342,9 +342,15 @@ export function AccountingView({
             </div>
           </Panel>
 
-          <section className="grid grid-cols-[2fr_1fr] gap-4 max-[1280px]:grid-cols-1">
+          <section className="grid grid-cols-[minmax(0,1.9fr)_minmax(340px,1fr)] gap-5 max-[1320px]:grid-cols-1">
             <Panel title="본부별 원가 구성">
-              <div className="grid gap-3">
+              <div className="mb-4 flex items-center justify-between rounded-xl border border-[#dbe5f5] bg-[#f8fbff] px-4 py-2.5 text-[0.92rem] text-[#5e749c]">
+                <span>배분원가 기준 막대 비교</span>
+                <strong className="font-bold text-[#25406f]">
+                  프로젝트 원가
+                </strong>
+              </div>
+              <div className="grid gap-3.5">
                 {mergedRows.map((row) => {
                   const width = Math.max(
                     3,
@@ -353,17 +359,19 @@ export function AccountingView({
                   return (
                     <article
                       key={`bar-${row.department}`}
-                      className="grid gap-1.5"
+                      className="grid gap-2 rounded-xl border border-[#e3ebf8] bg-[#fbfdff] px-4 py-3"
                     >
-                      <div className="flex items-center justify-between text-sm text-[#647ca5]">
-                        <strong className="text-[#1e2f4c]">
+                      <div className="flex items-center justify-between text-[0.95rem] text-[#647ca5]">
+                        <strong className="text-[1.02rem] text-[#1e2f4c]">
                           {row.department}
                         </strong>
-                        <span>{formatKrwCompact(row.actual)}</span>
+                        <span className="font-semibold text-[#4e6690]">
+                          {formatKrwCompact(row.actual)}
+                        </span>
                       </div>
-                      <div className="h-3 overflow-hidden rounded-full bg-[#eaf0f9]">
+                      <div className="h-3.5 overflow-hidden rounded-full bg-[#eaf0f9]">
                         <span
-                          className="block h-full rounded-full bg-[#2f57c8]"
+                          className="block h-full rounded-full bg-[linear-gradient(90deg,#3f70db_0%,#1fa7cb_100%)]"
                           style={{ width: `${width}%` }}
                         />
                       </div>
@@ -374,19 +382,19 @@ export function AccountingView({
             </Panel>
 
             <Panel title="원가 배분 시뮬레이터">
-              <div className="grid gap-2.5">
+              <div className="grid gap-3">
                 <input
-                  className="w-full rounded-[10px] border border-[#cbd6ea] px-3 py-2.5"
+                  className="w-full rounded-[12px] border border-[#cbd6ea] px-3.5 py-3 text-[1rem] text-[#243b63] outline-none transition focus:border-[#9fb3da] focus:ring-2 focus:ring-[#dce7fa]"
                   type="number"
                   placeholder="배분할 총 금액 (예: 100000000)"
                 />
                 <textarea
-                  className="w-full rounded-[10px] border border-[#cbd6ea] px-3 py-2.5 font-mono text-[0.84rem]"
+                  className="w-full rounded-[12px] border border-[#cbd6ea] px-3.5 py-3 font-mono text-[0.92rem] text-[#243b63] outline-none transition focus:border-[#9fb3da] focus:ring-2 focus:ring-[#dce7fa]"
                   rows={6}
                   defaultValue='{"PRJ-001":30,"PRJ-002":20,"PRJ-003":50}'
                 />
                 <button
-                  className="rounded-[10px] bg-[#2b4dbf] px-3 py-[11px] font-extrabold text-white"
+                  className="rounded-[12px] bg-[#2b4dbf] px-4 py-3 text-[1.05rem] font-extrabold tracking-[-0.01em] text-white shadow-[0_10px_22px_rgba(43,77,191,0.26)] transition-transform hover:-translate-y-[1px]"
                   type="button"
                 >
                   배분 계산
@@ -397,7 +405,7 @@ export function AccountingView({
 
           <Panel title="원가 거래 내역">
             <div className="mb-3 flex flex-wrap items-center justify-end gap-2.5">
-              <select className="rounded-[10px] border border-[#cbd6ea] bg-white px-3 py-2 text-sm text-[#2f4570]">
+              <select className="rounded-[12px] border border-[#cbd6ea] bg-white px-3.5 py-2.5 text-[0.95rem] font-semibold text-[#2f4570]">
                 <option>전체 본부</option>
                 <option>주식운용본부</option>
                 <option>채권운용본부</option>
@@ -406,22 +414,22 @@ export function AccountingView({
                 <option>리스크관리본부</option>
               </select>
               <input
-                className="rounded-[10px] border border-[#cbd6ea] bg-white px-3 py-2 text-sm text-[#2f4570]"
+                className="rounded-[12px] border border-[#cbd6ea] bg-white px-3.5 py-2.5 text-[0.95rem] font-semibold text-[#2f4570]"
                 type="month"
               />
             </div>
 
             <div className="max-h-[560px] overflow-auto rounded-2xl border border-[#dce5f4] bg-white shadow-[inset_0_1px_0_#f6f9ff]">
-              <table className="min-w-full text-[1rem]">
-                <thead className="sticky top-0 z-[1] bg-[#eef3fb] text-[#5b7097]">
+              <table className="min-w-full text-[0.98rem] text-[#294065]">
+                <thead className="sticky top-0 z-[1] bg-[#eef3fb]/95 text-[0.92rem] font-bold tracking-[0.01em] text-[#5b7097] backdrop-blur">
                   <tr>
                     <th className="px-5 py-4 text-left">날짜</th>
                     <th className="px-5 py-4 text-left">기간</th>
                     <th className="px-5 py-4 text-left">본부</th>
                     <th className="px-5 py-4 text-left">프로젝트</th>
                     <th className="px-5 py-4 text-left">원가항목</th>
-                    <th className="px-5 py-4 text-left">실제</th>
-                    <th className="px-5 py-4 text-left">표준</th>
+                    <th className="px-5 py-4 text-right">실제</th>
+                    <th className="px-5 py-4 text-right">표준</th>
                     <th className="px-5 py-4 text-left">비고</th>
                   </tr>
                 </thead>
@@ -429,7 +437,7 @@ export function AccountingView({
                   {accountingTransactions.map((row) => (
                     <tr
                       key={`${row.date}-${row.project}`}
-                      className="border-t border-[#e6edf8]"
+                      className="border-t border-[#e6edf8] transition-colors hover:bg-[#f9fbff]"
                     >
                       <td className="px-5 py-3.5 text-[#2a4168]">{row.date}</td>
                       <td className="px-5 py-3.5 text-[#2a4168]">
@@ -442,10 +450,10 @@ export function AccountingView({
                         {row.project}
                       </td>
                       <td className="px-5 py-3.5 text-[#2a4168]">{row.item}</td>
-                      <td className="px-5 py-3.5 font-semibold text-[#1e2f4c]">
+                      <td className="px-5 py-3.5 text-right font-semibold text-[#1e2f4c]">
                         {row.actual}
                       </td>
-                      <td className="px-5 py-3.5 text-[#7086ac]">
+                      <td className="px-5 py-3.5 text-right text-[#7086ac]">
                         {row.standard}
                       </td>
                       <td className="px-5 py-3.5 text-[#60779f]">{row.note}</td>

@@ -775,7 +775,7 @@ export function App() {
   }
 
   return (
-    <div className="grid min-h-screen bg-cw-page lg:grid-cols-[306px_minmax(0,1fr)]">
+    <div className="grid min-h-screen overflow-x-hidden bg-cw-page lg:grid-cols-[292px_minmax(0,1fr)]">
       <a
         className="absolute left-2.5 top-2.5 z-50 -translate-y-[140%] rounded-full bg-white px-3.5 py-2.5 text-cw-text no-underline transition-transform duration-150 focus:translate-y-0"
         href="#main-content"
@@ -789,7 +789,7 @@ export function App() {
         onChangeView={setActiveView}
       />
 
-      <div className="min-h-screen">
+      <div className="min-h-screen min-w-0 overflow-x-hidden">
         <TaskTopbar
           selectedRole={selectedRole}
           username={session.displayName}
@@ -804,10 +804,7 @@ export function App() {
           onLogout={handleLogout}
         />
 
-        <main
-          id="main-content"
-          className="grid gap-4 px-[22px] pb-[26px] pt-[18px]"
-        >
+        <main id="main-content" className="grid gap-4 px-5 pb-6 pt-4">
           {activeView === 'dashboard' ? (
             <DashboardView
               decisionSignals={decisionSignals}

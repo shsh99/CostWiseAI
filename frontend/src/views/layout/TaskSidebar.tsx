@@ -52,17 +52,17 @@ export function TaskSidebar({
   const renderedSections = new Set<string>();
 
   return (
-    <aside className="min-h-screen w-[306px] border-r border-[#21345b] bg-[linear-gradient(180deg,#071227_0%,#0b1c3f_52%,#102652_100%)] px-4 pb-6 pt-5 shadow-[8px_0_26px_rgba(4,8,22,0.35)]">
-      <div className="mb-6 rounded-2xl border border-[#355487] bg-[linear-gradient(140deg,rgba(22,40,84,0.96),rgba(14,29,62,0.92))] px-4 py-3.5 shadow-[0_10px_20px_rgba(4,12,34,0.28)]">
+    <aside className="min-h-screen w-[292px] shrink-0 overflow-x-hidden border-r border-[#1b2f52] bg-[linear-gradient(180deg,#08162f_0%,#0a1c3a_70%,#0b2146_100%)] px-4 pb-6 pt-5">
+      <div className="mb-6 rounded-2xl border border-[#2e4671] bg-[linear-gradient(140deg,rgba(16,32,68,0.96),rgba(12,26,56,0.94))] px-4 py-3.5">
         <div className="flex items-center gap-3">
-          <div className="grid h-[46px] w-[46px] place-items-center rounded-xl bg-[linear-gradient(135deg,#2b68e4,#1bb3db)] text-base font-extrabold text-white shadow-[0_8px_16px_rgba(25,82,212,0.45)]">
+          <div className="grid h-[44px] w-[44px] place-items-center rounded-xl bg-[linear-gradient(135deg,#2a67e0,#1ba9d4)] text-[0.98rem] font-extrabold text-white">
             CW
           </div>
           <div className="min-w-0">
-            <strong className="block text-[1.2rem] font-extrabold leading-tight tracking-[0.01em] text-white">
+            <strong className="block text-[1.15rem] font-extrabold leading-tight tracking-[0.005em] text-white">
               CostWise
             </strong>
-            <p className="m-0 mt-1 text-[0.76rem] font-semibold tracking-[0.04em] text-[#9eb5de]">
+            <p className="m-0 mt-1 text-[0.74rem] font-semibold tracking-[0.03em] text-[#9bb2db]">
               원가·평가 통합관리
             </p>
           </div>
@@ -80,20 +80,20 @@ export function TaskSidebar({
           return (
             <div key={item.key}>
               {showSection ? (
-                <p className="mb-2 ml-2.5 mr-2 mt-5 text-[0.69rem] font-extrabold tracking-[0.16em] text-[#809ac8]">
+                <p className="mb-2 ml-2.5 mr-2 mt-5 text-[0.68rem] font-extrabold tracking-[0.12em] text-[#7f98c6]">
                   {section}
                 </p>
               ) : null}
               <button
                 type="button"
-                className={`flex w-full items-center gap-3 rounded-2xl border px-4 py-[0.7rem] text-left text-[0.93rem] font-semibold tracking-[0.01em] transition-all duration-150 ${
+                className={`flex w-full items-center gap-3 rounded-2xl border px-4 py-[0.66rem] text-left text-[0.91rem] font-semibold tracking-[0.005em] transition-all duration-150 ${
                   activeView === item.key
-                    ? 'border-[#5480ec] bg-[linear-gradient(96deg,#2a64de_0%,#1da8d1_100%)] text-white shadow-[0_10px_20px_rgba(20,71,188,0.33)]'
-                    : 'border-transparent text-[#c8d6ee] hover:border-white/15 hover:bg-white/[0.07] hover:text-white'
+                    ? 'border-[#4f78dc] bg-[linear-gradient(96deg,#2b63d7_0%,#239cca_100%)] text-white shadow-[0_4px_10px_rgba(13,53,146,0.24)]'
+                    : 'border-transparent text-[#c8d5ec] hover:border-white/10 hover:bg-white/[0.06] hover:text-white'
                 }`}
                 onClick={() => onChangeView(item.key)}
               >
-                <span className="inline-block w-5 text-center text-[0.88rem] opacity-95">
+                <span className="inline-block w-5 text-center text-[0.86rem] opacity-95">
                   {iconByKey[item.key] ?? '•'}
                 </span>
                 <span className="leading-none">{item.label}</span>
