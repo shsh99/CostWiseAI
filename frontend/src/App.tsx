@@ -32,6 +32,7 @@ import {
 import { filterAndSortProjects } from './features/portfolio/explorerFilters';
 import { buildDecisionBars } from './features/workspace/decisionVisuals';
 import { DashboardView } from './views/dashboard/DashboardView';
+import { AccountingView } from './views/accounting/AccountingView';
 import { TaskSidebar } from './views/layout/TaskSidebar';
 import { TaskTopbar } from './views/layout/TaskTopbar';
 import { viewMeta } from './views/layout/viewMeta';
@@ -848,9 +849,17 @@ export function App() {
             />
           ) : null}
 
-          {activeView === 'accounting' ||
-          activeView === 'valuation' ||
-          activeView === 'risk' ? (
+          {activeView === 'accounting' ? (
+            <AccountingView
+              selectedProject={selectedProject}
+              selectedDetail={selectedDetail}
+              detailStatus={selectedDetailStatus}
+              detailError={selectedDetailError}
+              onRetryDetailLoad={retryDetailLoad}
+            />
+          ) : null}
+
+          {activeView === 'valuation' || activeView === 'risk' ? (
             <WorkspaceView
               activeView={activeView}
               portfolioProjects={scopedPortfolio.projects}
