@@ -99,6 +99,33 @@ export type ProjectDetail = {
     executiveComment: string;
     nextStep: string;
   };
+  cashFlows: Array<{
+    date: string;
+    periodLabel: string;
+    category: string;
+    amount: number;
+    status: string;
+    note: string;
+  }>;
+  costEntries: Array<{
+    date: string;
+    period: string;
+    costItem: string;
+    category: string;
+    actual: number;
+    standard: number;
+    note: string;
+  }>;
+  valuationHistory: Array<{
+    evaluatedAt: string;
+    type: string;
+    npvKrw: number;
+    irr: number;
+    fairValueKrw: number;
+    var95Krw: number;
+    creditGrade: string;
+    note: string;
+  }>;
 };
 
 export type DataSource = 'api' | 'degraded';
@@ -1175,6 +1202,132 @@ function adaptProjectDetail(
     comment: log.comment ?? '',
     at: log.createdAt ?? new Date().toISOString()
   }));
+  const flowStatus =
+    approvalStage === '승인'
+      ? '확정'
+      : approvalStage === '보류'
+        ? '보류'
+        : '검토중';
+  const cashFlows = scenario.cashFlows.flatMap((cashFlow, index) => {
+    const periodLabel =
+      cashFlow.periodLabel ??
+      cashFlow.yearLabel ??
+      `P${cashFlow.periodNo ?? index + 1}`;
+    const periodDate =
+      cashFlow.yearLabel && /^\d{4}$/.test(cashFlow.yearLabel)
+        ? `${cashFlow.yearLabel}-12-31`
+        : `${defaults.startDate.slice(0, 8)}${String(
+            Math.min(28, Math.max(1, index + 1))
+          ).padStart(2, '0')}`;
+    const operating = toNumber(cashFlow.operatingCashFlow, 0);
+    const investment = toNumber(cashFlow.investmentCashFlow, 0);
+    const financing = toNumber(cashFlow.financingCashFlow, 0);
+    const net = toNumber(
+      cashFlow.netCashFlow,
+      operating + investment + financing
+    );
+
+    return [
+      {
+        date: periodDate,
+        periodLabel,
+        category: '영업현금흐름',
+        amount: operating,
+        status: flowStatus,
+        note: `${scenario.name} · 할인율 ${Math.round(toNumber(cashFlow.discountRate, toNumber(scenario.valuation?.discountRate, defaults.valuation.discountRate)) * 1000) / 10}%`
+      },
+      {
+        date: periodDate,
+        periodLabel,
+        category: '투자현금흐름',
+        amount: investment,
+        status: flowStatus,
+        note: `${scenario.name} 기준 투자 집행`
+      },
+      {
+        date: periodDate,
+        periodLabel,
+        category: '재무현금흐름',
+        amount: financing,
+        status: flowStatus,
+        note: `${scenario.name} 기준 재무 조달`
+      },
+      {
+        date: periodDate,
+        periodLabel,
+        category: '순현금흐름',
+        amount: net,
+        status: flowStatus,
+        note: `${scenario.name} 순현금흐름`
+      }
+    ];
+  });
+  const costEntries = allocationRules.map((rule, index) => {
+    const standard = Math.round(
+      toNumber(rule.costPoolAmount, 0) *
+        Math.max(0, toNumber(rule.allocationRate, 0))
+    );
+
+    return {
+      date: `${defaults.startDate.slice(0, 8)}${String(
+        Math.min(28, Math.max(1, index + 2))
+      ).padStart(2, '0')}`,
+      period: scenario.name,
+      costItem: rule.costPoolName || `${rule.departmentCode} 배부원가`,
+      category: rule.costPoolCategory || rule.basis || '배부원가',
+      actual: toNumber(rule.allocatedAmount, 0),
+      standard: standard || toNumber(rule.costPoolAmount, 0),
+      note: `${rule.departmentCode} · ${rule.basis}`
+    };
+  });
+  const fallbackIrr = toNumber(
+    scenario.valuation?.irr,
+    toNumber(valuationRisk.projectValuation?.irr, project.irr)
+  );
+  const valuationHistory = [
+    {
+      evaluatedAt:
+        persistedDetail.approval?.updatedAt ??
+        persistedDetail.createdAt ??
+        new Date().toISOString(),
+      type: scenario.name || '기준 평가',
+      npvKrw,
+      irr: fallbackIrr,
+      fairValueKrw: toNumber(
+        valuationRisk.stockValuation?.fairValue,
+        defaults.valuation.fairValueKrw
+      ),
+      var95Krw: toNumber(
+        valuationRisk.riskMetrics?.var95,
+        defaults.valuation.var95Krw
+      ),
+      creditGrade:
+        ratingLabel(valuationRisk.creditRisk?.ratingBand) ??
+        defaults.valuation.creditGrade,
+      note:
+        scenario.valuation?.decision ??
+        persistedDetail.approval?.lastComment ??
+        `${scenario.name} 시나리오 기준 평가`
+    },
+    ...(persistedDetail.approval?.logs ?? []).map((log) => ({
+      evaluatedAt: log.createdAt ?? new Date().toISOString(),
+      type: log.action ?? '승인 이력',
+      npvKrw,
+      irr: fallbackIrr,
+      fairValueKrw: toNumber(
+        valuationRisk.stockValuation?.fairValue,
+        defaults.valuation.fairValueKrw
+      ),
+      var95Krw: toNumber(
+        valuationRisk.riskMetrics?.var95,
+        defaults.valuation.var95Krw
+      ),
+      creditGrade:
+        ratingLabel(valuationRisk.creditRisk?.ratingBand) ??
+        defaults.valuation.creditGrade,
+      note: [log.actorName, log.comment].filter(Boolean).join(' · ') || '-'
+    }))
+  ];
 
   return {
     code: persistedDetail.code || project.code,
@@ -1290,7 +1443,11 @@ function adaptProjectDetail(
       nextStep:
         persistedDetail.approval?.lastAction ||
         `${scenario.name} 기준 ${approvalStage === '승인' ? '사후 성과 모니터링' : '승인위원회 안건 등록'}`
-    }
+    },
+    cashFlows: cashFlows.length > 0 ? cashFlows : defaults.cashFlows,
+    costEntries: costEntries.length > 0 ? costEntries : defaults.costEntries,
+    valuationHistory:
+      valuationHistory.length > 0 ? valuationHistory : defaults.valuationHistory
   };
 }
 
@@ -1307,6 +1464,136 @@ function buildScenarioReturns(
     { label: '기준', npvKrw: base, probability: 0.5 },
     { label: '비관', npvKrw: downside, probability: 0.25 }
   ];
+}
+
+type DetailTabFallbackOptions = {
+  startDate?: string;
+  periodLabel?: string;
+  allocatedCostKrw?: number;
+  standardCostKrw?: number;
+  fairValueKrw?: number;
+  var95Krw?: number;
+  creditGrade?: string;
+  irr?: number;
+};
+
+function buildDetailTabFallbacks(
+  project: ProjectSummary,
+  options: DetailTabFallbackOptions = {}
+): Pick<ProjectDetail, 'cashFlows' | 'costEntries' | 'valuationHistory'> {
+  const startDate = options.startDate ?? new Date().toISOString().slice(0, 10);
+  const periodLabel = options.periodLabel ?? '기준';
+  const allocatedCostKrw =
+    options.allocatedCostKrw ?? Math.round(project.investmentKrw * 0.86);
+  const standardCostKrw =
+    options.standardCostKrw ?? Math.round(project.investmentKrw * 0.74);
+  const fairValueKrw =
+    options.fairValueKrw ?? Math.round(project.expectedRevenueKrw * 0.82);
+  const var95Krw =
+    options.var95Krw ??
+    Math.round(project.npvKrw - Math.abs(project.npvKrw) * 0.4);
+  const creditGrade = options.creditGrade ?? 'A';
+  const irr = options.irr ?? project.irr;
+  const operatingBase = Math.round(project.expectedRevenueKrw * 0.36);
+  const investmentBase = -Math.round(project.investmentKrw * 0.24);
+  const financingBase = Math.round(project.investmentKrw * 0.08);
+
+  return {
+    cashFlows: [
+      {
+        date: addDayOffset(startDate, 0),
+        periodLabel: `${periodLabel} Q1`,
+        category: '영업현금흐름',
+        amount: operatingBase,
+        status: '기준',
+        note: '기본 운영 시나리오 기반'
+      },
+      {
+        date: addDayOffset(startDate, 1),
+        periodLabel: `${periodLabel} Q1`,
+        category: '투자현금흐름',
+        amount: investmentBase,
+        status: '기준',
+        note: '초기 투자 집행'
+      },
+      {
+        date: addDayOffset(startDate, 2),
+        periodLabel: `${periodLabel} Q1`,
+        category: '재무현금흐름',
+        amount: financingBase,
+        status: '기준',
+        note: '조달 구조 반영'
+      },
+      {
+        date: addDayOffset(startDate, 3),
+        periodLabel: `${periodLabel} Q1`,
+        category: '순현금흐름',
+        amount: operatingBase + investmentBase + financingBase,
+        status: '기준',
+        note: '합산 순현금흐름'
+      }
+    ],
+    costEntries: [
+      {
+        date: addDayOffset(startDate, 1),
+        period: periodLabel,
+        costItem: '인력원가',
+        category: '직접비',
+        actual: Math.round(project.investmentKrw * 0.32),
+        standard: Math.round(standardCostKrw * 0.3),
+        note: '프로젝트 기본 배부'
+      },
+      {
+        date: addDayOffset(startDate, 2),
+        period: periodLabel,
+        costItem: '프로젝트 운영비',
+        category: '운영비',
+        actual: Math.round(project.investmentKrw * 0.41),
+        standard: Math.round(standardCostKrw * 0.4),
+        note: '운영 시나리오 기준'
+      },
+      {
+        date: addDayOffset(startDate, 3),
+        period: periodLabel,
+        costItem: '본부 공통비',
+        category: '간접비',
+        actual: Math.round(project.investmentKrw * 0.18),
+        standard: Math.round(standardCostKrw * 0.2),
+        note: '본부 배부율 반영'
+      },
+      {
+        date: addDayOffset(startDate, 4),
+        period: periodLabel,
+        costItem: '내부 대체가액',
+        category: '내부거래',
+        actual: Math.max(0, allocatedCostKrw - standardCostKrw),
+        standard: Math.round(standardCostKrw * 0.1),
+        note: '내부거래/대체가액'
+      }
+    ],
+    valuationHistory: [
+      {
+        evaluatedAt: addDayOffset(startDate, 0),
+        type: '기준 평가',
+        npvKrw: project.npvKrw,
+        irr,
+        fairValueKrw,
+        var95Krw,
+        creditGrade,
+        note: '요약 데이터 기반 기본 평가'
+      },
+      {
+        evaluatedAt: addDayOffset(startDate, 7),
+        type: '리스크 재평가',
+        npvKrw: Math.round(project.npvKrw * 0.93),
+        irr: Number((irr * 0.97).toFixed(4)),
+        fairValueKrw: Math.round(fairValueKrw * 0.95),
+        var95Krw: Math.round(var95Krw * 1.08),
+        creditGrade,
+        note: '하방 시나리오 반영'
+      }
+    ]
+  };
 }
 
 function approvalStageFromStatus(
@@ -1361,19 +1648,40 @@ function toNumber(value: number | string | undefined, fallback: number) {
   return fallback;
 }
 
+function addDayOffset(isoDate: string, offset: number) {
+  const parsed = new Date(isoDate);
+  if (Number.isNaN(parsed.getTime())) {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  parsed.setDate(parsed.getDate() + offset);
+  return parsed.toISOString().slice(0, 10);
+}
+
 function buildDetailDefaultsFromProject(
   project: ProjectSummary
 ): ProjectDetail {
+  const startDate = new Date().toISOString().slice(0, 10);
   const standardCostKrw = Math.round(project.investmentKrw * 0.74);
   const allocatedCostKrw = Math.round(project.investmentKrw * 0.86);
   const baseVar95Krw = Math.round(
     project.npvKrw - Math.abs(project.npvKrw) * 0.4
   );
+  const fallbackTabs = buildDetailTabFallbacks(project, {
+    startDate,
+    periodLabel: '기본',
+    allocatedCostKrw,
+    standardCostKrw,
+    fairValueKrw: Math.round(project.expectedRevenueKrw * 0.82),
+    var95Krw: baseVar95Krw,
+    creditGrade: 'A',
+    irr: project.irr
+  });
 
   return {
     code: project.code,
     manager: `${project.headquarter} PM`,
-    startDate: new Date().toISOString().slice(0, 10),
+    startDate,
     lifecycle: `${Math.max(1, Math.round(project.paybackYears))}년`,
     assetCategory: project.assetCategory,
     headline: `${project.headquarter} 투자안의 API 상세 데이터가 제한되어 프로젝트 요약 기준으로 표시합니다.`,
@@ -1414,7 +1722,10 @@ function buildDetailDefaultsFromProject(
       financeReviewer: '재무검토자',
       executiveComment: 'API 기반 상세 승인 코멘트 확인 필요',
       nextStep: '프로젝트 승인 이력 확인'
-    }
+    },
+    cashFlows: fallbackTabs.cashFlows,
+    costEntries: fallbackTabs.costEntries,
+    valuationHistory: fallbackTabs.valuationHistory
   };
 }
 
@@ -1500,11 +1811,46 @@ export function buildProjectDetail(projectCode: string): ProjectDetail {
       )
     )
   );
+  const startDate = `2026-0${((seedIndex >= 0 ? seedIndex : 0) % 4) + 1}-0${((seedIndex >= 0 ? seedIndex : 0) % 6) + 2}`;
+  const creditGrade =
+    creditRiskScore >= 85
+      ? 'AA'
+      : creditRiskScore >= 75
+        ? 'A'
+        : creditRiskScore >= 65
+          ? 'BBB'
+          : 'BB';
+  const fallbackTabs = buildDetailTabFallbacks(
+    {
+      rank: seedIndex >= 0 ? seedIndex + 1 : 1,
+      code: seed.code,
+      name: seed.name,
+      headquarter: seed.headquarter,
+      investmentKrw: seed.investmentKrw,
+      expectedRevenueKrw: seed.expectedRevenueKrw,
+      npvKrw: seed.npvKrw,
+      irr: seed.irr,
+      paybackYears: seed.paybackYears,
+      status: seed.status,
+      risk: seed.risk,
+      assetCategory: seed.assetCategory
+    },
+    {
+      startDate,
+      periodLabel: 'seed',
+      allocatedCostKrw,
+      standardCostKrw,
+      fairValueKrw: Math.round(seed.expectedRevenueKrw * 0.82),
+      var95Krw,
+      creditGrade,
+      irr: seed.irr
+    }
+  );
 
   return {
     code: seed.code,
     manager: managerByHeadquarter[seed.headquarter],
-    startDate: `2026-0${((seedIndex >= 0 ? seedIndex : 0) % 4) + 1}-0${((seedIndex >= 0 ? seedIndex : 0) % 6) + 2}`,
+    startDate,
     lifecycle: `${Math.max(2, Math.round(seed.paybackYears))}년`,
     assetCategory: seed.assetCategory,
     headline: `${seed.headquarter}의 ${seed.assetCategory}형 투자안으로, 원가 배부와 금융 리스크를 함께 보는 프로젝트입니다.`,
@@ -1532,14 +1878,7 @@ export function buildProjectDetail(projectCode: string): ProjectDetail {
       duration,
       convexity,
       creditRiskScore,
-      creditGrade:
-        creditRiskScore >= 85
-          ? 'AA'
-          : creditRiskScore >= 75
-            ? 'A'
-            : creditRiskScore >= 65
-              ? 'BBB'
-              : 'BB',
+      creditGrade,
       discountRate: 0.115,
       riskPremium:
         seed.risk === '높음' ? 0.08 : seed.risk === '중간' ? 0.04 : 0.01,
@@ -1579,7 +1918,10 @@ export function buildProjectDetail(projectCode: string): ProjectDetail {
           : '기준 시나리오 유지 시 조건부 승인 가능',
       nextStep:
         seed.status === '승인' ? '사후 성과 모니터링' : '승인위원회 안건 등록'
-    }
+    },
+    cashFlows: fallbackTabs.cashFlows,
+    costEntries: fallbackTabs.costEntries,
+    valuationHistory: fallbackTabs.valuationHistory
   };
 }
 

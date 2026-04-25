@@ -14,6 +14,7 @@ import {
   createProject,
   isForbiddenApiError,
   type AssetCategory,
+  type ProjectDetail,
   type PortfolioSummary,
   type ProjectStatus,
   type ProjectSummary,
@@ -35,6 +36,7 @@ import {
   type ExplorerQuickFilterKey,
   type ExplorerSortKey
 } from '../../features/portfolio/explorerState';
+import { ProjectDetailSection } from './ProjectDetailSection';
 
 const riskToneMap = {
   낮음: 'low',
@@ -365,6 +367,10 @@ type PortfolioViewProps = {
   portfolio: PortfolioSummary;
   portfolioStatus: 'loading' | 'ready' | 'error';
   portfolioError: string | null;
+  selectedProject: ProjectSummary | null;
+  selectedDetail: ProjectDetail | null;
+  detailStatus: 'idle' | 'loading' | 'ready' | 'error';
+  detailError: string | null;
   maxHeadquarterInvestment: number;
   divisionScope: string | null;
   selectedProjectCode: string;
@@ -384,6 +390,7 @@ type PortfolioViewProps = {
     target: 'accounting' | 'valuation',
     projectCode: string
   ): void;
+  onRetryDetailLoad(): void;
   onRetryPortfolioLoad(): void;
 };
 
@@ -392,6 +399,10 @@ export function PortfolioView({
   portfolio,
   portfolioStatus,
   portfolioError,
+  selectedProject,
+  selectedDetail,
+  detailStatus,
+  detailError,
   maxHeadquarterInvestment,
   divisionScope,
   selectedProjectCode,
@@ -408,6 +419,7 @@ export function PortfolioView({
   onResetExplorerControls,
   onSelectProject,
   onOpenWorkspace,
+  onRetryDetailLoad,
   onRetryPortfolioLoad
 }: PortfolioViewProps) {
   const [statusFilter, setStatusFilter] = useState<'all' | ProjectStatus>(
@@ -421,6 +433,7 @@ export function PortfolioView({
   const [modalMode, setModalMode] = useState<'detail' | 'edit' | 'create'>(
     'detail'
   );
+  const [portfolioMode, setPortfolioMode] = useState<'list' | 'detail'>('list');
   const [editReturnMode, setEditReturnMode] = useState<'close' | 'detail'>(
     'close'
   );
@@ -521,7 +534,118 @@ export function PortfolioView({
   const modalProject =
     (modalProjectCode ? projectsByCode.get(modalProjectCode) : null) ?? null;
   const isCreateModalOpen = modalMode === 'create' && createForm !== null;
-  const isModalOpen = isCreateModalOpen || modalProjectCode !== null;
+  const isEditModalOpen =
+    modalMode === 'edit' && modalProject !== null && editForm !== null;
+  const isModalOpen = isCreateModalOpen || isEditModalOpen;
+  const detailProject = explicitSelectedProject ?? selectedProject ?? null;
+  const activeDetail =
+    selectedProject?.code === detailProject?.code ? selectedDetail : null;
+  const detailSummary = detailProject
+    ? {
+        headquarter: detailProject.headquarter,
+        budgetKrw: detailProject.investmentKrw,
+        executedKrw:
+          activeDetail?.allocation.allocatedCostKrw ??
+          Math.round(detailProject.investmentKrw * 0.42),
+        periodLabel: activeDetail
+          ? `${activeDetail.startDate} · ${activeDetail.lifecycle}`
+          : `${detailProject.paybackYears.toFixed(1)}년`
+      }
+    : null;
+  const detailLatestMetrics = activeDetail
+    ? [
+        {
+          label: 'NPV',
+          value: formatKrwCompact(activeDetail.valuation.fairValueKrw),
+          tone: 'default' as const
+        },
+        {
+          label: 'IRR',
+          value: detailProject
+            ? `${(detailProject.irr * 100).toFixed(1)}%`
+            : '-',
+          tone: 'default' as const
+        },
+        {
+          label: 'VaR 95%',
+          value: formatKrwCompact(activeDetail.valuation.var95Krw),
+          tone: 'danger' as const
+        },
+        {
+          label: '신용등급',
+          value: activeDetail.valuation.creditGrade,
+          tone: 'accent' as const
+        }
+      ]
+    : detailProject
+      ? [
+          {
+            label: 'NPV',
+            value: formatKrwCompact(detailProject.npvKrw)
+          },
+          {
+            label: 'IRR',
+            value: `${(detailProject.irr * 100).toFixed(1)}%`
+          },
+          {
+            label: '회수기간',
+            value: `${detailProject.paybackYears.toFixed(1)}년`
+          },
+          {
+            label: '상태',
+            value: detailProject.status
+          }
+        ]
+      : [];
+  const detailCashFlowRows = useMemo(() => {
+    if (!activeDetail) {
+      return [];
+    }
+
+    let cumulative = 0;
+    return activeDetail.cashFlows.map((row) => {
+      cumulative += row.amount;
+      return {
+        period: row.periodLabel,
+        cashFlowKrw: row.amount,
+        cumulativeKrw: cumulative,
+        note: row.note
+      };
+    });
+  }, [activeDetail]);
+  const detailCostRows = useMemo(() => {
+    if (!activeDetail || !detailProject) {
+      return [];
+    }
+
+    return activeDetail.costEntries.map((row) => ({
+      date: row.date,
+      period: row.period,
+      department: detailProject.headquarter,
+      projectName: detailProject.name,
+      costItem: row.costItem,
+      actualKrw: row.actual,
+      standardKrw: row.standard,
+      note: row.note
+    }));
+  }, [activeDetail, detailProject]);
+  const detailValuationRows = useMemo(() => {
+    if (!activeDetail) {
+      return [];
+    }
+
+    return activeDetail.valuationHistory.map((row) => ({
+      valuationDate: row.evaluatedAt,
+      valuationType: row.type,
+      npvKrw: row.npvKrw,
+      irr: row.irr,
+      roi: null,
+      fairValueKrw: row.fairValueKrw,
+      duration: activeDetail.valuation.duration,
+      var95Krw: row.var95Krw,
+      grade: row.creditGrade
+    }));
+  }, [activeDetail]);
 
   useEffect(() => {
     if (modalMode === 'create' || !modalProjectCode || modalProject) {
@@ -644,20 +768,16 @@ export function PortfolioView({
     closeButtonRef.current?.focus();
   }, [isModalOpen, modalMode]);
 
-  function openProjectModal(
-    project: ProjectSummary,
-    opener?: HTMLElement | null
-  ) {
-    if (typeof opener !== 'undefined') {
-      modalOpenerRef.current = opener;
-    }
+  function openProjectModal(project: ProjectSummary) {
+    onSelectProject(project.code);
+    setPortfolioMode('detail');
     setModalMode('detail');
     setEditReturnMode('close');
     setEditForm(null);
     setCreateForm(null);
     setCreateFormError(null);
     setProjectLookup(createProjectLookupState());
-    setModalProjectCode(project.code);
+    setModalProjectCode(null);
   }
 
   function openProjectEditModal(
@@ -775,6 +895,10 @@ export function PortfolioView({
     setCreateFormError(null);
     setProjectLookup(createProjectLookupState());
     setModalProjectCode(null);
+  }
+
+  function handleBackToList() {
+    setPortfolioMode('list');
   }
 
   function handleEditCancel() {
@@ -920,7 +1044,9 @@ export function PortfolioView({
     };
 
     setCreatedProjects((currentProjects) => [...currentProjects, newProject]);
-    setModalProjectCode(code);
+    onSelectProject(code);
+    setPortfolioMode('detail');
+    setModalProjectCode(null);
     setModalMode('detail');
     setCreateForm(null);
     setCreateFormError(null);
@@ -1108,517 +1234,609 @@ export function PortfolioView({
 
   return (
     <section className="grid gap-4">
-      <Panel title="프로젝트" subtitle="20여개 프로젝트 동시 평가·관리">
-        {portfolioStatus === 'loading' && !hasHeadquarters ? (
-          <div className={stateBoxClass} role="status">
-            <strong>포트폴리오 본부 현황을 불러오는 중입니다.</strong>
-            <p>API 응답을 기다리고 있습니다.</p>
-          </div>
-        ) : null}
-        {portfolioStatus === 'error' && !hasHeadquarters ? (
-          <div className={stateBoxClass}>
-            <strong>포트폴리오 본부 현황을 불러오지 못했습니다.</strong>
-            <p className="m-0 text-sm text-slate-600">
-              {portfolioError ?? 'API 연결 상태를 확인한 뒤 다시 시도하세요.'}
-            </p>
-            <button
-              type="button"
-              className={stateButtonClass}
-              onClick={onRetryPortfolioLoad}
-            >
-              다시 시도
-            </button>
-          </div>
-        ) : null}
-        {hasHeadquarters ? (
-          <>
-            <div
-              className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
-              aria-label="포트폴리오 개요"
-            >
-              <article className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-                <span className="text-xs text-slate-500">총 투자액</span>
-                <strong>
-                  {formatKrwCompact(portfolio.overview.totalInvestmentKrw)}
-                </strong>
-              </article>
-              <article className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-                <span className="text-xs text-slate-500">평균 NPV</span>
-                <strong>
-                  {formatKrwCompact(portfolio.overview.averageNpvKrw)}
-                </strong>
-              </article>
-              <article className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-                <span className="text-xs text-slate-500">조건부 진행</span>
-                <strong>{portfolio.overview.conditionalCount}개</strong>
-              </article>
-              <article className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-                <span className="text-xs text-slate-500">승인 완료</span>
-                <strong>{portfolio.overview.approvedCount}개</strong>
-              </article>
+      {portfolioMode === 'list' ? (
+        <Panel title="프로젝트" subtitle="20여개 프로젝트 동시 평가·관리">
+          {portfolioStatus === 'loading' && !hasHeadquarters ? (
+            <div className={stateBoxClass} role="status">
+              <strong>포트폴리오 본부 현황을 불러오는 중입니다.</strong>
+              <p>API 응답을 기다리고 있습니다.</p>
             </div>
+          ) : null}
+          {portfolioStatus === 'error' && !hasHeadquarters ? (
+            <div className={stateBoxClass}>
+              <strong>포트폴리오 본부 현황을 불러오지 못했습니다.</strong>
+              <p className="m-0 text-sm text-slate-600">
+                {portfolioError ?? 'API 연결 상태를 확인한 뒤 다시 시도하세요.'}
+              </p>
+              <button
+                type="button"
+                className={stateButtonClass}
+                onClick={onRetryPortfolioLoad}
+              >
+                다시 시도
+              </button>
+            </div>
+          ) : null}
+          {hasHeadquarters ? (
+            <>
+              <div
+                className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
+                aria-label="포트폴리오 개요"
+              >
+                <article className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                  <span className="text-xs text-slate-500">총 투자액</span>
+                  <strong>
+                    {formatKrwCompact(portfolio.overview.totalInvestmentKrw)}
+                  </strong>
+                </article>
+                <article className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                  <span className="text-xs text-slate-500">평균 NPV</span>
+                  <strong>
+                    {formatKrwCompact(portfolio.overview.averageNpvKrw)}
+                  </strong>
+                </article>
+                <article className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                  <span className="text-xs text-slate-500">조건부 진행</span>
+                  <strong>{portfolio.overview.conditionalCount}개</strong>
+                </article>
+                <article className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                  <span className="text-xs text-slate-500">승인 완료</span>
+                  <strong>{portfolio.overview.approvedCount}개</strong>
+                </article>
+              </div>
 
-            <div className="grid gap-3 lg:grid-cols-2">
-              {portfolio.headquarters.map((headquarter) => (
-                <article
-                  key={headquarter.code}
-                  className="grid gap-3 rounded-xl border border-slate-200 bg-white p-4"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <strong>{headquarter.name}</strong>
-                      <span className="mt-1 block text-sm text-slate-500">
-                        {headquarter.projectCount}개 프로젝트
+              <div className="grid gap-3 lg:grid-cols-2">
+                {portfolio.headquarters.map((headquarter) => (
+                  <article
+                    key={headquarter.code}
+                    className="grid gap-3 rounded-xl border border-slate-200 bg-white p-4"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <strong>{headquarter.name}</strong>
+                        <span className="mt-1 block text-sm text-slate-500">
+                          {headquarter.projectCount}개 프로젝트
+                        </span>
+                      </div>
+                      <span className={riskPillClass(headquarter.risk)}>
+                        {headquarter.risk}
                       </span>
                     </div>
-                    <span className={riskPillClass(headquarter.risk)}>
-                      {headquarter.risk}
-                    </span>
-                  </div>
-                  <ProgressBar
-                    label="투자 비중"
-                    value={Math.round(headquarter.totalInvestmentKrw / 10000)}
-                    max={Math.max(
-                      1,
-                      Math.round(maxHeadquarterInvestment / 10000)
-                    )}
-                    tone={
-                      headquarter.risk === '높음'
-                        ? 'rose'
-                        : headquarter.risk === '중간'
-                          ? 'amber'
-                          : 'teal'
-                    }
-                  />
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                      <span className="text-xs text-slate-500">총 투자액</span>
-                      <strong>
-                        {formatKrwCompact(headquarter.totalInvestmentKrw)}
-                      </strong>
+                    <ProgressBar
+                      label="투자 비중"
+                      value={Math.round(headquarter.totalInvestmentKrw / 10000)}
+                      max={Math.max(
+                        1,
+                        Math.round(maxHeadquarterInvestment / 10000)
+                      )}
+                      tone={
+                        headquarter.risk === '높음'
+                          ? 'rose'
+                          : headquarter.risk === '중간'
+                            ? 'amber'
+                            : 'teal'
+                      }
+                    />
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                        <span className="text-xs text-slate-500">
+                          총 투자액
+                        </span>
+                        <strong>
+                          {formatKrwCompact(headquarter.totalInvestmentKrw)}
+                        </strong>
+                      </div>
+                      <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                        <span className="text-xs text-slate-500">평균 NPV</span>
+                        <strong>
+                          {formatKrwCompact(headquarter.averageNpvKrw)}
+                        </strong>
+                      </div>
                     </div>
-                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                      <span className="text-xs text-slate-500">평균 NPV</span>
-                      <strong>
-                        {formatKrwCompact(headquarter.averageNpvKrw)}
-                      </strong>
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </>
-        ) : null}
-      </Panel>
-
-      <Panel
-        title="프로젝트 목록"
-        subtitle="필터/검색 후 상세 분석으로 진입합니다."
-      >
-        {isErrorWithoutData ? (
-          <div className={stateBoxClass}>
-            <strong>프로젝트 목록을 불러오지 못했습니다.</strong>
-            <p className="m-0 text-sm text-slate-600">
-              {portfolioError ?? '잠시 후 다시 시도하세요.'}
-            </p>
-            <button
-              type="button"
-              className={stateButtonClass}
-              onClick={onRetryPortfolioLoad}
-            >
-              다시 시도
-            </button>
-          </div>
-        ) : null}
-
-        {isLoadingWithoutData ? (
-          <div className={stateBoxClass} role="status">
-            <strong>프로젝트 목록을 불러오는 중입니다.</strong>
-            <p>필터와 테이블은 데이터 수신 후 활성화됩니다.</p>
-          </div>
-        ) : null}
-
-        {!isErrorWithoutData && !isLoadingWithoutData ? (
-          <div className="rounded-2xl border border-slate-200 bg-gradient-to-b from-white via-slate-50/65 to-white p-4 shadow-sm sm:p-5">
-            <div className="grid gap-4 border-b border-slate-200 pb-4 xl:grid-cols-[1fr_auto] xl:items-start">
-              <div className="space-y-2">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                  프로젝트 운영 센터
-                </p>
-                <h3 className="text-xl font-semibold tracking-tight text-slate-900">
-                  프로젝트 목록
-                </h3>
-                <p className="max-w-3xl text-sm leading-6 text-slate-600">
-                  검색과 다중 필터로 운영 후보를 좁힌 뒤, 상세 허브에서
-                  컨텍스트를 정리하고 분석 워크스페이스로 이동합니다.
-                </p>
+                  </article>
+                ))}
               </div>
-              <div
-                className="grid gap-2 rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm sm:grid-cols-2 xl:w-[26.5rem]"
-                aria-label="운영 액션"
+            </>
+          ) : null}
+        </Panel>
+      ) : null}
+
+      {portfolioMode === 'detail' ? (
+        <Panel
+          title={detailProject ? detailProject.name : '프로젝트 상세'}
+          subtitle=""
+        >
+          <div className="grid gap-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <button
+                type="button"
+                className={secondaryActionButtonClass}
+                onClick={handleBackToList}
               >
+                목록으로
+              </button>
+              {detailProject ? (
+                <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
+                  {detailProject.code} · {detailProject.headquarter}
+                </span>
+              ) : null}
+            </div>
+            {detailProject ? (
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs font-semibold text-slate-500">
+                    {detailProject.code}
+                  </span>
+                  <span className={statusPillClass(detailProject.status)}>
+                    <span className="h-1.5 w-1.5 rounded-full bg-current/80" />
+                    {detailProject.status}
+                  </span>
+                  <span className={riskPillClass(detailProject.risk)}>
+                    <span className="h-1.5 w-1.5 rounded-full bg-current/80" />
+                    {detailProject.risk}
+                  </span>
+                </div>
+                <button type="button" className={secondaryActionButtonClass}>
+                  평가 계산
+                </button>
+              </div>
+            ) : null}
+
+            {detailStatus === 'loading' ? (
+              <div className={stateBoxClass} role="status">
+                <strong>프로젝트 상세 데이터를 불러오는 중입니다.</strong>
+                <p>현금흐름/원가/평가 이력을 준비하고 있습니다.</p>
+              </div>
+            ) : null}
+
+            {detailStatus === 'error' ? (
+              <div className={stateBoxClass}>
+                <strong>프로젝트 상세를 불러오지 못했습니다.</strong>
+                <p className="m-0 text-sm text-slate-600">
+                  {detailError ?? '잠시 후 다시 시도하세요.'}
+                </p>
                 <button
                   type="button"
-                  className={primaryActionButtonClass}
-                  onClick={(event: ReactMouseEvent<HTMLButtonElement>) => {
-                    if (explicitSelectedProject) {
-                      openProjectModal(
-                        explicitSelectedProject,
-                        event.currentTarget
-                      );
-                    }
-                  }}
-                  disabled={!explicitSelectedProject}
+                  className={stateButtonClass}
+                  onClick={onRetryDetailLoad}
                 >
-                  상세 허브
+                  다시 시도
                 </button>
-                {isProjectWritable ? (
+              </div>
+            ) : null}
+
+            <ProjectDetailSection
+              summary={detailSummary}
+              latestMetrics={detailLatestMetrics}
+              cashFlowRows={detailCashFlowRows}
+              costRows={detailCostRows}
+              valuationRows={detailValuationRows}
+              emptyMessage={
+                detailProject
+                  ? '선택한 프로젝트의 상세 데이터가 아직 없습니다.'
+                  : '프로젝트를 선택하면 상세 정보를 확인할 수 있습니다.'
+              }
+            />
+          </div>
+        </Panel>
+      ) : (
+        <Panel
+          title="프로젝트 목록"
+          subtitle="필터/검색 후 상세 분석으로 진입합니다."
+        >
+          {isErrorWithoutData ? (
+            <div className={stateBoxClass}>
+              <strong>프로젝트 목록을 불러오지 못했습니다.</strong>
+              <p className="m-0 text-sm text-slate-600">
+                {portfolioError ?? '잠시 후 다시 시도하세요.'}
+              </p>
+              <button
+                type="button"
+                className={stateButtonClass}
+                onClick={onRetryPortfolioLoad}
+              >
+                다시 시도
+              </button>
+            </div>
+          ) : null}
+
+          {isLoadingWithoutData ? (
+            <div className={stateBoxClass} role="status">
+              <strong>프로젝트 목록을 불러오는 중입니다.</strong>
+              <p>필터와 테이블은 데이터 수신 후 활성화됩니다.</p>
+            </div>
+          ) : null}
+
+          {!isErrorWithoutData && !isLoadingWithoutData ? (
+            <div className="rounded-2xl border border-slate-200 bg-gradient-to-b from-white via-slate-50/65 to-white p-4 shadow-sm sm:p-5">
+              <div className="grid gap-4 border-b border-slate-200 pb-4 xl:grid-cols-[1fr_auto] xl:items-start">
+                <div className="space-y-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                    프로젝트 운영 센터
+                  </p>
+                  <h3 className="text-xl font-semibold tracking-tight text-slate-900">
+                    프로젝트 목록
+                  </h3>
+                  <p className="max-w-3xl text-sm leading-6 text-slate-600">
+                    검색과 다중 필터로 운영 후보를 좁힌 뒤, 상세 허브에서
+                    컨텍스트를 정리하고 분석 워크스페이스로 이동합니다.
+                  </p>
+                </div>
+                <div
+                  className="grid gap-2 rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm sm:grid-cols-2 xl:w-[26.5rem]"
+                  aria-label="운영 액션"
+                >
                   <button
                     type="button"
                     className={primaryActionButtonClass}
-                    onClick={(event: ReactMouseEvent<HTMLButtonElement>) =>
-                      openProjectCreateModal(event.currentTarget)
-                    }
-                  >
-                    + 새 프로젝트
-                  </button>
-                ) : (
-                  <span className="col-span-full rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800">
-                    {writeAccessMessage}
-                  </span>
-                )}
-                {isProjectWritable ? (
-                  <button
-                    type="button"
-                    className={secondaryActionButtonClass}
-                    onClick={(event: ReactMouseEvent<HTMLButtonElement>) => {
+                    onClick={() => {
                       if (explicitSelectedProject) {
-                        openProjectEditModal(explicitSelectedProject, {
-                          opener: event.currentTarget,
-                          returnMode: 'close'
-                        });
+                        openProjectModal(explicitSelectedProject);
                       }
                     }}
                     disabled={!explicitSelectedProject}
                   >
-                    프로젝트 편집
+                    상세 허브
                   </button>
-                ) : null}
-                {isProjectWritable ? (
-                  <button
-                    type="button"
-                    className={secondaryActionButtonClass}
-                    onClick={handleExportCsv}
-                    disabled={displayedProjects.length === 0}
+                  {isProjectWritable ? (
+                    <button
+                      type="button"
+                      className={primaryActionButtonClass}
+                      onClick={(event: ReactMouseEvent<HTMLButtonElement>) =>
+                        openProjectCreateModal(event.currentTarget)
+                      }
+                    >
+                      + 새 프로젝트
+                    </button>
+                  ) : (
+                    <span className="col-span-full rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800">
+                      {writeAccessMessage}
+                    </span>
+                  )}
+                  {isProjectWritable ? (
+                    <button
+                      type="button"
+                      className={secondaryActionButtonClass}
+                      onClick={(event: ReactMouseEvent<HTMLButtonElement>) => {
+                        if (explicitSelectedProject) {
+                          openProjectEditModal(explicitSelectedProject, {
+                            opener: event.currentTarget,
+                            returnMode: 'close'
+                          });
+                        }
+                      }}
+                      disabled={!explicitSelectedProject}
+                    >
+                      프로젝트 편집
+                    </button>
+                  ) : null}
+                  {isProjectWritable ? (
+                    <button
+                      type="button"
+                      className={secondaryActionButtonClass}
+                      onClick={handleExportCsv}
+                      disabled={displayedProjects.length === 0}
+                    >
+                      CSV 내보내기
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+
+              <div
+                className="mt-4 grid gap-3 xl:grid-cols-12"
+                aria-label="프로젝트 운영 필터"
+              >
+                <div className={`${filterGroupClass} xl:col-span-4`}>
+                  <label
+                    className="flex min-w-0 flex-col gap-1.5"
+                    htmlFor="project-search-input"
                   >
-                    CSV 내보내기
-                  </button>
-                ) : null}
-              </div>
-            </div>
-
-            <div
-              className="mt-4 grid gap-3 xl:grid-cols-12"
-              aria-label="프로젝트 운영 필터"
-            >
-              <div className={`${filterGroupClass} xl:col-span-4`}>
-                <label
-                  className="flex min-w-0 flex-col gap-1.5"
-                  htmlFor="project-search-input"
-                >
-                  <span className="text-[11px] font-semibold uppercase tracking-[0.09em] text-slate-500">
-                    검색
-                  </span>
-                  <input
-                    id="project-search-input"
-                    type="search"
-                    value={searchTerm}
-                    placeholder="프로젝트명, 코드, 본부 검색"
-                    onChange={(event) => onChangeSearchTerm(event.target.value)}
-                    className={controlSurfaceClass}
-                  />
-                </label>
-                <label
-                  className="flex min-w-0 flex-col gap-1.5"
-                  htmlFor="project-sort-select"
-                >
-                  <span className="text-[11px] font-semibold uppercase tracking-[0.09em] text-slate-500">
-                    정렬
-                  </span>
-                  <select
-                    id="project-sort-select"
-                    value={explorerSort}
-                    onChange={(event) =>
-                      onChangeSort(event.target.value as ExplorerSortKey)
-                    }
-                    className={controlSurfaceClass}
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.09em] text-slate-500">
+                      검색
+                    </span>
+                    <input
+                      id="project-search-input"
+                      type="search"
+                      value={searchTerm}
+                      placeholder="프로젝트명, 코드, 본부 검색"
+                      onChange={(event) =>
+                        onChangeSearchTerm(event.target.value)
+                      }
+                      className={controlSurfaceClass}
+                    />
+                  </label>
+                  <label
+                    className="flex min-w-0 flex-col gap-1.5"
+                    htmlFor="project-sort-select"
                   >
-                    {explorerSortOptions.map((option) => (
-                      <option key={option.key} value={option.key}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-
-              <div
-                className={`${filterGroupClass} xl:col-span-3`}
-                aria-label="빠른 필터"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-semibold uppercase tracking-[0.09em] text-slate-500">
-                    빠른 필터
-                  </span>
-                  <span className="text-xs text-slate-500">
-                    {explorerQuickFilterOptions.length}개
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {explorerQuickFilterOptions.map((filter) => (
-                    <button
-                      key={filter.key}
-                      type="button"
-                      className={`${filterPillBaseClass} ${
-                        explorerQuickFilter === filter.key
-                          ? 'border-slate-900 bg-slate-900 text-white shadow-sm'
-                          : 'border-slate-300 bg-white text-slate-700 hover:border-slate-400'
-                      }`}
-                      aria-pressed={explorerQuickFilter === filter.key}
-                      onClick={() => onChangeQuickFilter(filter.key)}
-                      title={filter.helper}
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.09em] text-slate-500">
+                      정렬
+                    </span>
+                    <select
+                      id="project-sort-select"
+                      value={explorerSort}
+                      onChange={(event) =>
+                        onChangeSort(event.target.value as ExplorerSortKey)
+                      }
+                      className={controlSurfaceClass}
                     >
-                      {filter.label}
-                    </button>
-                  ))}
+                      {explorerSortOptions.map((option) => (
+                        <option key={option.key} value={option.key}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                 </div>
-              </div>
 
-              <div
-                className={`${filterGroupClass} xl:col-span-2`}
-                aria-label="상태 필터"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-semibold uppercase tracking-[0.09em] text-slate-500">
-                    상태
-                  </span>
-                  <span className="text-xs text-slate-500">
-                    {statusFilter === 'all' ? '전체' : statusFilter}
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {projectStatusFilterOptions.map((filter) => (
-                    <button
-                      key={filter.key}
-                      type="button"
-                      className={`${filterPillBaseClass} ${
-                        statusFilter === filter.key
-                          ? 'border-blue-700 bg-blue-700 text-white shadow-sm'
-                          : 'border-slate-300 bg-white text-slate-600 hover:border-slate-400 hover:text-slate-800'
-                      }`}
-                      aria-pressed={statusFilter === filter.key}
-                      onClick={() => setStatusFilter(filter.key)}
-                    >
-                      {filter.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div
-                className={`${filterGroupClass} xl:col-span-3`}
-                aria-label="본부 필터"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-semibold uppercase tracking-[0.09em] text-slate-500">
-                    본부
-                  </span>
-                  <span className="text-xs text-slate-500">
-                    {resolvedHeadquarterFilter === 'all'
-                      ? '전체'
-                      : resolvedHeadquarterFilter}
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {renderedHeadquarterOptions.map((headquarter) => (
-                    <button
-                      key={headquarter}
-                      type="button"
-                      className={`${filterPillBaseClass} ${
-                        resolvedHeadquarterFilter === headquarter
-                          ? 'border-indigo-700 bg-indigo-700 text-white shadow-sm'
-                          : 'border-slate-300 bg-white text-slate-600 hover:border-slate-400 hover:text-slate-800'
-                      }`}
-                      aria-pressed={resolvedHeadquarterFilter === headquarter}
-                      onClick={() => onChangeHeadquarterFilter(headquarter)}
-                    >
-                      {headquarter === 'all' ? '전체 본부' : headquarter}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-4 grid gap-2 rounded-xl border border-slate-200 bg-white p-3 sm:grid-cols-[auto_auto_1fr_auto] sm:items-center">
-              <span className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700">
-                운영 대상 {displayedProjects.length}
-              </span>
-              <span className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700">
-                필터 결과 {recomputedFilteredProjects.length}
-              </span>
-              <span className="text-sm text-slate-600">
-                전체 프로젝트 <strong>{mergedProjects.length}</strong>
-              </span>
-              <div className="flex flex-wrap items-center justify-end gap-2">
-                {explicitSelectedProject ? (
-                  <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800">
-                    현재 선택 {explicitSelectedProject.name}
-                  </span>
-                ) : (
-                  <span className="rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
-                    선택된 프로젝트 없음
-                  </span>
-                )}
-                <button
-                  type="button"
-                  className="inline-flex h-9 items-center rounded-lg border border-slate-300 px-3 text-xs font-medium text-slate-600 transition hover:border-slate-400 hover:bg-slate-50"
-                  onClick={resetOperationalFilters}
+                <div
+                  className={`${filterGroupClass} xl:col-span-3`}
+                  aria-label="빠른 필터"
                 >
-                  필터 초기화
-                </button>
-              </div>
-            </div>
-
-            <div className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-              <div className="overflow-x-auto">
-                <table className="min-w-[1000px] w-full border-collapse text-sm">
-                  <thead className="sticky top-0 z-[1] bg-slate-100/95 backdrop-blur">
-                    <tr>
-                      <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
-                        우선
-                      </th>
-                      <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
-                        프로젝트
-                      </th>
-                      <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
-                        본부
-                      </th>
-                      <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
-                        상태
-                      </th>
-                      <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
-                        리스크
-                      </th>
-                      <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
-                        투자액
-                      </th>
-                      <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
-                        NPV
-                      </th>
-                      <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
-                        IRR
-                      </th>
-                      <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
-                        회수
-                      </th>
-                      <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
-                        허브
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {displayedProjects.map((project) => (
-                      <tr
-                        key={project.code}
-                        className={`border-t border-slate-200 align-top transition odd:bg-white even:bg-slate-50/40 hover:bg-cyan-50/70 ${
-                          project.code === selectedProjectCode
-                            ? 'bg-emerald-50/80'
-                            : ''
-                        } ${
-                          project.code === modalProjectCode
-                            ? 'bg-indigo-50/80'
-                            : ''
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.09em] text-slate-500">
+                      빠른 필터
+                    </span>
+                    <span className="text-xs text-slate-500">
+                      {explorerQuickFilterOptions.length}개
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {explorerQuickFilterOptions.map((filter) => (
+                      <button
+                        key={filter.key}
+                        type="button"
+                        className={`${filterPillBaseClass} ${
+                          explorerQuickFilter === filter.key
+                            ? 'border-slate-900 bg-slate-900 text-white shadow-sm'
+                            : 'border-slate-300 bg-white text-slate-700 hover:border-slate-400'
                         }`}
+                        aria-pressed={explorerQuickFilter === filter.key}
+                        onClick={() => onChangeQuickFilter(filter.key)}
+                        title={filter.helper}
                       >
-                        <td className="whitespace-nowrap px-3 py-2">
-                          <span className="inline-flex rounded-md border border-slate-300 bg-slate-50 px-2 py-0.5 text-xs font-semibold text-slate-600">
-                            #{project.rank}
-                          </span>
-                        </td>
-                        <td className="px-3 py-2">
-                          <strong className="font-semibold text-slate-800">
-                            {project.name}
-                          </strong>
-                          <div className="mt-0.5 text-xs text-slate-500">
-                            {project.code} · {project.assetCategory}
-                          </div>
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-2 text-slate-700">
-                          {project.headquarter}
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-2">
-                          <span className={statusPillClass(project.status)}>
-                            <span className="h-1.5 w-1.5 rounded-full bg-current/80" />
-                            {project.status}
-                          </span>
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-2">
-                          <span className={riskPillClass(project.risk)}>
-                            <span className="h-1.5 w-1.5 rounded-full bg-current/80" />
-                            {project.risk}
-                          </span>
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-2 font-medium text-slate-700">
-                          {formatKrwCompact(project.investmentKrw)}
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-2 font-medium text-slate-700">
-                          {formatKrwCompact(project.npvKrw)}
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-2 text-slate-700">
-                          {(project.irr * 100).toFixed(1)}%
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-2 text-slate-700">
-                          {project.paybackYears.toFixed(1)}년
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-2">
-                          <button
-                            type="button"
-                            className="inline-flex h-8 items-center rounded-lg border border-slate-300 px-3 text-xs font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-100"
-                            aria-label={`${project.name} 상세 허브 열기`}
-                            onClick={(
-                              event: ReactMouseEvent<HTMLButtonElement>
-                            ) => {
-                              openProjectModal(project, event.currentTarget);
-                            }}
-                          >
-                            상세 허브
-                          </button>
-                        </td>
-                      </tr>
+                        {filter.label}
+                      </button>
                     ))}
-                  </tbody>
-                </table>
+                  </div>
+                </div>
+
+                <div
+                  className={`${filterGroupClass} xl:col-span-2`}
+                  aria-label="상태 필터"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.09em] text-slate-500">
+                      상태
+                    </span>
+                    <span className="text-xs text-slate-500">
+                      {statusFilter === 'all' ? '전체' : statusFilter}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {projectStatusFilterOptions.map((filter) => (
+                      <button
+                        key={filter.key}
+                        type="button"
+                        className={`${filterPillBaseClass} ${
+                          statusFilter === filter.key
+                            ? 'border-blue-700 bg-blue-700 text-white shadow-sm'
+                            : 'border-slate-300 bg-white text-slate-600 hover:border-slate-400 hover:text-slate-800'
+                        }`}
+                        aria-pressed={statusFilter === filter.key}
+                        onClick={() => setStatusFilter(filter.key)}
+                      >
+                        {filter.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div
+                  className={`${filterGroupClass} xl:col-span-3`}
+                  aria-label="본부 필터"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.09em] text-slate-500">
+                      본부
+                    </span>
+                    <span className="text-xs text-slate-500">
+                      {resolvedHeadquarterFilter === 'all'
+                        ? '전체'
+                        : resolvedHeadquarterFilter}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {renderedHeadquarterOptions.map((headquarter) => (
+                      <button
+                        key={headquarter}
+                        type="button"
+                        className={`${filterPillBaseClass} ${
+                          resolvedHeadquarterFilter === headquarter
+                            ? 'border-indigo-700 bg-indigo-700 text-white shadow-sm'
+                            : 'border-slate-300 bg-white text-slate-600 hover:border-slate-400 hover:text-slate-800'
+                        }`}
+                        aria-pressed={resolvedHeadquarterFilter === headquarter}
+                        onClick={() => onChangeHeadquarterFilter(headquarter)}
+                      >
+                        {headquarter === 'all' ? '전체 본부' : headquarter}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
-              {displayedProjects.length === 0 ? (
-                <div className="m-3 grid gap-2 rounded-lg border border-slate-200 bg-slate-50 p-4">
-                  <p className="m-0 text-sm text-slate-600">
-                    조건에 맞는 프로젝트가 없습니다.
-                  </p>
+
+              <div className="mt-4 grid gap-2 rounded-xl border border-slate-200 bg-white p-3 sm:grid-cols-[auto_auto_1fr_auto] sm:items-center">
+                <span className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700">
+                  운영 대상 {displayedProjects.length}
+                </span>
+                <span className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700">
+                  필터 결과 {recomputedFilteredProjects.length}
+                </span>
+                <span className="text-sm text-slate-600">
+                  전체 프로젝트 <strong>{mergedProjects.length}</strong>
+                </span>
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  {explicitSelectedProject ? (
+                    <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800">
+                      현재 선택 {explicitSelectedProject.name}
+                    </span>
+                  ) : (
+                    <span className="rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+                      선택된 프로젝트 없음
+                    </span>
+                  )}
                   <button
                     type="button"
-                    className={stateButtonClass}
+                    className="inline-flex h-9 items-center rounded-lg border border-slate-300 px-3 text-xs font-medium text-slate-600 transition hover:border-slate-400 hover:bg-slate-50"
                     onClick={resetOperationalFilters}
                   >
-                    탐색 조건 초기화
+                    필터 초기화
                   </button>
                 </div>
-              ) : null}
-            </div>
-          </div>
-        ) : null}
-      </Panel>
+              </div>
 
-      {isCreateModalOpen || modalProject ? (
+              <div className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                <div className="overflow-x-auto">
+                  <table className="min-w-[1000px] w-full border-collapse text-sm">
+                    <thead className="sticky top-0 z-[1] bg-slate-100/95 backdrop-blur">
+                      <tr>
+                        <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
+                          우선
+                        </th>
+                        <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
+                          프로젝트
+                        </th>
+                        <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
+                          본부
+                        </th>
+                        <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
+                          상태
+                        </th>
+                        <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
+                          리스크
+                        </th>
+                        <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
+                          투자액
+                        </th>
+                        <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
+                          NPV
+                        </th>
+                        <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
+                          IRR
+                        </th>
+                        <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
+                          회수
+                        </th>
+                        <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
+                          허브
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {displayedProjects.map((project) => (
+                        <tr
+                          key={project.code}
+                          className={`cursor-pointer border-t border-slate-200 align-top transition odd:bg-white even:bg-slate-50/40 hover:bg-cyan-50/70 ${
+                            project.code === selectedProjectCode
+                              ? 'bg-emerald-50/80'
+                              : ''
+                          } ${
+                            project.code === modalProjectCode
+                              ? 'bg-indigo-50/80'
+                              : ''
+                          }`}
+                          tabIndex={0}
+                          onClick={() => openProjectModal(project)}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                              event.preventDefault();
+                              openProjectModal(project);
+                            }
+                          }}
+                        >
+                          <td className="whitespace-nowrap px-3 py-2">
+                            <span className="inline-flex rounded-md border border-slate-300 bg-slate-50 px-2 py-0.5 text-xs font-semibold text-slate-600">
+                              #{project.rank}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2">
+                            <strong className="font-semibold text-slate-800">
+                              {project.name}
+                            </strong>
+                            <div className="mt-0.5 text-xs text-slate-500">
+                              {project.code} · {project.assetCategory}
+                            </div>
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-2 text-slate-700">
+                            {project.headquarter}
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-2">
+                            <span className={statusPillClass(project.status)}>
+                              <span className="h-1.5 w-1.5 rounded-full bg-current/80" />
+                              {project.status}
+                            </span>
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-2">
+                            <span className={riskPillClass(project.risk)}>
+                              <span className="h-1.5 w-1.5 rounded-full bg-current/80" />
+                              {project.risk}
+                            </span>
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-2 font-medium text-slate-700">
+                            {formatKrwCompact(project.investmentKrw)}
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-2 font-medium text-slate-700">
+                            {formatKrwCompact(project.npvKrw)}
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-2 text-slate-700">
+                            {(project.irr * 100).toFixed(1)}%
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-2 text-slate-700">
+                            {project.paybackYears.toFixed(1)}년
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-2">
+                            <button
+                              type="button"
+                              className="inline-flex h-8 items-center rounded-lg border border-slate-300 px-3 text-xs font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-100"
+                              aria-label={`${project.name} 상세 허브 열기`}
+                              onClick={(
+                                event: ReactMouseEvent<HTMLButtonElement>
+                              ) => {
+                                event.stopPropagation();
+                                openProjectModal(project);
+                              }}
+                            >
+                              상세 허브
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {displayedProjects.length === 0 ? (
+                  <div className="m-3 grid gap-2 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                    <p className="m-0 text-sm text-slate-600">
+                      조건에 맞는 프로젝트가 없습니다.
+                    </p>
+                    <button
+                      type="button"
+                      className={stateButtonClass}
+                      onClick={resetOperationalFilters}
+                    >
+                      탐색 조건 초기화
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+        </Panel>
+      )}
+
+      {isModalOpen ? (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
           role="presentation"
@@ -2177,162 +2395,6 @@ export function PortfolioView({
                     </div>
                   </div>
                 </form>
-              </>
-            ) : modalProject ? (
-              <>
-                <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 pb-4">
-                  <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                      {modalProject.code}
-                    </p>
-                    <h3
-                      id="portfolio-modal-title"
-                      className="mt-1 text-xl font-semibold tracking-tight text-slate-900"
-                    >
-                      {modalProject.name}
-                    </h3>
-                    <p
-                      id="portfolio-modal-description"
-                      className="mt-1 text-sm leading-6 text-slate-600"
-                    >
-                      운영 컨텍스트를 선택한 뒤 관리회계 또는 재무평가
-                      워크스페이스로 이동합니다.
-                    </p>
-                  </div>
-                  <button
-                    ref={closeButtonRef}
-                    type="button"
-                    className="inline-flex h-9 items-center rounded-md border border-slate-300 px-3 text-xs font-semibold text-slate-600 transition hover:border-slate-400 hover:bg-slate-50"
-                    onClick={handleModalClose}
-                  >
-                    닫기
-                  </button>
-                </div>
-
-                <div className="mt-4 grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-                  <div className="grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
-                    <div className="grid gap-2 sm:grid-cols-3">
-                      <span className="flex flex-col gap-1 rounded-lg border border-slate-200 bg-white px-3 py-2">
-                        <small className="text-xs text-slate-500">본부</small>
-                        <strong>{modalProject.headquarter}</strong>
-                      </span>
-                      <span className="flex flex-col gap-1 rounded-lg border border-slate-200 bg-white px-3 py-2">
-                        <small className="text-xs text-slate-500">상태</small>
-                        <strong>
-                          <span
-                            className={statusPillClass(modalProject.status)}
-                          >
-                            <span className="h-1.5 w-1.5 rounded-full bg-current/80" />
-                            {modalProject.status}
-                          </span>
-                        </strong>
-                      </span>
-                      <span className="flex flex-col gap-1 rounded-lg border border-slate-200 bg-white px-3 py-2">
-                        <small className="text-xs text-slate-500">리스크</small>
-                        <strong>
-                          <span className={riskPillClass(modalProject.risk)}>
-                            <span className="h-1.5 w-1.5 rounded-full bg-current/80" />
-                            {modalProject.risk}
-                          </span>
-                        </strong>
-                      </span>
-                    </div>
-
-                    <div className="grid gap-2 sm:grid-cols-2">
-                      <article className="rounded-lg border border-slate-200 bg-white px-3 py-2">
-                        <span className="text-xs font-medium text-slate-500">
-                          투자 예산
-                        </span>
-                        <strong className="mt-1 block text-sm font-semibold text-slate-900">
-                          {formatKrwCompact(modalProject.investmentKrw)}
-                        </strong>
-                      </article>
-                      <article className="rounded-lg border border-slate-200 bg-white px-3 py-2">
-                        <span className="text-xs font-medium text-slate-500">
-                          예상 매출
-                        </span>
-                        <strong className="mt-1 block text-sm font-semibold text-slate-900">
-                          {formatKrwCompact(modalProject.expectedRevenueKrw)}
-                        </strong>
-                      </article>
-                      <article className="rounded-lg border border-slate-200 bg-white px-3 py-2">
-                        <span className="text-xs font-medium text-slate-500">
-                          NPV
-                        </span>
-                        <strong className="mt-1 block text-sm font-semibold text-slate-900">
-                          {formatKrwCompact(modalProject.npvKrw)}
-                        </strong>
-                      </article>
-                      <article className="rounded-lg border border-slate-200 bg-white px-3 py-2">
-                        <span className="text-xs font-medium text-slate-500">
-                          IRR / 회수기간
-                        </span>
-                        <strong className="mt-1 block text-sm font-semibold text-slate-900">
-                          {(modalProject.irr * 100).toFixed(1)}% ·{' '}
-                          {modalProject.paybackYears.toFixed(1)}년
-                        </strong>
-                      </article>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-3 sm:p-4">
-                    <div className="space-y-1.5">
-                      <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
-                        다음 액션
-                      </span>
-                      <strong className="block text-sm font-semibold text-slate-900">
-                        컨텍스트 선택 후 분석 레인 진입
-                      </strong>
-                      <p className="text-sm text-slate-600">
-                        기존 라우팅 로직은 동일하며, 상세 허브에서 진입 목적만
-                        명확히 구분합니다.
-                      </p>
-                    </div>
-                    <div className="grid gap-2">
-                      <button
-                        type="button"
-                        className={primaryActionButtonClass}
-                        onClick={() => {
-                          onSelectProject(modalProject.code);
-                          handleModalClose();
-                        }}
-                      >
-                        현재 프로젝트로 선택
-                      </button>
-                      <button
-                        type="button"
-                        className={`${actionButtonBaseClass} border-transparent bg-cyan-700 text-white hover:bg-cyan-600`}
-                        onClick={() =>
-                          handleWorkspaceEntry('accounting', modalProject.code)
-                        }
-                      >
-                        관리회계 워크스페이스
-                      </button>
-                      <button
-                        type="button"
-                        className={`${actionButtonBaseClass} border-transparent bg-indigo-700 text-white hover:bg-indigo-600`}
-                        onClick={() =>
-                          handleWorkspaceEntry('valuation', modalProject.code)
-                        }
-                      >
-                        재무평가 워크스페이스
-                      </button>
-                      {isProjectWritable ? (
-                        <button
-                          type="button"
-                          className={secondaryActionButtonClass}
-                          onClick={() =>
-                            openProjectEditModal(modalProject, {
-                              returnMode: 'detail'
-                            })
-                          }
-                        >
-                          프로젝트 편집
-                        </button>
-                      ) : null}
-                    </div>
-                  </div>
-                </div>
               </>
             ) : null}
           </div>
