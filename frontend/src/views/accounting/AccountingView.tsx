@@ -10,6 +10,17 @@ type AccountingViewProps = {
   onRetryDetailLoad(): void;
 };
 
+type AccountingTransaction = {
+  date: string;
+  period: string;
+  department: string;
+  project: string;
+  item: string;
+  actual: string;
+  standard: string;
+  note: string;
+};
+
 const departmentLabelByCode: Record<string, string> = {
   HQ01: '주식운용본부',
   HQ02: '채권운용본부',
@@ -17,6 +28,89 @@ const departmentLabelByCode: Record<string, string> = {
   HQ04: '파생상품본부',
   HQ05: '리스크관리본부'
 };
+
+const accountingTransactions: AccountingTransaction[] = [
+  {
+    date: '2026-03-25',
+    period: '2026-03',
+    department: '리스크관리본부',
+    project: 'PRJ-2025-018 · IFRS17 시스템 구축',
+    item: '직접인건비',
+    actual: '₩14,000,000',
+    standard: '₩13,500,000',
+    note: 'IFRS17 개발'
+  },
+  {
+    date: '2026-03-20',
+    period: '2026-03',
+    department: '파생상품본부',
+    project: 'PRJ-2025-015 · 통화 옵션 헤지북',
+    item: '직접인건비',
+    actual: '₩10,500,000',
+    standard: '₩10,000,000',
+    note: '통화옵션 운용'
+  },
+  {
+    date: '2026-03-15',
+    period: '2026-03',
+    department: '대체투자본부',
+    project: 'PRJ-2025-010 · 서울권 오피스 리츠',
+    item: '자재비',
+    actual: '₩32,000,000',
+    standard: '₩30,000,000',
+    note: '오피스리츠 감정평가'
+  },
+  {
+    date: '2026-03-10',
+    period: '2026-03',
+    department: '채권운용본부',
+    project: 'PRJ-2025-007 · 해외채권 달러표시',
+    item: '직접인건비',
+    actual: '₩13,500,000',
+    standard: '₩13,000,000',
+    note: '해외채권 분석'
+  },
+  {
+    date: '2026-03-05',
+    period: '2026-03',
+    department: '주식운용본부',
+    project: 'PRJ-2025-004 · ESG 테마 펀드',
+    item: '직접인건비',
+    actual: '₩12,500,000',
+    standard: '₩12,000,000',
+    note: 'ESG펀드 분석'
+  },
+  {
+    date: '2026-02-25',
+    period: '2026-02',
+    department: '파생상품본부',
+    project: 'PRJ-2025-014 · 주가지수 선물 전략',
+    item: '직접인건비',
+    actual: '₩11,000,000',
+    standard: '₩10,500,000',
+    note: '선물 운용 인건비'
+  },
+  {
+    date: '2026-02-22',
+    period: '2026-02',
+    department: '대체투자본부',
+    project: 'PRJ-2025-011 · 해상풍력 프로젝트파이낸싱',
+    item: '외주용역비',
+    actual: '₩45,000,000',
+    standard: '₩45,000,000',
+    note: '해상풍력 외주실사'
+  },
+  {
+    date: '2026-02-20',
+    period: '2026-02',
+    department: '채권운용본부',
+    project: 'PRJ-2025-005 · 국고채 10년 포지션',
+    item: '직접인건비',
+    actual: '₩16,000,000',
+    standard: '₩15,500,000',
+    note: '국고채 운용인건비'
+  }
+];
 
 export function AccountingView({
   selectedProject,
@@ -223,6 +317,65 @@ export function AccountingView({
               </div>
             </Panel>
           </section>
+
+          <Panel title="원가 거래 내역">
+            <div className="mb-3 flex flex-wrap items-center justify-end gap-2.5">
+              <select className="rounded-[10px] border border-[#cbd6ea] bg-white px-3 py-2 text-sm text-[#2f4570]">
+                <option>전체 본부</option>
+                <option>주식운용본부</option>
+                <option>채권운용본부</option>
+                <option>대체투자본부</option>
+                <option>파생상품본부</option>
+                <option>리스크관리본부</option>
+              </select>
+              <input
+                className="rounded-[10px] border border-[#cbd6ea] bg-white px-3 py-2 text-sm text-[#2f4570]"
+                type="month"
+              />
+            </div>
+
+            <div className="max-h-[520px] overflow-auto rounded-xl border border-[#dce5f4] bg-white">
+              <table className="min-w-full text-[0.98rem]">
+                <thead className="sticky top-0 z-[1] bg-[#eef3fb] text-[#5b7097]">
+                  <tr>
+                    <th className="px-4 py-3 text-left">날짜</th>
+                    <th className="px-4 py-3 text-left">기간</th>
+                    <th className="px-4 py-3 text-left">본부</th>
+                    <th className="px-4 py-3 text-left">프로젝트</th>
+                    <th className="px-4 py-3 text-left">원가항목</th>
+                    <th className="px-4 py-3 text-left">실제</th>
+                    <th className="px-4 py-3 text-left">표준</th>
+                    <th className="px-4 py-3 text-left">비고</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {accountingTransactions.map((row) => (
+                    <tr
+                      key={`${row.date}-${row.project}`}
+                      className="border-t border-[#e6edf8]"
+                    >
+                      <td className="px-4 py-3 text-[#2a4168]">{row.date}</td>
+                      <td className="px-4 py-3 text-[#2a4168]">{row.period}</td>
+                      <td className="px-4 py-3 font-semibold text-[#1e2f4c]">
+                        {row.department}
+                      </td>
+                      <td className="px-4 py-3 text-[#2a4168]">
+                        {row.project}
+                      </td>
+                      <td className="px-4 py-3 text-[#2a4168]">{row.item}</td>
+                      <td className="px-4 py-3 font-semibold text-[#1e2f4c]">
+                        {row.actual}
+                      </td>
+                      <td className="px-4 py-3 text-[#7086ac]">
+                        {row.standard}
+                      </td>
+                      <td className="px-4 py-3 text-[#60779f]">{row.note}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Panel>
         </>
       ) : null}
     </section>
