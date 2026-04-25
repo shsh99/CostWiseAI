@@ -1,4 +1,8 @@
-import { defaultPortfolioSummary, navigationItems, type ProjectStatus } from '../../app/portfolioData';
+import {
+  defaultPortfolioSummary,
+  navigationItems,
+  type ProjectStatus
+} from '../../app/portfolioData';
 
 export type NavigationKey = (typeof navigationItems)[number]['key'];
 export type ExplorerSortKey = 'priority' | 'npv' | 'irr' | 'payback' | 'risk';
@@ -29,16 +33,22 @@ export function parseExplorerState(search: string): {
   const rawProjectCode = query.get('project');
 
   const view: NavigationKey =
-    rawView && navigationItems.some((item) => item.key === normalizeLegacyView(rawView))
+    rawView &&
+    navigationItems.some((item) => item.key === normalizeLegacyView(rawView))
       ? (normalizeLegacyView(rawView) as NavigationKey)
       : 'dashboard';
-  const sort: ExplorerSortKey = isExplorerSortKey(rawSort) ? rawSort : defaultExplorerSort;
-  const quickFilter: ExplorerQuickFilterKey = isExplorerQuickFilterKey(rawQuickFilter)
+  const sort: ExplorerSortKey = isExplorerSortKey(rawSort)
+    ? rawSort
+    : defaultExplorerSort;
+  const quickFilter: ExplorerQuickFilterKey = isExplorerQuickFilterKey(
+    rawQuickFilter
+  )
     ? rawQuickFilter
     : defaultExplorerQuickFilter;
   const headquarter = rawHeadquarter?.trim() ? rawHeadquarter : 'all';
   const searchTerm = rawSearch?.trim() ?? '';
-  const projectCode = rawProjectCode?.trim() || defaultPortfolioSummary.projects[0]?.code || '';
+  const projectCode =
+    rawProjectCode?.trim() || defaultPortfolioSummary.projects[0]?.code || '';
 
   return {
     view,
@@ -75,10 +85,18 @@ export function statusTone(status: ProjectStatus) {
 }
 
 function isExplorerSortKey(value: string | null): value is ExplorerSortKey {
-  return value === 'priority' || value === 'npv' || value === 'irr' || value === 'payback' || value === 'risk';
+  return (
+    value === 'priority' ||
+    value === 'npv' ||
+    value === 'irr' ||
+    value === 'payback' ||
+    value === 'risk'
+  );
 }
 
-function isExplorerQuickFilterKey(value: string | null): value is ExplorerQuickFilterKey {
+function isExplorerQuickFilterKey(
+  value: string | null
+): value is ExplorerQuickFilterKey {
   return (
     value === 'all' ||
     value === 'needs-review' ||

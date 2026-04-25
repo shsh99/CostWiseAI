@@ -34,11 +34,14 @@ export function LoginView({ onLogin }: LoginViewProps) {
             </div>
             <div>
               <strong className="text-[1.8rem] leading-none">CostWise</strong>
-              <p className="m-0 text-[rgba(238,245,255,0.92)]">원가·평가 통합관리 플랫폼</p>
+              <p className="m-0 text-[rgba(238,245,255,0.92)]">
+                원가·평가 통합관리 플랫폼
+              </p>
             </div>
           </div>
           <p className="m-0 text-[rgba(238,245,255,0.92)]">
-            프로젝트 원가관리와 금융상품 가치평가를 하나의 운영 흐름으로 관리합니다.
+            프로젝트 원가관리와 금융상품 가치평가를 하나의 운영 흐름으로
+            관리합니다.
           </p>
         </header>
 
@@ -47,7 +50,9 @@ export function LoginView({ onLogin }: LoginViewProps) {
           onSubmit={handleSubmit}
         >
           <label className="grid gap-1.5">
-            <span className="text-[0.92rem] font-extrabold text-[#233150]">아이디</span>
+            <span className="text-[0.92rem] font-extrabold text-[#233150]">
+              아이디
+            </span>
             <input
               className="w-full rounded-xl border border-[#c8d2e6] px-3 py-[11px]"
               type="text"
@@ -58,7 +63,9 @@ export function LoginView({ onLogin }: LoginViewProps) {
             />
           </label>
           <label className="grid gap-1.5">
-            <span className="text-[0.92rem] font-extrabold text-[#233150]">비밀번호</span>
+            <span className="text-[0.92rem] font-extrabold text-[#233150]">
+              비밀번호
+            </span>
             <input
               className="w-full rounded-xl border border-[#c8d2e6] px-3 py-[11px]"
               type="password"

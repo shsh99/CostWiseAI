@@ -32,6 +32,7 @@ import {
 import { filterAndSortProjects } from './features/portfolio/explorerFilters';
 import { buildDecisionBars } from './features/workspace/decisionVisuals';
 import { DashboardView } from './views/dashboard/DashboardView';
+import { AccountingView } from './views/accounting/AccountingView';
 import { TaskSidebar } from './views/layout/TaskSidebar';
 import { TaskTopbar } from './views/layout/TaskTopbar';
 import { viewMeta } from './views/layout/viewMeta';
@@ -742,7 +743,8 @@ export function App() {
 
   function handleLogin(username: string, password: string) {
     const resolved = demoAccounts.find(
-      (account) => account.username === username && account.password === password
+      (account) =>
+        account.username === username && account.password === password
     );
 
     if (!resolved) {
@@ -754,7 +756,10 @@ export function App() {
       displayName: resolved.displayName,
       role: resolved.role
     };
-    window.localStorage.setItem('costwise_session', JSON.stringify(nextSession));
+    window.localStorage.setItem(
+      'costwise_session',
+      JSON.stringify(nextSession)
+    );
     setSession(nextSession);
     setSelectedRole(nextSession.role);
     return true;
@@ -770,7 +775,7 @@ export function App() {
   }
 
   return (
-    <div className="grid min-h-screen bg-cw-page lg:grid-cols-[260px_1fr]">
+    <div className="grid min-h-screen overflow-x-hidden bg-cw-page lg:grid-cols-[292px_minmax(0,1fr)]">
       <a
         className="absolute left-2.5 top-2.5 z-50 -translate-y-[140%] rounded-full bg-white px-3.5 py-2.5 text-cw-text no-underline transition-transform duration-150 focus:translate-y-0"
         href="#main-content"
@@ -784,7 +789,7 @@ export function App() {
         onChangeView={setActiveView}
       />
 
-      <div className="min-h-screen">
+      <div className="min-h-screen min-w-0 overflow-x-hidden">
         <TaskTopbar
           selectedRole={selectedRole}
           username={session.displayName}
@@ -799,7 +804,7 @@ export function App() {
           onLogout={handleLogout}
         />
 
-        <main id="main-content" className="grid gap-4 px-[22px] pb-[26px] pt-[18px]">
+        <main id="main-content" className="grid gap-4 px-5 pb-6 pt-4">
           {activeView === 'dashboard' ? (
             <DashboardView
               decisionSignals={decisionSignals}
@@ -836,7 +841,17 @@ export function App() {
             />
           ) : null}
 
-          {activeView === 'accounting' || activeView === 'valuation' || activeView === 'risk' ? (
+          {activeView === 'accounting' ? (
+            <AccountingView
+              selectedProject={selectedProject}
+              selectedDetail={selectedDetail}
+              detailStatus={selectedDetailStatus}
+              detailError={selectedDetailError}
+              onRetryDetailLoad={retryDetailLoad}
+            />
+          ) : null}
+
+          {activeView === 'valuation' || activeView === 'risk' ? (
             <WorkspaceView
               activeView={activeView}
               selectedProject={selectedProject}

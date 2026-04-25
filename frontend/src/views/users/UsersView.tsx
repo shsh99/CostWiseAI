@@ -37,7 +37,13 @@ const defaultFormState: UpsertUserRequest = {
   mfaEnabled: false
 };
 
-const formRoleOptions = ['ADMIN', 'EXECUTIVE', 'PM', 'ACCOUNTANT', 'AUDITOR'] as const;
+const formRoleOptions = [
+  'ADMIN',
+  'EXECUTIVE',
+  'PM',
+  'ACCOUNTANT',
+  'AUDITOR'
+] as const;
 const formStatusOptions = ['ACTIVE', 'SUSPENDED', 'INVITED'] as const;
 
 type UsersViewProps = {
@@ -52,16 +58,21 @@ export function UsersView({
   divisionOptions
 }: UsersViewProps) {
   const [users, setUsers] = useState<UserAccount[]>([]);
-  const [usersStatus, setUsersStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [usersStatus, setUsersStatus] = useState<'loading' | 'ready' | 'error'>(
+    'loading'
+  );
   const [usersError, setUsersError] = useState<string | null>(null);
   const [usersReloadKey, setUsersReloadKey] = useState(0);
   const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
-  const [auditStatus, setAuditStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [auditStatus, setAuditStatus] = useState<'loading' | 'ready' | 'error'>(
+    'loading'
+  );
   const [auditError, setAuditError] = useState<string | null>(null);
   const [auditReloadKey, setAuditReloadKey] = useState(0);
   const [modalMode, setModalMode] = useState<'create' | 'edit' | null>(null);
   const [editingUser, setEditingUser] = useState<UserAccount | null>(null);
-  const [formState, setFormState] = useState<UpsertUserRequest>(defaultFormState);
+  const [formState, setFormState] =
+    useState<UpsertUserRequest>(defaultFormState);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -202,7 +213,9 @@ export function UsersView({
       setUsersReloadKey((current) => current + 1);
       setAuditReloadKey((current) => current + 1);
     } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : '저장에 실패했습니다.');
+      setSubmitError(
+        error instanceof Error ? error.message : '저장에 실패했습니다.'
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -297,28 +310,74 @@ export function UsersView({
           <div className="rounded-xl border border-slate-200 bg-white">
             <div className="overflow-x-auto">
               <table className="min-w-[980px] table-auto border-collapse">
-              <thead>
-                <tr>
-                    <th className="px-3 py-2 text-left text-xs font-semibold tracking-wide text-slate-500" scope="col">사용자</th>
-                    <th className="px-3 py-2 text-left text-xs font-semibold tracking-wide text-slate-500" scope="col">역할</th>
-                    <th className="px-3 py-2 text-left text-xs font-semibold tracking-wide text-slate-500" scope="col">본부</th>
-                    <th className="px-3 py-2 text-left text-xs font-semibold tracking-wide text-slate-500" scope="col">상태</th>
-                    <th className="px-3 py-2 text-left text-xs font-semibold tracking-wide text-slate-500" scope="col">MFA</th>
-                    <th className="px-3 py-2 text-left text-xs font-semibold tracking-wide text-slate-500" scope="col">업데이트</th>
-                    <th className="px-3 py-2 text-left text-xs font-semibold tracking-wide text-slate-500" scope="col">작업</th>
-                </tr>
-              </thead>
-                  <tbody>
-                {visibleUsers.map((user) => (
-                    <tr key={user.id} className="border-t border-slate-200 align-top hover:bg-slate-50">
+                <thead>
+                  <tr>
+                    <th
+                      className="px-3 py-2 text-left text-xs font-semibold tracking-wide text-slate-500"
+                      scope="col"
+                    >
+                      사용자
+                    </th>
+                    <th
+                      className="px-3 py-2 text-left text-xs font-semibold tracking-wide text-slate-500"
+                      scope="col"
+                    >
+                      역할
+                    </th>
+                    <th
+                      className="px-3 py-2 text-left text-xs font-semibold tracking-wide text-slate-500"
+                      scope="col"
+                    >
+                      본부
+                    </th>
+                    <th
+                      className="px-3 py-2 text-left text-xs font-semibold tracking-wide text-slate-500"
+                      scope="col"
+                    >
+                      상태
+                    </th>
+                    <th
+                      className="px-3 py-2 text-left text-xs font-semibold tracking-wide text-slate-500"
+                      scope="col"
+                    >
+                      MFA
+                    </th>
+                    <th
+                      className="px-3 py-2 text-left text-xs font-semibold tracking-wide text-slate-500"
+                      scope="col"
+                    >
+                      업데이트
+                    </th>
+                    <th
+                      className="px-3 py-2 text-left text-xs font-semibold tracking-wide text-slate-500"
+                      scope="col"
+                    >
+                      작업
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {visibleUsers.map((user) => (
+                    <tr
+                      key={user.id}
+                      className="border-t border-slate-200 align-top hover:bg-slate-50"
+                    >
                       <td className="px-3 py-2.5">
                         <strong>{user.displayName}</strong>
-                        <p className="mt-0.5 text-xs text-slate-500">{user.email}</p>
+                        <p className="mt-0.5 text-xs text-slate-500">
+                          {user.email}
+                        </p>
                       </td>
-                      <td className="px-3 py-2.5 text-slate-700">{user.role}</td>
-                      <td className="px-3 py-2.5 text-slate-700">{user.division}</td>
+                      <td className="px-3 py-2.5 text-slate-700">
+                        {user.role}
+                      </td>
+                      <td className="px-3 py-2.5 text-slate-700">
+                        {user.division}
+                      </td>
                       <td className="px-3 py-2.5">
-                        <span className={tonePillClass(statusTone(user.status))}>
+                        <span
+                          className={tonePillClass(statusTone(user.status))}
+                        >
                           {user.status}
                         </span>
                       </td>
@@ -349,9 +408,9 @@ export function UsersView({
                         </div>
                       </td>
                     </tr>
-                ))}
-              </tbody>
-            </table>
+                  ))}
+                </tbody>
+              </table>
             </div>
 
             {visibleUsers.length === 0 ? (
@@ -408,7 +467,9 @@ export function UsersView({
                 key={`${event.actor}-${event.action}-${event.at}`}
                 className="grid gap-1 border-b border-slate-200 px-3 py-2.5 text-sm last:border-b-0"
               >
-                <strong className="font-semibold text-[#142542]">{event.actor}</strong>
+                <strong className="font-semibold text-[#142542]">
+                  {event.actor}
+                </strong>
                 <span className="text-cw-muted">{event.action}</span>
                 <small className="text-xs text-cw-muted">
                   {event.domain} · {formatDateTime(event.at)}
@@ -434,7 +495,9 @@ export function UsersView({
             className="relative z-10 w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-xl border border-slate-200 bg-white p-4 shadow-2xl sm:p-6"
             role="dialog"
             aria-modal="true"
-            aria-labelledby={modalMode === 'create' ? 'users-create-title' : 'users-edit-title'}
+            aria-labelledby={
+              modalMode === 'create' ? 'users-create-title' : 'users-edit-title'
+            }
           >
             <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 pb-4">
               <div>
@@ -442,13 +505,18 @@ export function UsersView({
                   {modalMode === 'create' ? 'New user' : editingUser?.email}
                 </p>
                 <h3
-                  id={modalMode === 'create' ? 'users-create-title' : 'users-edit-title'}
+                  id={
+                    modalMode === 'create'
+                      ? 'users-create-title'
+                      : 'users-edit-title'
+                  }
                   className="mt-1 text-xl font-semibold tracking-tight text-slate-900"
                 >
                   {modalMode === 'create' ? '사용자 등록' : '사용자 수정'}
                 </h3>
                 <p className="mt-1 text-sm leading-6 text-slate-600">
-                  권한/본부/상태를 설정하면 USER-MGMT 감사 로그에 자동 기록됩니다.
+                  권한/본부/상태를 설정하면 USER-MGMT 감사 로그에 자동
+                  기록됩니다.
                 </p>
               </div>
               <button
@@ -578,7 +646,10 @@ export function UsersView({
               </div>
 
               <div className={formActionsClass}>
-                <p className="m-0 text-sm leading-6 text-slate-600" role="alert">
+                <p
+                  className="m-0 text-sm leading-6 text-slate-600"
+                  role="alert"
+                >
                   {submitError ?? '필수 입력값을 확인한 뒤 저장하세요.'}
                 </p>
                 <div className="flex flex-wrap items-center gap-2.5">
