@@ -52,18 +52,20 @@ export function TaskSidebar({
   const renderedSections = new Set<string>();
 
   return (
-    <aside className="min-h-screen w-[320px] border-r border-[rgba(136,153,196,0.2)] bg-[linear-gradient(180deg,#0a1433_0%,#1f1b67_58%,#2a2a78_100%)] px-3 pb-4 pt-5 shadow-cw-sidebar">
-      <div className="mb-[18px] ml-3 mr-2 flex items-center gap-3">
-        <div className="grid h-[42px] w-[42px] place-items-center rounded-[11px] bg-[linear-gradient(135deg,#2d68e4,#19b2db)] text-base font-extrabold text-white">
-          CW
-        </div>
-        <div>
-          <strong className="text-[2.65rem] font-bold leading-none tracking-[-0.02em] text-white">
-            CostWise
-          </strong>
-          <p className="m-0 mt-0.5 text-[0.88rem] text-[#8fa7d3]">
-            원가·평가 통합관리
-          </p>
+    <aside className="min-h-screen w-[306px] border-r border-[#21345b] bg-[linear-gradient(180deg,#071227_0%,#0b1c3f_52%,#102652_100%)] px-4 pb-6 pt-5 shadow-[8px_0_26px_rgba(4,8,22,0.35)]">
+      <div className="mb-6 rounded-2xl border border-[#355487] bg-[linear-gradient(140deg,rgba(22,40,84,0.96),rgba(14,29,62,0.92))] px-4 py-3.5 shadow-[0_10px_20px_rgba(4,12,34,0.28)]">
+        <div className="flex items-center gap-3">
+          <div className="grid h-[46px] w-[46px] place-items-center rounded-xl bg-[linear-gradient(135deg,#2b68e4,#1bb3db)] text-base font-extrabold text-white shadow-[0_8px_16px_rgba(25,82,212,0.45)]">
+            CW
+          </div>
+          <div className="min-w-0">
+            <strong className="block text-[1.2rem] font-extrabold leading-tight tracking-[0.01em] text-white">
+              CostWise
+            </strong>
+            <p className="m-0 mt-1 text-[0.76rem] font-semibold tracking-[0.04em] text-[#9eb5de]">
+              원가·평가 통합관리
+            </p>
+          </div>
         </div>
       </div>
 
@@ -78,23 +80,23 @@ export function TaskSidebar({
           return (
             <div key={item.key}>
               {showSection ? (
-                <p className="mb-1.5 ml-2.5 mr-2.5 mt-3.5 text-[0.78rem] font-extrabold tracking-[0.08em] text-[#6f84b1]">
+                <p className="mb-2 ml-2.5 mr-2 mt-5 text-[0.69rem] font-extrabold tracking-[0.16em] text-[#809ac8]">
                   {section}
                 </p>
               ) : null}
               <button
                 type="button"
-                className={`flex w-full items-center gap-3 rounded-xl border-0 bg-transparent px-4 py-3 text-left text-[1.02rem] font-semibold transition-colors ${
+                className={`flex w-full items-center gap-3 rounded-2xl border px-4 py-[0.7rem] text-left text-[0.93rem] font-semibold tracking-[0.01em] transition-all duration-150 ${
                   activeView === item.key
-                    ? 'bg-[linear-gradient(90deg,#2666e2_0%,#1ab3dc_100%)] text-white shadow-[0_8px_18px_rgba(27,88,220,0.26)]'
-                    : 'text-[#cbd5e1] hover:bg-white/10 hover:text-white'
+                    ? 'border-[#5480ec] bg-[linear-gradient(96deg,#2a64de_0%,#1da8d1_100%)] text-white shadow-[0_10px_20px_rgba(20,71,188,0.33)]'
+                    : 'border-transparent text-[#c8d6ee] hover:border-white/15 hover:bg-white/[0.07] hover:text-white'
                 }`}
                 onClick={() => onChangeView(item.key)}
               >
-                <span className="inline-block w-5 text-center opacity-95">
+                <span className="inline-block w-5 text-center text-[0.88rem] opacity-95">
                   {iconByKey[item.key] ?? '•'}
                 </span>
-                <span>{item.label}</span>
+                <span className="leading-none">{item.label}</span>
               </button>
             </div>
           );

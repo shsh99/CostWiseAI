@@ -1057,17 +1057,21 @@ export function PortfolioView({
   }
 
   const actionButtonBaseClass =
-    'inline-flex h-10 items-center justify-center rounded-md border px-3 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-45';
-  const secondaryActionButtonClass = `${actionButtonBaseClass} border-slate-300 bg-white text-slate-700 hover:border-slate-400 hover:bg-slate-50`;
-  const primaryActionButtonClass = `${actionButtonBaseClass} border-blue-700 bg-blue-700 text-white hover:bg-blue-600`;
+    'inline-flex h-10 items-center justify-center rounded-lg border px-3.5 text-sm font-semibold tracking-tight transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-45';
+  const secondaryActionButtonClass = `${actionButtonBaseClass} border-slate-300 bg-white text-slate-700 shadow-sm hover:border-slate-400 hover:bg-slate-50`;
+  const primaryActionButtonClass = `${actionButtonBaseClass} border-blue-700 bg-blue-700 text-white shadow-sm hover:bg-blue-600`;
   const controlSurfaceClass =
-    'h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-slate-500 focus:ring-2 focus:ring-slate-200';
+    'h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-slate-500 focus:ring-2 focus:ring-slate-200';
   const stateBoxClass =
     'grid gap-2 rounded-lg border border-slate-200 bg-slate-50 p-4';
   const stateButtonClass =
     'inline-flex h-9 items-center rounded-md border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-100';
   const statusPillBaseClass =
-    'inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold';
+    'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold leading-none';
+  const filterGroupClass =
+    'grid gap-2 rounded-xl border border-slate-200 bg-white/90 p-3';
+  const filterPillBaseClass =
+    'inline-flex h-8 items-center rounded-full border px-3 text-xs font-medium transition';
   const projectFormClass = 'mt-4 grid gap-4';
   const projectFormGridClass = 'grid gap-3 sm:grid-cols-2';
   const projectFormFieldClass =
@@ -1235,47 +1239,24 @@ export function PortfolioView({
         ) : null}
 
         {!isErrorWithoutData && !isLoadingWithoutData ? (
-          <div className="rounded-xl border border-slate-200 bg-gradient-to-b from-slate-50 to-white p-4 shadow-sm sm:p-5">
-            <div className="flex flex-col gap-4 border-b border-slate-200 pb-4 lg:flex-row lg:items-start lg:justify-between">
-              <div className="max-w-2xl space-y-2">
+          <div className="rounded-2xl border border-slate-200 bg-gradient-to-b from-white via-slate-50/65 to-white p-4 shadow-sm sm:p-5">
+            <div className="grid gap-4 border-b border-slate-200 pb-4 xl:grid-cols-[1fr_auto] xl:items-start">
+              <div className="space-y-2">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                  프로젝트 운영
+                  프로젝트 운영 센터
                 </p>
                 <h3 className="text-xl font-semibold tracking-tight text-slate-900">
                   프로젝트 목록
                 </h3>
-                <p className="text-sm leading-6 text-slate-600">
-                  이름/코드 검색과 상태·본부 필터로 운영 대상을 추린 뒤, 상세
-                  허브 또는 워크스페이스로 바로 진입합니다.
+                <p className="max-w-3xl text-sm leading-6 text-slate-600">
+                  검색과 다중 필터로 운영 후보를 좁힌 뒤, 상세 허브에서
+                  컨텍스트를 정리하고 분석 워크스페이스로 이동합니다.
                 </p>
               </div>
               <div
-                className="flex flex-wrap items-center gap-2.5"
+                className="grid gap-2 rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm sm:grid-cols-2 xl:w-[26.5rem]"
                 aria-label="운영 액션"
               >
-                {isProjectWritable ? (
-                  <button
-                    type="button"
-                    className={secondaryActionButtonClass}
-                    onClick={handleExportCsv}
-                    disabled={displayedProjects.length === 0}
-                  >
-                    CSV 내보내기
-                  </button>
-                ) : null}
-                {isProjectWritable ? (
-                  <button
-                    type="button"
-                    className={primaryActionButtonClass}
-                    onClick={(event: ReactMouseEvent<HTMLButtonElement>) =>
-                      openProjectCreateModal(event.currentTarget)
-                    }
-                  >
-                    + 새 프로젝트
-                  </button>
-                ) : (
-                  <p className="text-xs text-slate-500">{writeAccessMessage}</p>
-                )}
                 <button
                   type="button"
                   className={primaryActionButtonClass}
@@ -1294,6 +1275,21 @@ export function PortfolioView({
                 {isProjectWritable ? (
                   <button
                     type="button"
+                    className={primaryActionButtonClass}
+                    onClick={(event: ReactMouseEvent<HTMLButtonElement>) =>
+                      openProjectCreateModal(event.currentTarget)
+                    }
+                  >
+                    + 새 프로젝트
+                  </button>
+                ) : (
+                  <span className="col-span-full rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800">
+                    {writeAccessMessage}
+                  </span>
+                )}
+                {isProjectWritable ? (
+                  <button
+                    type="button"
                     className={secondaryActionButtonClass}
                     onClick={(event: ReactMouseEvent<HTMLButtonElement>) => {
                       if (explicitSelectedProject) {
@@ -1308,142 +1304,184 @@ export function PortfolioView({
                     프로젝트 편집
                   </button>
                 ) : null}
+                {isProjectWritable ? (
+                  <button
+                    type="button"
+                    className={secondaryActionButtonClass}
+                    onClick={handleExportCsv}
+                    disabled={displayedProjects.length === 0}
+                  >
+                    CSV 내보내기
+                  </button>
+                ) : null}
               </div>
             </div>
 
             <div
-              className="mt-4 grid gap-3 rounded-lg border border-slate-200 bg-slate-50/70 p-3 md:grid-cols-2 xl:grid-cols-[minmax(280px,1.2fr)_minmax(180px,0.65fr)_1fr_1fr_1fr]"
+              className="mt-4 grid gap-3 xl:grid-cols-12"
               aria-label="프로젝트 운영 필터"
             >
-              <label
-                className="flex min-w-0 flex-col gap-1.5"
-                htmlFor="project-search-input"
-              >
-                <span className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
-                  검색
-                </span>
-                <input
-                  id="project-search-input"
-                  type="search"
-                  value={searchTerm}
-                  placeholder="프로젝트명, 코드, 본부 검색"
-                  onChange={(event) => onChangeSearchTerm(event.target.value)}
-                  className={controlSurfaceClass}
-                />
-              </label>
-
-              <label
-                className="flex min-w-0 flex-col gap-1.5"
-                htmlFor="project-sort-select"
-              >
-                <span className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
-                  정렬
-                </span>
-                <select
-                  id="project-sort-select"
-                  value={explorerSort}
-                  onChange={(event) =>
-                    onChangeSort(event.target.value as ExplorerSortKey)
-                  }
-                  className={controlSurfaceClass}
+              <div className={`${filterGroupClass} xl:col-span-4`}>
+                <label
+                  className="flex min-w-0 flex-col gap-1.5"
+                  htmlFor="project-search-input"
                 >
-                  {explorerSortOptions.map((option) => (
-                    <option key={option.key} value={option.key}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.09em] text-slate-500">
+                    검색
+                  </span>
+                  <input
+                    id="project-search-input"
+                    type="search"
+                    value={searchTerm}
+                    placeholder="프로젝트명, 코드, 본부 검색"
+                    onChange={(event) => onChangeSearchTerm(event.target.value)}
+                    className={controlSurfaceClass}
+                  />
+                </label>
+                <label
+                  className="flex min-w-0 flex-col gap-1.5"
+                  htmlFor="project-sort-select"
+                >
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.09em] text-slate-500">
+                    정렬
+                  </span>
+                  <select
+                    id="project-sort-select"
+                    value={explorerSort}
+                    onChange={(event) =>
+                      onChangeSort(event.target.value as ExplorerSortKey)
+                    }
+                    className={controlSurfaceClass}
+                  >
+                    {explorerSortOptions.map((option) => (
+                      <option key={option.key} value={option.key}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
 
               <div
-                className="flex flex-wrap items-start gap-1.5 rounded-lg border border-slate-200 bg-white p-2"
+                className={`${filterGroupClass} xl:col-span-3`}
                 aria-label="빠른 필터"
               >
-                <span className="w-full text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
-                  빠른 필터
-                </span>
-                {explorerQuickFilterOptions.map((filter) => (
-                  <button
-                    key={filter.key}
-                    type="button"
-                    className={`inline-flex h-8 items-center rounded-full border px-3 text-xs font-medium transition ${
-                      explorerQuickFilter === filter.key
-                        ? 'border-slate-900 bg-slate-900 text-white shadow-sm'
-                        : 'border-slate-300 bg-white text-slate-700 hover:border-slate-400'
-                    }`}
-                    aria-pressed={explorerQuickFilter === filter.key}
-                    onClick={() => onChangeQuickFilter(filter.key)}
-                    title={filter.helper}
-                  >
-                    {filter.label}
-                  </button>
-                ))}
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.09em] text-slate-500">
+                    빠른 필터
+                  </span>
+                  <span className="text-xs text-slate-500">
+                    {explorerQuickFilterOptions.length}개
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {explorerQuickFilterOptions.map((filter) => (
+                    <button
+                      key={filter.key}
+                      type="button"
+                      className={`${filterPillBaseClass} ${
+                        explorerQuickFilter === filter.key
+                          ? 'border-slate-900 bg-slate-900 text-white shadow-sm'
+                          : 'border-slate-300 bg-white text-slate-700 hover:border-slate-400'
+                      }`}
+                      aria-pressed={explorerQuickFilter === filter.key}
+                      onClick={() => onChangeQuickFilter(filter.key)}
+                      title={filter.helper}
+                    >
+                      {filter.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div
-                className="flex flex-wrap items-start gap-1.5 rounded-lg border border-slate-200 bg-white p-2"
+                className={`${filterGroupClass} xl:col-span-2`}
                 aria-label="상태 필터"
               >
-                <span className="w-full text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
-                  상태
-                </span>
-                {projectStatusFilterOptions.map((filter) => (
-                  <button
-                    key={filter.key}
-                    type="button"
-                    className={`inline-flex h-8 items-center rounded-full border px-3 text-xs font-medium transition ${
-                      statusFilter === filter.key
-                        ? 'border-slate-900 bg-slate-900 text-white shadow-sm'
-                        : 'border-slate-300 bg-white text-slate-600 hover:border-slate-400 hover:text-slate-800'
-                    }`}
-                    aria-pressed={statusFilter === filter.key}
-                    onClick={() => setStatusFilter(filter.key)}
-                  >
-                    {filter.label}
-                  </button>
-                ))}
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.09em] text-slate-500">
+                    상태
+                  </span>
+                  <span className="text-xs text-slate-500">
+                    {statusFilter === 'all' ? '전체' : statusFilter}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {projectStatusFilterOptions.map((filter) => (
+                    <button
+                      key={filter.key}
+                      type="button"
+                      className={`${filterPillBaseClass} ${
+                        statusFilter === filter.key
+                          ? 'border-blue-700 bg-blue-700 text-white shadow-sm'
+                          : 'border-slate-300 bg-white text-slate-600 hover:border-slate-400 hover:text-slate-800'
+                      }`}
+                      aria-pressed={statusFilter === filter.key}
+                      onClick={() => setStatusFilter(filter.key)}
+                    >
+                      {filter.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div
-                className="flex flex-wrap items-start gap-1.5 rounded-lg border border-slate-200 bg-white p-2"
+                className={`${filterGroupClass} xl:col-span-3`}
                 aria-label="본부 필터"
               >
-                <span className="w-full text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
-                  본부
-                </span>
-                {renderedHeadquarterOptions.map((headquarter) => (
-                  <button
-                    key={headquarter}
-                    type="button"
-                    className={`inline-flex h-8 items-center rounded-full border px-3 text-xs font-medium transition ${
-                      resolvedHeadquarterFilter === headquarter
-                        ? 'border-slate-900 bg-slate-900 text-white shadow-sm'
-                        : 'border-slate-300 bg-white text-slate-600 hover:border-slate-400 hover:text-slate-800'
-                    }`}
-                    aria-pressed={resolvedHeadquarterFilter === headquarter}
-                    onClick={() => onChangeHeadquarterFilter(headquarter)}
-                  >
-                    {headquarter === 'all' ? '전체 본부' : headquarter}
-                  </button>
-                ))}
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.09em] text-slate-500">
+                    본부
+                  </span>
+                  <span className="text-xs text-slate-500">
+                    {resolvedHeadquarterFilter === 'all'
+                      ? '전체'
+                      : resolvedHeadquarterFilter}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {renderedHeadquarterOptions.map((headquarter) => (
+                    <button
+                      key={headquarter}
+                      type="button"
+                      className={`${filterPillBaseClass} ${
+                        resolvedHeadquarterFilter === headquarter
+                          ? 'border-indigo-700 bg-indigo-700 text-white shadow-sm'
+                          : 'border-slate-300 bg-white text-slate-600 hover:border-slate-400 hover:text-slate-800'
+                      }`}
+                      aria-pressed={resolvedHeadquarterFilter === headquarter}
+                      onClick={() => onChangeHeadquarterFilter(headquarter)}
+                    >
+                      {headquarter === 'all' ? '전체 본부' : headquarter}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3">
-              <p className="text-sm text-slate-600">
-                운영 대상 <strong>{displayedProjects.length}</strong> / 필터
-                결과 {recomputedFilteredProjects.length} / 전체{' '}
-                {mergedProjects.length}
-              </p>
-              <div className="flex flex-wrap items-center gap-2.5">
+            <div className="mt-4 grid gap-2 rounded-xl border border-slate-200 bg-white p-3 sm:grid-cols-[auto_auto_1fr_auto] sm:items-center">
+              <span className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700">
+                운영 대상 {displayedProjects.length}
+              </span>
+              <span className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700">
+                필터 결과 {recomputedFilteredProjects.length}
+              </span>
+              <span className="text-sm text-slate-600">
+                전체 프로젝트 <strong>{mergedProjects.length}</strong>
+              </span>
+              <div className="flex flex-wrap items-center justify-end gap-2">
                 {explicitSelectedProject ? (
                   <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800">
                     현재 선택 {explicitSelectedProject.name}
                   </span>
-                ) : null}
+                ) : (
+                  <span className="rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+                    선택된 프로젝트 없음
+                  </span>
+                )}
                 <button
                   type="button"
-                  className="inline-flex h-9 items-center rounded-md border border-slate-300 px-3 text-xs font-medium text-slate-600 transition hover:border-slate-400 hover:bg-slate-50"
+                  className="inline-flex h-9 items-center rounded-lg border border-slate-300 px-3 text-xs font-medium text-slate-600 transition hover:border-slate-400 hover:bg-slate-50"
                   onClick={resetOperationalFilters}
                 >
                   필터 초기화
@@ -1451,39 +1489,39 @@ export function PortfolioView({
               </div>
             </div>
 
-            <div className="mt-4 overflow-hidden rounded-lg border border-slate-200 bg-white">
+            <div className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
               <div className="overflow-x-auto">
-                <table className="min-w-[980px] w-full border-collapse text-sm">
-                  <thead className="sticky top-0 z-[1] bg-slate-100/90 backdrop-blur">
+                <table className="min-w-[1000px] w-full border-collapse text-sm">
+                  <thead className="sticky top-0 z-[1] bg-slate-100/95 backdrop-blur">
                     <tr>
-                      <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+                      <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
                         우선
                       </th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+                      <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
                         프로젝트
                       </th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+                      <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
                         본부
                       </th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+                      <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
                         상태
                       </th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+                      <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
                         리스크
                       </th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+                      <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
                         투자액
                       </th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+                      <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
                         NPV
                       </th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+                      <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
                         IRR
                       </th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+                      <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
                         회수
                       </th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+                      <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
                         허브
                       </th>
                     </tr>
@@ -1492,22 +1530,22 @@ export function PortfolioView({
                     {displayedProjects.map((project) => (
                       <tr
                         key={project.code}
-                        className={`border-t border-slate-200 align-top transition odd:bg-white even:bg-slate-50/35 hover:bg-cyan-50/60 ${
+                        className={`border-t border-slate-200 align-top transition odd:bg-white even:bg-slate-50/40 hover:bg-cyan-50/70 ${
                           project.code === selectedProjectCode
-                            ? 'bg-emerald-50/70'
+                            ? 'bg-emerald-50/80'
                             : ''
                         } ${
                           project.code === modalProjectCode
-                            ? 'bg-indigo-50/70'
+                            ? 'bg-indigo-50/80'
                             : ''
                         }`}
                       >
-                        <td className="whitespace-nowrap px-3 py-2.5">
+                        <td className="whitespace-nowrap px-3 py-2">
                           <span className="inline-flex rounded-md border border-slate-300 bg-slate-50 px-2 py-0.5 text-xs font-semibold text-slate-600">
                             #{project.rank}
                           </span>
                         </td>
-                        <td className="px-3 py-2.5">
+                        <td className="px-3 py-2">
                           <strong className="font-semibold text-slate-800">
                             {project.name}
                           </strong>
@@ -1515,35 +1553,37 @@ export function PortfolioView({
                             {project.code} · {project.assetCategory}
                           </div>
                         </td>
-                        <td className="whitespace-nowrap px-3 py-2.5 text-slate-700">
+                        <td className="whitespace-nowrap px-3 py-2 text-slate-700">
                           {project.headquarter}
                         </td>
-                        <td className="whitespace-nowrap px-3 py-2.5">
+                        <td className="whitespace-nowrap px-3 py-2">
                           <span className={statusPillClass(project.status)}>
+                            <span className="h-1.5 w-1.5 rounded-full bg-current/80" />
                             {project.status}
                           </span>
                         </td>
-                        <td className="whitespace-nowrap px-3 py-2.5">
+                        <td className="whitespace-nowrap px-3 py-2">
                           <span className={riskPillClass(project.risk)}>
+                            <span className="h-1.5 w-1.5 rounded-full bg-current/80" />
                             {project.risk}
                           </span>
                         </td>
-                        <td className="whitespace-nowrap px-3 py-2.5 text-slate-700">
+                        <td className="whitespace-nowrap px-3 py-2 font-medium text-slate-700">
                           {formatKrwCompact(project.investmentKrw)}
                         </td>
-                        <td className="whitespace-nowrap px-3 py-2.5 text-slate-700">
+                        <td className="whitespace-nowrap px-3 py-2 font-medium text-slate-700">
                           {formatKrwCompact(project.npvKrw)}
                         </td>
-                        <td className="whitespace-nowrap px-3 py-2.5 text-slate-700">
+                        <td className="whitespace-nowrap px-3 py-2 text-slate-700">
                           {(project.irr * 100).toFixed(1)}%
                         </td>
-                        <td className="whitespace-nowrap px-3 py-2.5 text-slate-700">
+                        <td className="whitespace-nowrap px-3 py-2 text-slate-700">
                           {project.paybackYears.toFixed(1)}년
                         </td>
-                        <td className="whitespace-nowrap px-3 py-2.5">
+                        <td className="whitespace-nowrap px-3 py-2">
                           <button
                             type="button"
-                            className="inline-flex h-8 items-center rounded-md border border-slate-300 px-3 text-xs font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-100"
+                            className="inline-flex h-8 items-center rounded-lg border border-slate-300 px-3 text-xs font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-100"
                             aria-label={`${project.name} 상세 허브 열기`}
                             onClick={(
                               event: ReactMouseEvent<HTMLButtonElement>
@@ -1560,7 +1600,7 @@ export function PortfolioView({
                 </table>
               </div>
               {displayedProjects.length === 0 ? (
-                <div className="mt-3 grid gap-2 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <div className="m-3 grid gap-2 rounded-lg border border-slate-200 bg-slate-50 p-4">
                   <p className="m-0 text-sm text-slate-600">
                     조건에 맞는 프로젝트가 없습니다.
                   </p>
@@ -2169,120 +2209,128 @@ export function PortfolioView({
                   </button>
                 </div>
 
-                <div className="mt-4 grid gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 sm:grid-cols-3">
-                  <span className="flex flex-col gap-0.5 rounded-md border border-slate-200 bg-white px-3 py-2">
-                    <small>본부</small>
-                    <strong>{modalProject.headquarter}</strong>
-                  </span>
-                  <span className="flex flex-col gap-0.5 rounded-md border border-slate-200 bg-white px-3 py-2">
-                    <small>상태</small>
-                    <strong>
-                      <span className={statusPillClass(modalProject.status)}>
-                        {modalProject.status}
+                <div className="mt-4 grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+                  <div className="grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                    <div className="grid gap-2 sm:grid-cols-3">
+                      <span className="flex flex-col gap-1 rounded-lg border border-slate-200 bg-white px-3 py-2">
+                        <small className="text-xs text-slate-500">본부</small>
+                        <strong>{modalProject.headquarter}</strong>
                       </span>
-                    </strong>
-                  </span>
-                  <span className="flex flex-col gap-0.5 rounded-md border border-slate-200 bg-white px-3 py-2">
-                    <small>리스크</small>
-                    <strong>
-                      <span className={riskPillClass(modalProject.risk)}>
-                        {modalProject.risk}
+                      <span className="flex flex-col gap-1 rounded-lg border border-slate-200 bg-white px-3 py-2">
+                        <small className="text-xs text-slate-500">상태</small>
+                        <strong>
+                          <span
+                            className={statusPillClass(modalProject.status)}
+                          >
+                            <span className="h-1.5 w-1.5 rounded-full bg-current/80" />
+                            {modalProject.status}
+                          </span>
+                        </strong>
                       </span>
-                    </strong>
-                  </span>
-                </div>
+                      <span className="flex flex-col gap-1 rounded-lg border border-slate-200 bg-white px-3 py-2">
+                        <small className="text-xs text-slate-500">리스크</small>
+                        <strong>
+                          <span className={riskPillClass(modalProject.risk)}>
+                            <span className="h-1.5 w-1.5 rounded-full bg-current/80" />
+                            {modalProject.risk}
+                          </span>
+                        </strong>
+                      </span>
+                    </div>
 
-                <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-                  <article className="rounded-lg border border-slate-200 bg-white px-3 py-2">
-                    <span className="text-xs font-medium text-slate-500">
-                      투자 예산
-                    </span>
-                    <strong className="mt-1 block text-sm font-semibold text-slate-900">
-                      {formatKrwCompact(modalProject.investmentKrw)}
-                    </strong>
-                  </article>
-                  <article className="rounded-lg border border-slate-200 bg-white px-3 py-2">
-                    <span className="text-xs font-medium text-slate-500">
-                      예상 매출
-                    </span>
-                    <strong className="mt-1 block text-sm font-semibold text-slate-900">
-                      {formatKrwCompact(modalProject.expectedRevenueKrw)}
-                    </strong>
-                  </article>
-                  <article className="rounded-lg border border-slate-200 bg-white px-3 py-2">
-                    <span className="text-xs font-medium text-slate-500">
-                      NPV
-                    </span>
-                    <strong className="mt-1 block text-sm font-semibold text-slate-900">
-                      {formatKrwCompact(modalProject.npvKrw)}
-                    </strong>
-                  </article>
-                  <article className="rounded-lg border border-slate-200 bg-white px-3 py-2">
-                    <span className="text-xs font-medium text-slate-500">
-                      IRR / 회수기간
-                    </span>
-                    <strong className="mt-1 block text-sm font-semibold text-slate-900">
-                      {(modalProject.irr * 100).toFixed(1)}% ·{' '}
-                      {modalProject.paybackYears.toFixed(1)}년
-                    </strong>
-                  </article>
-                </div>
-
-                <div className="mt-4 flex flex-col gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 sm:p-4">
-                  <div className="space-y-1">
-                    <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
-                      워크스페이스 진입
-                    </span>
-                    <strong className="block text-sm font-semibold text-slate-900">
-                      선택 후 필요한 분석 레인으로 바로 진입
-                    </strong>
-                    <p className="text-sm text-slate-600">
-                      현재 행위는 기존 라우팅과 동일하며, 프로젝트 컨텍스트만
-                      먼저 정리합니다.
-                    </p>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <article className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+                        <span className="text-xs font-medium text-slate-500">
+                          투자 예산
+                        </span>
+                        <strong className="mt-1 block text-sm font-semibold text-slate-900">
+                          {formatKrwCompact(modalProject.investmentKrw)}
+                        </strong>
+                      </article>
+                      <article className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+                        <span className="text-xs font-medium text-slate-500">
+                          예상 매출
+                        </span>
+                        <strong className="mt-1 block text-sm font-semibold text-slate-900">
+                          {formatKrwCompact(modalProject.expectedRevenueKrw)}
+                        </strong>
+                      </article>
+                      <article className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+                        <span className="text-xs font-medium text-slate-500">
+                          NPV
+                        </span>
+                        <strong className="mt-1 block text-sm font-semibold text-slate-900">
+                          {formatKrwCompact(modalProject.npvKrw)}
+                        </strong>
+                      </article>
+                      <article className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+                        <span className="text-xs font-medium text-slate-500">
+                          IRR / 회수기간
+                        </span>
+                        <strong className="mt-1 block text-sm font-semibold text-slate-900">
+                          {(modalProject.irr * 100).toFixed(1)}% ·{' '}
+                          {modalProject.paybackYears.toFixed(1)}년
+                        </strong>
+                      </article>
+                    </div>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2.5">
-                    {isProjectWritable ? (
+
+                  <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-3 sm:p-4">
+                    <div className="space-y-1.5">
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                        다음 액션
+                      </span>
+                      <strong className="block text-sm font-semibold text-slate-900">
+                        컨텍스트 선택 후 분석 레인 진입
+                      </strong>
+                      <p className="text-sm text-slate-600">
+                        기존 라우팅 로직은 동일하며, 상세 허브에서 진입 목적만
+                        명확히 구분합니다.
+                      </p>
+                    </div>
+                    <div className="grid gap-2">
                       <button
                         type="button"
-                        className={secondaryActionButtonClass}
+                        className={primaryActionButtonClass}
+                        onClick={() => {
+                          onSelectProject(modalProject.code);
+                          handleModalClose();
+                        }}
+                      >
+                        현재 프로젝트로 선택
+                      </button>
+                      <button
+                        type="button"
+                        className={`${actionButtonBaseClass} border-transparent bg-cyan-700 text-white hover:bg-cyan-600`}
                         onClick={() =>
-                          openProjectEditModal(modalProject, {
-                            returnMode: 'detail'
-                          })
+                          handleWorkspaceEntry('accounting', modalProject.code)
                         }
                       >
-                        프로젝트 편집
+                        관리회계 워크스페이스
                       </button>
-                    ) : null}
-                    <button
-                      type="button"
-                      className={primaryActionButtonClass}
-                      onClick={() => {
-                        onSelectProject(modalProject.code);
-                        handleModalClose();
-                      }}
-                    >
-                      선택
-                    </button>
-                    <button
-                      type="button"
-                      className={`${actionButtonBaseClass} border-transparent bg-cyan-700 text-white hover:bg-cyan-600`}
-                      onClick={() =>
-                        handleWorkspaceEntry('accounting', modalProject.code)
-                      }
-                    >
-                      관리회계
-                    </button>
-                    <button
-                      type="button"
-                      className={`${actionButtonBaseClass} border-transparent bg-indigo-700 text-white hover:bg-indigo-600`}
-                      onClick={() =>
-                        handleWorkspaceEntry('valuation', modalProject.code)
-                      }
-                    >
-                      재무평가
-                    </button>
+                      <button
+                        type="button"
+                        className={`${actionButtonBaseClass} border-transparent bg-indigo-700 text-white hover:bg-indigo-600`}
+                        onClick={() =>
+                          handleWorkspaceEntry('valuation', modalProject.code)
+                        }
+                      >
+                        재무평가 워크스페이스
+                      </button>
+                      {isProjectWritable ? (
+                        <button
+                          type="button"
+                          className={secondaryActionButtonClass}
+                          onClick={() =>
+                            openProjectEditModal(modalProject, {
+                              returnMode: 'detail'
+                            })
+                          }
+                        >
+                          프로젝트 편집
+                        </button>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
               </>
