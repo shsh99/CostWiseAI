@@ -742,7 +742,8 @@ export function App() {
 
   function handleLogin(username: string, password: string) {
     const resolved = demoAccounts.find(
-      (account) => account.username === username && account.password === password
+      (account) =>
+        account.username === username && account.password === password
     );
 
     if (!resolved) {
@@ -754,7 +755,10 @@ export function App() {
       displayName: resolved.displayName,
       role: resolved.role
     };
-    window.localStorage.setItem('costwise_session', JSON.stringify(nextSession));
+    window.localStorage.setItem(
+      'costwise_session',
+      JSON.stringify(nextSession)
+    );
     setSession(nextSession);
     setSelectedRole(nextSession.role);
     return true;
@@ -770,7 +774,7 @@ export function App() {
   }
 
   return (
-    <div className="grid min-h-screen bg-cw-page lg:grid-cols-[260px_1fr]">
+    <div className="grid min-h-screen bg-cw-page lg:grid-cols-[306px_minmax(0,1fr)]">
       <a
         className="absolute left-2.5 top-2.5 z-50 -translate-y-[140%] rounded-full bg-white px-3.5 py-2.5 text-cw-text no-underline transition-transform duration-150 focus:translate-y-0"
         href="#main-content"
@@ -799,7 +803,10 @@ export function App() {
           onLogout={handleLogout}
         />
 
-        <main id="main-content" className="grid gap-4 px-[22px] pb-[26px] pt-[18px]">
+        <main
+          id="main-content"
+          className="grid gap-4 px-[22px] pb-[26px] pt-[18px]"
+        >
           {activeView === 'dashboard' ? (
             <DashboardView
               decisionSignals={decisionSignals}
@@ -836,7 +843,9 @@ export function App() {
             />
           ) : null}
 
-          {activeView === 'accounting' || activeView === 'valuation' || activeView === 'risk' ? (
+          {activeView === 'accounting' ||
+          activeView === 'valuation' ||
+          activeView === 'risk' ? (
             <WorkspaceView
               activeView={activeView}
               selectedProject={selectedProject}
