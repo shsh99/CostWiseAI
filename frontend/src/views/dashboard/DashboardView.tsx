@@ -42,16 +42,15 @@ const monthlyTrend = [
 
 const categoryBudgets = [
   { label: 'BOND', value: 150, color: '#3f79ea' },
-  { label: 'DERIVATIVE', value: 95, color: '#17acc8' },
-  { label: 'EQUITY', value: 65, color: '#7a56dc' },
-  { label: 'INFRA', value: 110, color: '#f2a50f' },
-  { label: 'PROJECT', value: 28, color: '#22b659' },
-  { label: 'REAL_ESTATE', value: 45, color: '#e9509c' },
-  { label: 'STOCK', value: 92, color: '#23b2a4' }
+  { label: 'DERIVATIVE', value: 95, color: '#19b1ca' },
+  { label: 'EQUITY', value: 65, color: '#7d5de0' },
+  { label: 'INFRA', value: 110, color: '#f3a108' },
+  { label: 'PROJECT', value: 28, color: '#26be60' },
+  { label: 'REAL_ESTATE', value: 45, color: '#e84f9d' },
+  { label: 'STOCK', value: 92, color: '#22b0a2' }
 ];
 
 export function DashboardView({
-  decisionSignals,
   selectedInsight,
   portfolio,
   priorityProjects,
@@ -71,33 +70,10 @@ export function DashboardView({
         Boolean(item)
     );
 
-  const maxBudget = Math.max(
+  const budgetMax = Math.max(
     1,
     ...orderedHeadquarters.map((item) => item.totalInvestmentKrw)
   );
-  const maxTrend = Math.max(...monthlyTrend.map((item) => item.actual), 1);
-  const minTrend = Math.min(...monthlyTrend.map((item) => item.standard), 0);
-  const trendRange = Math.max(1, maxTrend - minTrend);
-  const chartWidth = 680;
-  const chartHeight = 240;
-  const xStep = chartWidth / Math.max(1, monthlyTrend.length - 1);
-  const actualPoints = monthlyTrend
-    .map((point, index) => {
-      const x = index * xStep;
-      const y =
-        chartHeight - ((point.actual - minTrend) / trendRange) * chartHeight;
-      return `${x},${y}`;
-    })
-    .join(' ');
-  const standardPoints = monthlyTrend
-    .map((point, index) => {
-      const x = index * xStep;
-      const y =
-        chartHeight - ((point.standard - minTrend) / trendRange) * chartHeight;
-      return `${x},${y}`;
-    })
-    .join(' ');
-
   const riskCounts = portfolio.projects.reduce(
     (acc, project) => {
       if (project.risk === '높음') acc.high += 1;
@@ -111,124 +87,141 @@ export function DashboardView({
     1,
     riskCounts.high + riskCounts.mid + riskCounts.low
   );
-  const quickFocus = priorityProjects.slice(0, 5);
-  const maxCategoryBudget = Math.max(
-    ...categoryBudgets.map((item) => item.value),
+
+  const chartWidth = 740;
+  const chartHeight = 310;
+  const tickCount = 5;
+  const valueMax = Math.max(
+    ...monthlyTrend.map((item) => Math.max(item.actual, item.standard)),
     1
   );
+  const paddedMax = Math.ceil(valueMax / 100) * 100;
+  const xStep = chartWidth / Math.max(1, monthlyTrend.length - 1);
+  const scaleY = (value: number) =>
+    chartHeight - (value / paddedMax) * chartHeight;
+  const actualPoints = monthlyTrend
+    .map((item, index) => `${index * xStep},${scaleY(item.actual)}`)
+    .join(' ');
+  const standardPoints = monthlyTrend
+    .map((item, index) => `${index * xStep},${scaleY(item.standard)}`)
+    .join(' ');
+
+  const sortedReviews = [...portfolio.projects]
+    .sort((a, b) => b.rank - a.rank)
+    .slice(0, 8);
 
   return (
-    <section className="grid gap-5">
-      <header className="flex flex-wrap items-start justify-between gap-4">
+    <section className="grid gap-4">
+      <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="m-0 text-[2.55rem] font-extrabold tracking-[-0.02em] text-[#172a4a]">
+          <h2 className="m-0 text-[2.05rem] font-extrabold tracking-[-0.015em] text-[#172a4a]">
             통합 대시보드
           </h2>
-          <p className="mt-1.5 text-[1.2rem] leading-snug text-[#5e759f]">
+          <p className="mt-1 text-[1.05rem] text-[#60759f]">
             전사 5개 본부 · 프로젝트 원가/평가 현황
           </p>
         </div>
-        <span className="text-[1.05rem] font-medium text-[#6780aa]">{now}</span>
+        <span className="text-[1rem] text-[#667da8]">{now}</span>
       </header>
 
       <section className="grid grid-cols-4 gap-4 max-[1280px]:grid-cols-2">
-        <article className="rounded-3xl border border-[#d7e0f0] bg-white px-6 py-5 shadow-[0_10px_24px_rgba(13,28,58,0.07)]">
-          <span className="inline-grid h-14 w-14 place-items-center rounded-2xl bg-[#356ee6] text-2xl text-white">
+        <article className="rounded-2xl border border-[#dce4f2] bg-white px-5 py-4 shadow-[0_2px_8px_rgba(12,26,56,0.05)]">
+          <span className="inline-grid h-12 w-12 place-items-center rounded-xl bg-[#376de3] text-xl text-white">
             ▦
           </span>
-          <strong className="mt-4 block text-[3rem] font-extrabold leading-none text-[#172a4a]">
+          <strong className="mt-3 block text-[2.15rem] font-extrabold leading-none text-[#192b4b]">
             {portfolio.overview.headquarterCount}
           </strong>
-          <span className="mt-2 block text-[1.3rem] font-bold text-[#526b96]">
+          <span className="mt-2 block text-[1.03rem] font-semibold text-[#526a96]">
             운영 본부
           </span>
-          <p className="mt-1 text-[1.02rem] text-[#8396b6]">5개 본부 가동중</p>
+          <p className="mt-1 text-[0.94rem] text-[#7f92b3]">5개 본부 가동중</p>
         </article>
-        <article className="rounded-3xl border border-[#d7e0f0] bg-white px-6 py-5 shadow-[0_10px_24px_rgba(13,28,58,0.07)]">
-          <span className="inline-grid h-14 w-14 place-items-center rounded-2xl bg-[#1ba8c7] text-2xl text-white">
+        <article className="rounded-2xl border border-[#dce4f2] bg-white px-5 py-4 shadow-[0_2px_8px_rgba(12,26,56,0.05)]">
+          <span className="inline-grid h-12 w-12 place-items-center rounded-xl bg-[#1ca9c7] text-xl text-white">
             ⊞
           </span>
-          <strong className="mt-4 block text-[3rem] font-extrabold leading-none text-[#172a4a]">
+          <strong className="mt-3 block text-[2.15rem] font-extrabold leading-none text-[#192b4b]">
             {portfolio.overview.projectCount}
           </strong>
-          <span className="mt-2 block text-[1.3rem] font-bold text-[#526b96]">
+          <span className="mt-2 block text-[1.03rem] font-semibold text-[#526a96]">
             활성 프로젝트
           </span>
-          <p className="mt-1 text-[1.02rem] text-[#8396b6]">
+          <p className="mt-1 text-[0.94rem] text-[#7f92b3]">
             총 20여개 동시 운영
           </p>
         </article>
-        <article className="rounded-3xl border border-[#d7e0f0] bg-white px-6 py-5 shadow-[0_10px_24px_rgba(13,28,58,0.07)]">
-          <span className="inline-grid h-14 w-14 place-items-center rounded-2xl bg-[#23b45e] text-2xl text-white">
+        <article className="rounded-2xl border border-[#dce4f2] bg-white px-5 py-4 shadow-[0_2px_8px_rgba(12,26,56,0.05)]">
+          <span className="inline-grid h-12 w-12 place-items-center rounded-xl bg-[#28b95d] text-xl text-white">
             ⛁
           </span>
-          <strong className="mt-4 block text-[3rem] font-extrabold leading-none text-[#172a4a]">
+          <strong className="mt-3 block text-[2.15rem] font-extrabold leading-none text-[#192b4b]">
             {formatKrwCompact(portfolio.overview.totalInvestmentKrw)}
           </strong>
-          <span className="mt-2 block text-[1.3rem] font-bold text-[#526b96]">
+          <span className="mt-2 block text-[1.03rem] font-semibold text-[#526a96]">
             총 예산
           </span>
-          <p className="mt-1 text-[1.02rem] text-[#8396b6]">
+          <p className="mt-1 text-[0.94rem] text-[#7f92b3]">
             집행: {formatKrwCompact(portfolio.overview.totalExpectedRevenueKrw)}
           </p>
         </article>
-        <article className="rounded-3xl border border-[#d7e0f0] bg-white px-6 py-5 shadow-[0_10px_24px_rgba(13,28,58,0.07)]">
-          <span className="inline-grid h-14 w-14 place-items-center rounded-2xl bg-[#ef3b45] text-2xl text-white">
+        <article className="rounded-2xl border border-[#dce4f2] bg-white px-5 py-4 shadow-[0_2px_8px_rgba(12,26,56,0.05)]">
+          <span className="inline-grid h-12 w-12 place-items-center rounded-xl bg-[#ef3b45] text-xl text-white">
             ⚠
           </span>
-          <strong className="mt-4 block text-[3rem] font-extrabold leading-none text-[#172a4a]">
+          <strong className="mt-3 block text-[2.15rem] font-extrabold leading-none text-[#192b4b]">
             {portfolio.overview.conditionalCount}
           </strong>
-          <span className="mt-2 block text-[1.3rem] font-bold text-[#526b96]">
+          <span className="mt-2 block text-[1.03rem] font-semibold text-[#526a96]">
             미확인 경보
           </span>
-          <p className="mt-1 text-[1.02rem] text-[#8396b6]">클릭하여 확인</p>
+          <p className="mt-1 text-[0.94rem] text-[#7f92b3]">클릭하여 확인</p>
         </article>
       </section>
 
       <section className="grid grid-cols-[2fr_1fr] gap-4 max-[1280px]:grid-cols-1">
         <Panel title="본부별 예산 vs 집행">
-          <div className="mb-4 flex justify-center gap-6 text-[1rem] font-semibold text-[#5e759f]">
+          <div className="mb-4 flex justify-center gap-5 text-[0.97rem] font-semibold text-[#5d749f]">
             <span className="inline-flex items-center gap-2">
-              <span className="h-3.5 w-10 rounded bg-[#3f79ea]" /> 예산
+              <span className="h-3 w-10 rounded bg-[#3f79ea]" />
+              예산
             </span>
             <span className="inline-flex items-center gap-2">
-              <span className="h-3.5 w-10 rounded bg-[#1ba8c7]" /> 집행
+              <span className="h-3 w-10 rounded bg-[#1ca9c7]" />
+              집행
             </span>
           </div>
           <div className="grid gap-3.5">
-            {orderedHeadquarters.map((headquarter) => {
+            {orderedHeadquarters.map((item) => {
               const budgetWidth = Math.max(
-                4,
-                Math.round((headquarter.totalInvestmentKrw / maxBudget) * 100)
+                3,
+                Math.round((item.totalInvestmentKrw / budgetMax) * 100)
               );
               const expenseWidth = Math.max(
-                4,
-                Math.round(
-                  (headquarter.totalExpectedRevenueKrw / maxBudget) * 100
-                )
+                3,
+                Math.round((item.totalExpectedRevenueKrw / budgetMax) * 100)
               );
               return (
-                <article key={headquarter.code} className="grid gap-1.5">
-                  <div className="flex items-center justify-between text-[1rem] text-[#5d759f]">
-                    <strong className="text-[1.2rem] text-[#1a2f53]">
-                      {headquarter.name}
+                <article key={item.code} className="grid gap-1.5">
+                  <div className="flex items-center justify-between text-[0.95rem] text-[#5f759f]">
+                    <strong className="text-[1.08rem] text-[#1d3054]">
+                      {item.name}
                     </strong>
                     <span>
-                      {formatKrwCompact(headquarter.totalInvestmentKrw)} /{' '}
-                      {formatKrwCompact(headquarter.totalExpectedRevenueKrw)}
+                      {formatKrwCompact(item.totalInvestmentKrw)} /{' '}
+                      {formatKrwCompact(item.totalExpectedRevenueKrw)}
                     </span>
                   </div>
                   <div className="grid gap-1.5">
-                    <div className="h-3 overflow-hidden rounded-full bg-[#e8eef8]">
+                    <div className="h-3 overflow-hidden rounded-full bg-[#e7eef8]">
                       <span
                         className="block h-full rounded-full bg-[#3f79ea]"
                         style={{ width: `${budgetWidth}%` }}
                       />
                     </div>
-                    <div className="h-3 overflow-hidden rounded-full bg-[#e8eef8]">
+                    <div className="h-3 overflow-hidden rounded-full bg-[#e7eef8]">
                       <span
-                        className="block h-full rounded-full bg-[#1ba8c7]"
+                        className="block h-full rounded-full bg-[#1ca9c7]"
                         style={{ width: `${expenseWidth}%` }}
                       />
                     </div>
@@ -240,29 +233,30 @@ export function DashboardView({
         </Panel>
 
         <Panel title="리스크 분포">
-          <div className="grid place-items-center gap-4 py-3">
+          <div className="grid place-items-center gap-3 py-2">
             <div
-              className="relative h-[280px] w-[280px] rounded-full after:absolute after:inset-[68px] after:rounded-full after:bg-white after:shadow-[inset_0_0_0_1px_#e4ebf8] after:content-['']"
+              className="relative h-[270px] w-[270px] rounded-full after:absolute after:inset-[66px] after:rounded-full after:bg-white after:content-['']"
               style={{
                 background: `conic-gradient(
                   #e52f2f 0% ${(riskCounts.high / riskTotal) * 100}%,
-                  #f67a13 ${(riskCounts.high / riskTotal) * 100}% ${((riskCounts.high + riskCounts.mid) / riskTotal) * 100}%,
+                  #f57a14 ${(riskCounts.high / riskTotal) * 100}% ${((riskCounts.high + riskCounts.mid) / riskTotal) * 100}%,
+                  #f2a40c ${((riskCounts.high + riskCounts.mid) / riskTotal) * 100}% ${((riskCounts.high + riskCounts.mid) / riskTotal) * 100}%,
                   #24be62 ${((riskCounts.high + riskCounts.mid) / riskTotal) * 100}% 100%
                 )`
               }}
             />
-            <div className="flex flex-wrap items-center justify-center gap-3 text-[1.02rem] font-semibold text-[#5f749d]">
+            <div className="flex flex-wrap items-center justify-center gap-3 text-[0.98rem] font-semibold text-[#60759f]">
               <span className="inline-flex items-center gap-1.5">
-                <span className="h-3 w-8 rounded bg-[#e52f2f]" /> CRITICAL
+                <span className="h-2.5 w-7 rounded bg-[#e52f2f]" /> CRITICAL
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <span className="h-3 w-8 rounded bg-[#f67a13]" /> HIGH
+                <span className="h-2.5 w-7 rounded bg-[#f57a14]" /> HIGH
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <span className="h-3 w-8 rounded bg-[#f0a20b]" /> MEDIUM
+                <span className="h-2.5 w-7 rounded bg-[#f2a40c]" /> MEDIUM
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <span className="h-3 w-8 rounded bg-[#24be62]" /> LOW
+                <span className="h-2.5 w-7 rounded bg-[#24be62]" /> LOW
               </span>
             </div>
           </div>
@@ -271,45 +265,34 @@ export function DashboardView({
 
       <section className="grid grid-cols-[2fr_1fr] gap-4 max-[1280px]:grid-cols-1">
         <Panel title="월별 원가 추이 (실적 vs 표준)">
-          <div className="mb-3 flex items-center justify-center gap-5 text-[1rem] font-semibold text-[#5f749d]">
+          <div className="mb-4 flex justify-center gap-5 text-[0.97rem] font-semibold text-[#5d749f]">
             <span className="inline-flex items-center gap-2">
-              <span className="h-[3px] w-10 rounded bg-[#2f57d8]" />
-              실제원가
+              <span className="h-[3px] w-10 rounded bg-[#2f57d8]" /> 실제원가
             </span>
             <span className="inline-flex items-center gap-2">
-              <span className="h-[3px] w-10 rounded border-2 border-dashed border-[#16a268]" />
+              <span className="h-[3px] w-10 rounded border-2 border-dashed border-[#18a169]" />{' '}
               표준원가
             </span>
           </div>
-          <div className="rounded-2xl border border-[#dce5f4] bg-[#f9fbff] p-4">
+          <div className="rounded-xl border border-[#dce5f4] bg-[#f9fbff] px-3 py-3">
             <svg
-              viewBox={`0 0 ${chartWidth} ${chartHeight + 36}`}
+              viewBox={`0 0 ${chartWidth} ${chartHeight + 38}`}
               className="w-full"
             >
-              <line
-                x1="0"
-                y1={chartHeight}
-                x2={chartWidth}
-                y2={chartHeight}
-                stroke="#d3dded"
-                strokeWidth="1"
-              />
-              <line
-                x1="0"
-                y1={chartHeight * 0.66}
-                x2={chartWidth}
-                y2={chartHeight * 0.66}
-                stroke="#e2e9f5"
-                strokeWidth="1"
-              />
-              <line
-                x1="0"
-                y1={chartHeight * 0.33}
-                x2={chartWidth}
-                y2={chartHeight * 0.33}
-                stroke="#e2e9f5"
-                strokeWidth="1"
-              />
+              {Array.from({ length: tickCount }).map((_, index) => {
+                const y = (chartHeight / (tickCount - 1)) * index;
+                return (
+                  <line
+                    key={`grid-${index}`}
+                    x1="0"
+                    y1={y}
+                    x2={chartWidth}
+                    y2={y}
+                    stroke="#e4ebf6"
+                    strokeWidth="1"
+                  />
+                );
+              })}
               <polyline
                 points={actualPoints}
                 fill="none"
@@ -319,30 +302,26 @@ export function DashboardView({
               <polyline
                 points={standardPoints}
                 fill="none"
-                stroke="#16a268"
+                stroke="#18a169"
                 strokeWidth="4"
                 strokeDasharray="10 8"
               />
-              {monthlyTrend.map((point, index) => {
+              {monthlyTrend.map((item, index) => {
                 const x = index * xStep;
-                const yActual =
-                  chartHeight -
-                  ((point.actual - minTrend) / trendRange) * chartHeight;
-                const yStandard =
-                  chartHeight -
-                  ((point.standard - minTrend) / trendRange) * chartHeight;
+                const yActual = scaleY(item.actual);
+                const yStandard = scaleY(item.standard);
                 return (
-                  <g key={point.month}>
-                    <circle cx={x} cy={yActual} r="5.5" fill="#2f57d8" />
-                    <circle cx={x} cy={yStandard} r="5.5" fill="#16a268" />
+                  <g key={item.month}>
+                    <circle cx={x} cy={yActual} r="5" fill="#2f57d8" />
+                    <circle cx={x} cy={yStandard} r="5" fill="#18a169" />
                     <text
                       x={x}
                       y={chartHeight + 28}
                       textAnchor="middle"
                       fontSize="14"
-                      fill="#62779d"
+                      fill="#62789f"
                     >
-                      {point.month}
+                      {item.month}
                     </text>
                   </g>
                 );
@@ -352,94 +331,141 @@ export function DashboardView({
         </Panel>
 
         <Panel title="유형별 예산">
-          <div className="grid gap-3">
+          <div className="relative mx-auto mt-1 grid h-[310px] w-[310px] place-items-center rounded-full border border-[#dee6f4] bg-[#fafdff]">
+            <div className="absolute inset-[18%] rounded-full border border-[#e2e9f5]" />
+            <div className="absolute inset-[34%] rounded-full border border-[#e2e9f5]" />
+            <div className="absolute inset-[50%] rounded-full border border-[#e2e9f5]" />
+            <div className="absolute h-[2px] w-full bg-[#e2e9f5]" />
+            <div className="absolute h-full w-[2px] bg-[#e2e9f5]" />
+            {categoryBudgets.map((item, index) => {
+              const angle = (360 / categoryBudgets.length) * index - 90;
+              const length =
+                46 +
+                (item.value /
+                  Math.max(...categoryBudgets.map((x) => x.value))) *
+                  86;
+              return (
+                <div
+                  key={item.label}
+                  className="absolute left-1/2 top-1/2 origin-left rounded-full"
+                  style={{
+                    width: `${length}px`,
+                    height: '12px',
+                    transform: `translateY(-50%) rotate(${angle}deg)`,
+                    background: item.color
+                  }}
+                />
+              );
+            })}
+          </div>
+          <div className="mt-3 flex flex-wrap justify-center gap-2 text-[0.9rem] font-semibold text-[#60759f]">
             {categoryBudgets.map((item) => (
-              <article
+              <span
                 key={item.label}
-                className="grid gap-1.5 rounded-xl border border-[#e0e8f5] bg-[#f9fbff] px-3 py-2.5"
+                className="inline-flex items-center gap-1.5"
               >
-                <div className="flex items-center justify-between text-[0.95rem] text-[#5f759f]">
-                  <strong className="text-[#1f3359]">{item.label}</strong>
-                  <span>{item.value.toFixed(1)}억</span>
-                </div>
-                <div className="h-2.5 overflow-hidden rounded-full bg-[#e4ebf6]">
-                  <span
-                    className="block h-full rounded-full"
-                    style={{
-                      width: `${Math.round((item.value / maxCategoryBudget) * 100)}%`,
-                      background: item.color
-                    }}
-                  />
-                </div>
-              </article>
+                <span
+                  className="h-2.5 w-6 rounded"
+                  style={{ background: item.color }}
+                />
+                {item.label}
+              </span>
             ))}
           </div>
         </Panel>
       </section>
 
       <section className="grid grid-cols-[2fr_1fr] gap-4 max-[1280px]:grid-cols-1">
-        <Panel title="최근 평가">
-          <div className="grid max-h-[360px] gap-2.5 overflow-y-auto pr-1">
-            {quickFocus.map((project) => (
-              <article
-                key={project.code}
-                className="rounded-xl border border-[#dce5f4] bg-[#f9fbff] px-4 py-3"
-              >
-                <span className="text-xs text-[#6b82aa]">
-                  {project.code} · {project.assetCategory}
-                </span>
-                <strong className="mt-1.5 block text-[1.03rem] text-[#1f3359]">
-                  {project.name}
-                </strong>
-                <p className="mt-1 text-[0.94rem] text-[#657da6]">
-                  NPV {formatKrwCompact(project.npvKrw)} · IRR{' '}
-                  {formatPercent(project.irr)}
-                </p>
-              </article>
-            ))}
+        <Panel title="본부별 현황">
+          <div className="overflow-hidden rounded-xl border border-[#dce5f4] bg-white">
+            <table className="min-w-full text-[0.98rem]">
+              <thead className="bg-[#eef3fb] text-[#5c729a]">
+                <tr>
+                  <th className="px-4 py-3 text-left">코드</th>
+                  <th className="px-4 py-3 text-left">본부</th>
+                  <th className="px-4 py-3 text-left">프로젝트</th>
+                  <th className="px-4 py-3 text-left">예산</th>
+                  <th className="px-4 py-3 text-left">집행</th>
+                  <th className="px-4 py-3 text-left">집행률</th>
+                </tr>
+              </thead>
+              <tbody>
+                {orderedHeadquarters.map((item) => {
+                  const runRate =
+                    item.totalInvestmentKrw === 0
+                      ? 0
+                      : item.totalExpectedRevenueKrw / item.totalInvestmentKrw;
+                  return (
+                    <tr key={item.code} className="border-t border-[#e6edf8]">
+                      <td className="px-4 py-3 font-semibold text-[#21375d]">
+                        {item.code.replace('HQ', 'DIV-')}
+                      </td>
+                      <td className="px-4 py-3 text-[#223a61]">{item.name}</td>
+                      <td className="px-4 py-3 text-[#2c4168]">
+                        {item.projectCount}
+                      </td>
+                      <td className="px-4 py-3 text-[#2c4168]">
+                        {formatKrwCompact(item.totalInvestmentKrw)}
+                      </td>
+                      <td className="px-4 py-3 text-[#2c4168]">
+                        {formatKrwCompact(item.totalExpectedRevenueKrw)}
+                      </td>
+                      <td
+                        className={`px-4 py-3 font-bold ${
+                          runRate > 0.9 ? 'text-[#d73636]' : 'text-[#16965f]'
+                        }`}
+                      >
+                        {formatPercent(runRate)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </Panel>
 
-        <Panel title="다음 액션">
-          <article className="rounded-2xl border border-[#dce5f4] bg-[#f9fbff] px-4 py-3">
-            <strong className="text-[1.08rem] text-[#1f3359]">
-              {selectedInsight.decisionFocus}
-            </strong>
-            <p className="mt-2 text-[0.97rem] leading-relaxed text-[#5f759f]">
-              {selectedInsight.nextAction}
-            </p>
-          </article>
-          <div className="mt-3 grid gap-2.5">
-            {decisionSignals.slice(0, 2).map((signal) => (
+        <Panel title="최근 평가">
+          <div className="grid max-h-[420px] gap-2 overflow-y-auto pr-1">
+            {sortedReviews.map((project) => (
               <article
-                key={signal.label}
-                className="rounded-xl border border-[#dce5f4] bg-white px-3 py-2.5 text-[0.93rem]"
+                key={project.code}
+                className="rounded-xl border border-[#dce5f4] bg-[#f9fbff] px-3.5 py-2.5"
               >
-                <span className="text-[#6c82aa]">{signal.label}</span>
-                <strong className="mt-1 block text-[#1f3359]">
-                  {signal.value}
+                <span className="text-xs text-[#6b83ab]">
+                  2026-03-31 · {project.assetCategory.toUpperCase()}
+                </span>
+                <strong className="mt-1 block text-[1rem] text-[#1e3358]">
+                  {project.name}
                 </strong>
+                <p className="mt-1 text-[0.92rem] text-[#667ea7]">
+                  NPV {formatKrwCompact(project.npvKrw)} · IRR{' '}
+                  {formatPercent(project.irr)} · {project.status}
+                </p>
               </article>
             ))}
+            <article className="rounded-xl border border-[#dce5f4] bg-[#f9fbff] px-3.5 py-2.5 text-[0.92rem] text-[#6279a3]">
+              {selectedInsight.nextAction}
+            </article>
             {priorityProjects[0] ? (
-              <div className="flex gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
                   onClick={() =>
                     onOpenWorkspace('accounting', priorityProjects[0].code)
                   }
-                  className="rounded-lg border border-[#c7d4ea] bg-[#eef3fc] px-3 py-2 text-xs font-semibold text-[#2f57c8]"
+                  className="rounded-lg border border-[#c8d5ea] bg-[#eef3fc] px-2.5 py-2 text-xs font-semibold text-[#2f57c8]"
                 >
-                  원가 보기
+                  원가 워크스페이스
                 </button>
                 <button
                   type="button"
                   onClick={() =>
                     onOpenWorkspace('valuation', priorityProjects[0].code)
                   }
-                  className="rounded-lg border border-[#ccd7ea] bg-white px-3 py-2 text-xs font-semibold text-[#395078]"
+                  className="rounded-lg border border-[#ccd8eb] bg-white px-2.5 py-2 text-xs font-semibold text-[#3a517a]"
                 >
-                  가치평가
+                  가치평가 워크스페이스
                 </button>
               </div>
             ) : null}
