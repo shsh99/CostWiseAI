@@ -109,6 +109,86 @@ const accountingTransactions: AccountingTransaction[] = [
     actual: '₩16,000,000',
     standard: '₩15,500,000',
     note: '국고채 운용인건비'
+  },
+  {
+    date: '2026-02-15',
+    period: '2026-02',
+    department: '주식운용본부',
+    project: '공통',
+    item: '간접인건비',
+    actual: '₩8,500,000',
+    standard: '₩8,500,000',
+    note: '본부 간접인건비'
+  },
+  {
+    date: '2026-02-10',
+    period: '2026-02',
+    department: '주식운용본부',
+    project: 'PRJ-2025-001 · 삼성전자 전략투자',
+    item: '직접인건비',
+    actual: '₩13,000,000',
+    standard: '₩12,000,000',
+    note: '프로젝트1 직접인건비'
+  },
+  {
+    date: '2026-02-10',
+    period: '2026-02',
+    department: '주식운용본부',
+    project: 'PRJ-2025-003 · 코스닥 성장주 포트폴리오',
+    item: '직접인건비',
+    actual: '₩14,000,000',
+    standard: '₩13,500,000',
+    note: '코스닥펀드 운용'
+  },
+  {
+    date: '2026-01-28',
+    period: '2026-01',
+    department: '리스크관리본부',
+    project: 'PRJ-2025-017 · 전사 리스크 모델 고도화',
+    item: '직접인건비',
+    actual: '₩13,000,000',
+    standard: '₩12,500,000',
+    note: '리스크모델 개발'
+  },
+  {
+    date: '2026-01-25',
+    period: '2026-01',
+    department: '파생상품본부',
+    project: 'PRJ-2025-013 · 금리스왑 헤지',
+    item: '직접인건비',
+    actual: '₩9,000,000',
+    standard: '₩8,500,000',
+    note: '금리스왑 운용'
+  },
+  {
+    date: '2026-01-22',
+    period: '2026-01',
+    department: '대체투자본부',
+    project: 'PRJ-2025-009 · A고속도로 인프라펀드',
+    item: '직접인건비',
+    actual: '₩18,000,000',
+    standard: '₩17,500,000',
+    note: '인프라펀드 관리'
+  },
+  {
+    date: '2026-01-22',
+    period: '2026-01',
+    department: '대체투자본부',
+    project: 'PRJ-2025-009 · A고속도로 인프라펀드',
+    item: '자재비',
+    actual: '₩25,000,000',
+    standard: '₩25,000,000',
+    note: '인프라 실사비용'
+  },
+  {
+    date: '2026-01-20',
+    period: '2026-01',
+    department: '채권운용본부',
+    project: 'PRJ-2025-005 · 국고채 10년 포지션',
+    item: '직접인건비',
+    actual: '₩15,000,000',
+    standard: '₩14,500,000',
+    note: '국고채 포지션 모니터링'
   }
 ];
 
@@ -152,13 +232,13 @@ export function AccountingView({
   const maxActual = Math.max(1, ...mergedRows.map((row) => row.actual));
 
   return (
-    <section className="grid gap-4">
+    <section className="grid gap-5">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="m-0 text-[2.05rem] font-extrabold tracking-[-0.01em] text-[#192a49]">
+          <h2 className="m-0 text-[2.45rem] font-extrabold tracking-[-0.02em] text-[#172a4a]">
             원가 집계·분석
           </h2>
-          <p className="mt-1 text-[1.05rem] text-[#62779d]">
+          <p className="mt-1.5 text-[1.18rem] text-[#5e759f]">
             본부/프로젝트별 원가 집계 및 표준원가 차이분석
           </p>
         </div>
@@ -211,16 +291,16 @@ export function AccountingView({
               </button>
             </div>
 
-            <div className="overflow-hidden rounded-xl border border-[#dce5f4] bg-white">
-              <table className="min-w-full text-[1.02rem]">
+            <div className="overflow-hidden rounded-2xl border border-[#dce5f4] bg-white shadow-[inset_0_1px_0_#f6f9ff]">
+              <table className="min-w-full text-[1.08rem]">
                 <thead className="bg-[#eef3fb] text-[#5b7097]">
                   <tr>
-                    <th className="px-4 py-3 text-left">본부</th>
-                    <th className="px-4 py-3 text-left">실제원가</th>
-                    <th className="px-4 py-3 text-left">표준원가</th>
-                    <th className="px-4 py-3 text-left">차이</th>
-                    <th className="px-4 py-3 text-left">차이율</th>
-                    <th className="px-4 py-3 text-left">판정</th>
+                    <th className="px-5 py-4 text-left">본부</th>
+                    <th className="px-5 py-4 text-left">실제원가</th>
+                    <th className="px-5 py-4 text-left">표준원가</th>
+                    <th className="px-5 py-4 text-left">차이</th>
+                    <th className="px-5 py-4 text-left">차이율</th>
+                    <th className="px-5 py-4 text-left">판정</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -229,17 +309,17 @@ export function AccountingView({
                       key={row.department}
                       className="border-t border-[#e6edf8]"
                     >
-                      <td className="px-4 py-3 font-semibold text-[#1e2f4c]">
+                      <td className="px-5 py-4 font-semibold text-[#1e2f4c]">
                         {row.department}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-5 py-4">
                         {formatKrwCompact(row.actual)}
                       </td>
-                      <td className="px-4 py-3 text-[#7086ac]">
+                      <td className="px-5 py-4 text-[#7086ac]">
                         {formatKrwCompact(row.standard)}
                       </td>
                       <td
-                        className={`px-4 py-3 font-bold ${
+                        className={`px-5 py-4 font-bold ${
                           row.diff > 0 ? 'text-[#e03131]' : 'text-[#16955f]'
                         }`}
                       >
@@ -247,13 +327,13 @@ export function AccountingView({
                         {formatKrwCompact(row.diff)}
                       </td>
                       <td
-                        className={`px-4 py-3 font-bold ${
+                        className={`px-5 py-4 font-bold ${
                           row.rate > 0 ? 'text-[#e03131]' : 'text-[#16955f]'
                         }`}
                       >
                         {row.rate.toFixed(2)}%
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-5 py-4">
                         <span className="inline-flex items-center rounded-full bg-[#f7dada] px-3 py-1 text-sm font-bold text-[#b83f3f]">
                           불리
                         </span>
@@ -334,18 +414,18 @@ export function AccountingView({
               />
             </div>
 
-            <div className="max-h-[520px] overflow-auto rounded-xl border border-[#dce5f4] bg-white">
-              <table className="min-w-full text-[0.98rem]">
+            <div className="max-h-[560px] overflow-auto rounded-2xl border border-[#dce5f4] bg-white shadow-[inset_0_1px_0_#f6f9ff]">
+              <table className="min-w-full text-[1rem]">
                 <thead className="sticky top-0 z-[1] bg-[#eef3fb] text-[#5b7097]">
                   <tr>
-                    <th className="px-4 py-3 text-left">날짜</th>
-                    <th className="px-4 py-3 text-left">기간</th>
-                    <th className="px-4 py-3 text-left">본부</th>
-                    <th className="px-4 py-3 text-left">프로젝트</th>
-                    <th className="px-4 py-3 text-left">원가항목</th>
-                    <th className="px-4 py-3 text-left">실제</th>
-                    <th className="px-4 py-3 text-left">표준</th>
-                    <th className="px-4 py-3 text-left">비고</th>
+                    <th className="px-5 py-4 text-left">날짜</th>
+                    <th className="px-5 py-4 text-left">기간</th>
+                    <th className="px-5 py-4 text-left">본부</th>
+                    <th className="px-5 py-4 text-left">프로젝트</th>
+                    <th className="px-5 py-4 text-left">원가항목</th>
+                    <th className="px-5 py-4 text-left">실제</th>
+                    <th className="px-5 py-4 text-left">표준</th>
+                    <th className="px-5 py-4 text-left">비고</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -354,22 +434,24 @@ export function AccountingView({
                       key={`${row.date}-${row.project}`}
                       className="border-t border-[#e6edf8]"
                     >
-                      <td className="px-4 py-3 text-[#2a4168]">{row.date}</td>
-                      <td className="px-4 py-3 text-[#2a4168]">{row.period}</td>
-                      <td className="px-4 py-3 font-semibold text-[#1e2f4c]">
+                      <td className="px-5 py-3.5 text-[#2a4168]">{row.date}</td>
+                      <td className="px-5 py-3.5 text-[#2a4168]">
+                        {row.period}
+                      </td>
+                      <td className="px-5 py-3.5 font-semibold text-[#1e2f4c]">
                         {row.department}
                       </td>
-                      <td className="px-4 py-3 text-[#2a4168]">
+                      <td className="px-5 py-3.5 text-[#2a4168]">
                         {row.project}
                       </td>
-                      <td className="px-4 py-3 text-[#2a4168]">{row.item}</td>
-                      <td className="px-4 py-3 font-semibold text-[#1e2f4c]">
+                      <td className="px-5 py-3.5 text-[#2a4168]">{row.item}</td>
+                      <td className="px-5 py-3.5 font-semibold text-[#1e2f4c]">
                         {row.actual}
                       </td>
-                      <td className="px-4 py-3 text-[#7086ac]">
+                      <td className="px-5 py-3.5 text-[#7086ac]">
                         {row.standard}
                       </td>
-                      <td className="px-4 py-3 text-[#60779f]">{row.note}</td>
+                      <td className="px-5 py-3.5 text-[#60779f]">{row.note}</td>
                     </tr>
                   ))}
                 </tbody>
