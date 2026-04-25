@@ -1,5 +1,9 @@
 /* eslint-disable no-unused-vars */
-import { type DataSource, type ProjectSummary, type Role } from '../../app/portfolioData';
+import {
+  type DataSource,
+  type ProjectSummary,
+  type Role
+} from '../../app/portfolioData';
 import { getRoleLabel } from '../../features/auth/permissions';
 
 type TaskTopbarProps = {
@@ -38,15 +42,17 @@ export function TaskTopbar({
   const pendingCount = Math.max(0, conditionalCount);
 
   return (
-    <header className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-[#d4dceb] bg-[#f8fbff] px-4 py-2.5">
+    <header className="sticky top-0 z-10 flex min-h-[72px] items-center justify-between gap-3 border-b border-[#d4dceb] bg-[#f8fbff] px-5 py-3">
       <div className="flex items-center">
-        <p className="m-0 text-[0.95rem] font-bold text-[#6c7e9f]">{meta.eyebrow}</p>
+        <p className="m-0 text-[0.95rem] font-bold text-[#6c7e9f]">
+          {meta.eyebrow}
+        </p>
       </div>
 
       <div className="flex items-center gap-2.5">
         <span className="rounded-full border border-[#d8e0ef] bg-[#eff4fb] px-3 py-1.5 text-[0.8rem] font-bold text-[#556a93]">
           {source === 'api'
-            ? `${projectCount}개 프로젝트`
+            ? `CostWise API 정상 연결 · ${projectCount}개 프로젝트`
             : `CostWise API 일부 제한 · ${projectCount}개 프로젝트`}
         </span>
         {divisionScope ? (
@@ -76,9 +82,11 @@ export function TaskTopbar({
             {username.charAt(0)}
           </div>
           <div>
-            <strong className="block text-[0.84rem] text-[#182844]">{username}</strong>
-            <small className="block text-[0.76rem] tracking-[0.05em] text-[#62759a]">
-              {getRoleLabel(selectedRole).toUpperCase()}
+            <strong className="block text-[0.84rem] text-[#182844]">
+              {username}
+            </strong>
+            <small className="block text-[0.76rem] tracking-[0.02em] text-[#62759a]">
+              {getRoleLabel(selectedRole)}
             </small>
           </div>
           <span className="text-[0.8rem] text-[#6c7e9f]">{now}</span>
