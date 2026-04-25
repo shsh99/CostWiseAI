@@ -1,9 +1,4 @@
-export type Role =
-  | 'ADMIN'
-  | 'EXECUTIVE'
-  | 'PM'
-  | 'ACCOUNTANT'
-  | 'AUDITOR';
+export type Role = 'ADMIN' | 'EXECUTIVE' | 'PM' | 'ACCOUNTANT' | 'AUDITOR';
 
 export type RiskLevel = '낮음' | '중간' | '높음';
 
@@ -516,7 +511,8 @@ export const roleInsights: Record<Role, RoleInsight> = {
     summary:
       '역할별 탐색 범위와 프로젝트 운영 흐름을 함께 보며, 필요 시 운영 기준과 컨텍스트를 조정합니다.',
     decisionFocus: '권한 정책, 운영 안정성, 예외 대응',
-    riskWatch: '역할 경계가 불명확하면 승인 근거와 편집 책임이 섞일 수 있습니다.',
+    riskWatch:
+      '역할 경계가 불명확하면 승인 근거와 편집 책임이 섞일 수 있습니다.',
     nextAction: '운영 정책 점검 및 권한 예외 검토'
   },
   EXECUTIVE: {
@@ -532,7 +528,8 @@ export const roleInsights: Record<Role, RoleInsight> = {
     summary:
       '본부별 프로젝트 수, 투자 규모, 평균 NPV를 비교하고 어떤 프로젝트를 먼저 추진할지 판단합니다.',
     decisionFocus: '프로젝트 우선순위, 본부 포트폴리오, 일정 리스크',
-    riskWatch: '본부 단위 맥락 없이 개별 프로젝트만 보면 우선순위가 왜곡될 수 있습니다.',
+    riskWatch:
+      '본부 단위 맥락 없이 개별 프로젝트만 보면 우선순위가 왜곡될 수 있습니다.',
     nextAction: '우선순위 코멘트 정리 및 프로젝트 조정'
   },
   ACCOUNTANT: {
@@ -548,7 +545,8 @@ export const roleInsights: Record<Role, RoleInsight> = {
     summary:
       '감사 로그, 검토 상태, 승인 근거를 분리해서 보고 변경 없이 증적과 맥락이 일치하는지 확인합니다.',
     decisionFocus: '감사 이력, 승인 근거, 변경 추적',
-    riskWatch: '운영 화면에서 수정 권한이 섞이면 감사 독립성이 약해질 수 있습니다.',
+    riskWatch:
+      '운영 화면에서 수정 권한이 섞이면 감사 독립성이 약해질 수 있습니다.',
     nextAction: '증적 검토 결과 기록 및 후속 확인 요청'
   }
 };
@@ -690,7 +688,9 @@ export async function loadAuditEventsByProjectId(
   events: AuditEvent[];
   source: DataSource;
 }> {
-  const resolvedLimit = Number.isFinite(limit) ? Math.max(1, Math.round(limit)) : 20;
+  const resolvedLimit = Number.isFinite(limit)
+    ? Math.max(1, Math.round(limit))
+    : 20;
 
   try {
     const response = await apiFetch(
@@ -762,13 +762,16 @@ export async function updateUserAccount(
   request: UpsertUserRequest
 ): Promise<UserAccount> {
   try {
-    const response = await apiFetch(`/api/users/${encodeURIComponent(userId)}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(request)
-    });
+    const response = await apiFetch(
+      `/api/users/${encodeURIComponent(userId)}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(request)
+      }
+    );
 
     if (!response.ok) {
       const errorMessage = await readApiErrorMessage(response);
@@ -786,9 +789,12 @@ export async function updateUserAccount(
 
 export async function deleteUserAccount(userId: string): Promise<void> {
   try {
-    const response = await apiFetch(`/api/users/${encodeURIComponent(userId)}`, {
-      method: 'DELETE'
-    });
+    const response = await apiFetch(
+      `/api/users/${encodeURIComponent(userId)}`,
+      {
+        method: 'DELETE'
+      }
+    );
 
     if (!response.ok) {
       const errorMessage = await readApiErrorMessage(response);
@@ -1208,9 +1214,14 @@ function adaptProjectDetail(
           : defaults.allocation.allocationBasis,
       calculationTrace:
         '표준원가=인력+직접비+표준배부, 실제원가=배부원가+내부대체가액, 성과갭=영업현금흐름-배부원가',
-      rules: allocationRules.length > 0 ? allocationRules : defaults.allocation.rules,
+      rules:
+        allocationRules.length > 0
+          ? allocationRules
+          : defaults.allocation.rules,
       changeHistory:
-        changeHistory.length > 0 ? changeHistory : defaults.allocation.changeHistory
+        changeHistory.length > 0
+          ? changeHistory
+          : defaults.allocation.changeHistory
     },
     valuation: {
       fairValueKrw: toNumber(
@@ -1530,7 +1541,8 @@ export function buildProjectDetail(projectCode: string): ProjectDetail {
               ? 'BBB'
               : 'BB',
       discountRate: 0.115,
-      riskPremium: seed.risk === '높음' ? 0.08 : seed.risk === '중간' ? 0.04 : 0.01,
+      riskPremium:
+        seed.risk === '높음' ? 0.08 : seed.risk === '중간' ? 0.04 : 0.01,
       interpretation:
         seed.risk === '높음'
           ? '보수적 할인율 기준 재검토 필요'

@@ -11,7 +11,12 @@ const toneStyles: Record<NonNullable<MetricCardProps['tone']>, string> = {
   warning: 'metric-card--warning'
 };
 
-export function MetricCard({ label, value, detail, tone = 'primary' }: MetricCardProps) {
+export function MetricCard({
+  label,
+  value,
+  detail,
+  tone = 'primary'
+}: MetricCardProps) {
   return (
     <section className={`metric-card ${toneStyles[tone]}`}>
       <div className="metric-card__label">{label}</div>
