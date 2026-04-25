@@ -7,7 +7,7 @@ type PanelProps = {
   children: ReactNode;
 };
 
-export function Panel({ id, title, subtitle, children }: PanelProps) {
+export function Panel({ id, title, children }: PanelProps) {
   return (
     <section
       className="overflow-hidden rounded-2xl border border-cw-cardBorder bg-[linear-gradient(180deg,#ffffff_0%,#fbfcff_100%)] shadow-[0_4px_14px_rgba(15,23,42,0.06)]"
@@ -18,11 +18,6 @@ export function Panel({ id, title, subtitle, children }: PanelProps) {
           <h2 className="text-[2rem] font-extrabold tracking-[-0.02em] text-[#132445]">
             {title}
           </h2>
-          {subtitle ? (
-            <p className="mt-1.5 text-[1.02rem] font-medium leading-relaxed text-cw-muted">
-              {subtitle}
-            </p>
-          ) : null}
         </div>
       </header>
       <div className="p-6 pt-5">{children}</div>
