@@ -1059,7 +1059,7 @@ export function PortfolioView({
   const actionButtonBaseClass =
     'inline-flex h-10 items-center justify-center rounded-md border px-3 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-45';
   const secondaryActionButtonClass = `${actionButtonBaseClass} border-slate-300 bg-white text-slate-700 hover:border-slate-400 hover:bg-slate-50`;
-  const primaryActionButtonClass = `${actionButtonBaseClass} border-slate-900 bg-slate-900 text-white hover:bg-slate-800`;
+  const primaryActionButtonClass = `${actionButtonBaseClass} border-blue-700 bg-blue-700 text-white hover:bg-blue-600`;
   const controlSurfaceClass =
     'h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-slate-500 focus:ring-2 focus:ring-slate-200';
   const stateBoxClass =
@@ -1242,11 +1242,11 @@ export function PortfolioView({
                   프로젝트 운영
                 </p>
                 <h3 className="text-xl font-semibold tracking-tight text-slate-900">
-                  프로젝트 관리
+                  프로젝트 목록
                 </h3>
                 <p className="text-sm leading-6 text-slate-600">
-                  탐색 조건을 빠르게 조합하고, 행 선택 후 상세 허브에서 컨텍스트
-                  선택과 워크스페이스 진입을 마무리합니다.
+                  이름/코드 검색과 상태·본부 필터로 운영 대상을 추린 뒤, 상세
+                  허브 또는 워크스페이스로 바로 진입합니다.
                 </p>
               </div>
               <div
@@ -1260,18 +1260,18 @@ export function PortfolioView({
                     onClick={handleExportCsv}
                     disabled={displayedProjects.length === 0}
                   >
-                    CSV
+                    CSV 내보내기
                   </button>
                 ) : null}
                 {isProjectWritable ? (
                   <button
                     type="button"
-                    className={secondaryActionButtonClass}
+                    className={primaryActionButtonClass}
                     onClick={(event: ReactMouseEvent<HTMLButtonElement>) =>
                       openProjectCreateModal(event.currentTarget)
                     }
                   >
-                    새 프로젝트
+                    + 새 프로젝트
                   </button>
                 ) : (
                   <p className="text-xs text-slate-500">{writeAccessMessage}</p>
@@ -1289,7 +1289,7 @@ export function PortfolioView({
                   }}
                   disabled={!explicitSelectedProject}
                 >
-                  선택 프로젝트 허브
+                  상세 허브
                 </button>
                 {isProjectWritable ? (
                   <button
@@ -1312,7 +1312,7 @@ export function PortfolioView({
             </div>
 
             <div
-              className="mt-4 grid gap-3 rounded-lg border border-slate-200 bg-slate-50/70 p-3 md:grid-cols-2 xl:grid-cols-[minmax(260px,1.35fr)_minmax(180px,0.65fr)_1fr_1fr_1fr]"
+              className="mt-4 grid gap-3 rounded-lg border border-slate-200 bg-slate-50/70 p-3 md:grid-cols-2 xl:grid-cols-[minmax(280px,1.2fr)_minmax(180px,0.65fr)_1fr_1fr_1fr]"
               aria-label="프로젝트 운영 필터"
             >
               <label
@@ -1356,7 +1356,7 @@ export function PortfolioView({
               </label>
 
               <div
-                className="flex flex-wrap items-start gap-1.5"
+                className="flex flex-wrap items-start gap-1.5 rounded-lg border border-slate-200 bg-white p-2"
                 aria-label="빠른 필터"
               >
                 <span className="w-full text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
@@ -1381,7 +1381,7 @@ export function PortfolioView({
               </div>
 
               <div
-                className="flex flex-wrap items-start gap-1.5"
+                className="flex flex-wrap items-start gap-1.5 rounded-lg border border-slate-200 bg-white p-2"
                 aria-label="상태 필터"
               >
                 <span className="w-full text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
@@ -1405,7 +1405,7 @@ export function PortfolioView({
               </div>
 
               <div
-                className="flex flex-wrap items-start gap-1.5"
+                className="flex flex-wrap items-start gap-1.5 rounded-lg border border-slate-200 bg-white p-2"
                 aria-label="본부 필터"
               >
                 <span className="w-full text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
@@ -1453,8 +1453,8 @@ export function PortfolioView({
 
             <div className="mt-4 overflow-hidden rounded-lg border border-slate-200 bg-white">
               <div className="overflow-x-auto">
-                <table className="min-w-[920px] w-full border-collapse text-sm">
-                  <thead className="bg-slate-100/70">
+                <table className="min-w-[980px] w-full border-collapse text-sm">
+                  <thead className="sticky top-0 z-[1] bg-slate-100/90 backdrop-blur">
                     <tr>
                       <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
                         우선
@@ -1467,6 +1467,9 @@ export function PortfolioView({
                       </th>
                       <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
                         상태
+                      </th>
+                      <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+                        리스크
                       </th>
                       <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
                         투자액
@@ -1489,7 +1492,7 @@ export function PortfolioView({
                     {displayedProjects.map((project) => (
                       <tr
                         key={project.code}
-                        className={`border-t border-slate-200 align-top transition hover:bg-slate-50 ${
+                        className={`border-t border-slate-200 align-top transition odd:bg-white even:bg-slate-50/35 hover:bg-cyan-50/60 ${
                           project.code === selectedProjectCode
                             ? 'bg-emerald-50/70'
                             : ''
@@ -1518,6 +1521,11 @@ export function PortfolioView({
                         <td className="whitespace-nowrap px-3 py-2.5">
                           <span className={statusPillClass(project.status)}>
                             {project.status}
+                          </span>
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-2.5">
+                          <span className={riskPillClass(project.risk)}>
+                            {project.risk}
                           </span>
                         </td>
                         <td className="whitespace-nowrap px-3 py-2.5 text-slate-700">

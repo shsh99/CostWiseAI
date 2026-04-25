@@ -11,10 +11,10 @@ export const viewMeta: Record<
     breadcrumb: ['메인', '대시보드']
   },
   portfolio: {
-    eyebrow: '프로젝트',
-    title: '프로젝트',
+    eyebrow: '프로젝트 목록',
+    title: '프로젝트 목록',
     description: '프로젝트 목록과 상태를 필터링하여 관리합니다.',
-    breadcrumb: ['프로젝트·평가', '프로젝트']
+    breadcrumb: ['프로젝트·평가', '프로젝트 목록']
   },
   accounting: {
     eyebrow: '원가·관리회계',
