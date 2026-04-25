@@ -1,6 +1,7 @@
 /* eslint-disable no-unused-vars */
-import type { KeyboardEvent } from 'react';
+import { useMemo, type KeyboardEvent } from 'react';
 import {
+  buildProjectDetail,
   detailTabs,
   type ProjectDetail,
   type ProjectSummary,
@@ -14,11 +15,14 @@ import {
 } from '../../features/workspace/decisionVisuals';
 import { InfoTile } from '../../shared/components/InfoTile';
 import { Panel } from '../../shared/components/Panel';
+import { RiskProjectBoard, type RiskProjectRow } from './RiskProjectBoard';
+import { ValuationProjectExplorer } from './ValuationProjectExplorer';
 
 type WorkspaceTabKey = (typeof detailTabs)[number]['key'];
 
 type WorkspaceViewProps = {
   activeView: 'accounting' | 'valuation' | 'risk';
+  portfolioProjects?: ProjectSummary[];
   selectedProject: ProjectSummary | null;
   selectedDetail: ProjectDetail | null;
   detailStatus: 'idle' | 'loading' | 'ready' | 'error';
@@ -39,11 +43,14 @@ type WorkspaceViewProps = {
     event: KeyboardEvent<HTMLButtonElement>,
     index: number
   ): void;
+  onSelectProjectFromValuation?: (projectCode: string) => void;
+  onSelectProjectFromRisk?: (projectCode: string) => void;
   onRetryDetailLoad(): void;
 };
 
 export function WorkspaceView({
   activeView,
+  portfolioProjects = [],
   selectedProject,
   selectedDetail,
   detailStatus,
@@ -61,6 +68,8 @@ export function WorkspaceView({
   riskGuardrailGap,
   onChangeWorkspaceTab,
   onWorkspaceTabKeydown,
+  onSelectProjectFromValuation,
+  onSelectProjectFromRisk,
   onRetryDetailLoad
 }: WorkspaceViewProps) {
   const hasSelectedProject = Boolean(selectedProject);
@@ -102,6 +111,56 @@ export function WorkspaceView({
     'rounded-2xl border border-[#c6d8f5] bg-[linear-gradient(130deg,#eef4ff_0%,#f8fbff_65%,#ffffff_100%)] p-4 text-[#304668] shadow-[0_8px_22px_rgba(24,40,71,0.08)]';
   const miniStatClass =
     'rounded-xl border border-[#d8e2f2] bg-[#f8fbff] p-3 text-sm text-[#3b4f76]';
+  const handleValuationProjectSelect = (projectCode: string) => {
+    if (!onSelectProjectFromValuation) {
+      return;
+    }
+
+    onSelectProjectFromValuation(projectCode);
+  };
+  const handleRiskProjectSelect = (projectCode: string) => {
+    if (!onSelectProjectFromRisk) {
+      return;
+    }
+
+    onSelectProjectFromRisk(projectCode);
+  };
+  const riskProjectRows = useMemo<RiskProjectRow[]>(() => {
+    if (activeView !== 'risk') {
+      return [];
+    }
+
+    return portfolioProjects.map((project) => {
+      const detail = buildProjectDetail(project.code);
+      const positionKrw = Math.max(project.investmentKrw, 1);
+      const var95Krw = Math.max(Math.abs(detail.valuation.var95Krw), 1);
+      const var99Krw = Math.max(Math.abs(detail.valuation.var99Krw), var95Krw);
+      const volatility = Math.min(
+        1.0,
+        Math.max(
+          0.01,
+          var95Krw / Math.max(Math.abs(detail.valuation.fairValueKrw), 1)
+        )
+      );
+      const pd = Math.min(
+        0.25,
+        Math.max(0.001, (100 - detail.valuation.creditRiskScore) / 1000)
+      );
+      const expectedLossKrw = Math.round(pd * 0.45 * positionKrw);
+
+      return {
+        code: project.code,
+        name: project.name,
+        positionKrw,
+        var95Krw,
+        var99Krw,
+        volatility,
+        creditGrade: detail.valuation.creditGrade,
+        pd,
+        expectedLossKrw
+      };
+    });
+  }, [activeView, portfolioProjects]);
 
   if (activeView === 'accounting') {
     const allocationRows = selectedDetail?.allocation.rules ?? [];
@@ -474,6 +533,32 @@ export function WorkspaceView({
         </div>
       </header>
 
+      {activeView === 'valuation' ? (
+        <section
+          className="rounded-2xl border border-[#d7e1f1] bg-white p-4 shadow-[0_6px_18px_rgba(24,40,71,0.05)]"
+          aria-label="가치평가 프로젝트 탐색기"
+        >
+          <ValuationProjectExplorer
+            projects={portfolioProjects}
+            selectedProjectCode={selectedProject?.code ?? null}
+            onSelectProject={handleValuationProjectSelect}
+            emptyMessage="가치평가 가능한 프로젝트가 없습니다."
+          />
+        </section>
+      ) : null}
+      {activeView === 'risk' ? (
+        <section
+          className="rounded-2xl border border-[#d7e1f1] bg-white p-4 shadow-[0_6px_18px_rgba(24,40,71,0.05)]"
+          aria-label="리스크 프로젝트 보드"
+        >
+          <RiskProjectBoard
+            rows={riskProjectRows}
+            selectedProjectCode={selectedProject?.code ?? null}
+            onSelectProject={handleRiskProjectSelect}
+          />
+        </section>
+      ) : null}
+
       <div
         className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
         aria-label="요약 메타 정보"
@@ -551,15 +636,35 @@ export function WorkspaceView({
         id={`workspace-panel-${activeWorkspaceTab}`}
         role="tabpanel"
         aria-labelledby={`workspace-tab-${activeWorkspaceTab}`}
-        className="grid gap-4 rounded-2xl border border-[#d7e1f1] bg-[#f7faff] p-4 shadow-[0_8px_22px_rgba(24,40,71,0.06)]"
+        className="grid gap-5 rounded-2xl border border-[#d7e1f1] bg-[#f7faff] p-5 shadow-[0_8px_22px_rgba(24,40,71,0.06)]"
       >
+        {activeView === 'valuation' ? (
+          <header className="rounded-2xl border border-[#d8e2f2] bg-white px-4 py-3.5 shadow-[0_4px_14px_rgba(24,40,71,0.05)]">
+            <p className="text-xs font-semibold uppercase tracking-[0.05em] text-[#6981a9]">
+              Project Detail
+            </p>
+            <h3 className="mt-1 text-[1.25rem] font-bold text-[#1d3053]">
+              프로젝트 상세
+            </h3>
+            <p className="mt-1 text-sm text-[#60759a]">
+              {selectedProject
+                ? `${selectedProject.name}의 가치평가 근거와 시나리오를 탭별로 검토합니다.`
+                : '상단 탐색기 목록에서 프로젝트를 선택하면 상세 분석이 표시됩니다.'}
+            </p>
+          </header>
+        ) : null}
+
         {!hasSelectedProject ? (
           <div className={emptyStateClass}>
             <strong className="block text-[1rem] font-semibold text-[#1d2f52]">
-              선택된 프로젝트가 없습니다.
+              {activeView === 'valuation'
+                ? '가치평가 대상 프로젝트를 선택하세요.'
+                : '선택된 프로젝트가 없습니다.'}
             </strong>
             <p className="mt-1 text-sm">
-              프로젝트 목록 화면에서 프로젝트를 선택하면 상세 분석을 표시합니다.
+              {activeView === 'valuation'
+                ? '상단 프로젝트 탐색기에서 행을 클릭하면 프로젝트 상세 분석이 열립니다.'
+                : '상단 리스크 프로젝트 테이블에서 행을 클릭하면 상세 분석이 열립니다.'}
             </p>
           </div>
         ) : null}

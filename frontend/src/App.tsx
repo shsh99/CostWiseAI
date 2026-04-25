@@ -821,6 +821,10 @@ export function App() {
               portfolio={scopedPortfolio}
               portfolioStatus={portfolioStatus}
               portfolioError={portfolioError}
+              selectedProject={selectedProject}
+              selectedDetail={selectedDetail}
+              detailStatus={selectedDetailStatus}
+              detailError={selectedDetailError}
               maxHeadquarterInvestment={maxHeadquarterInvestment}
               divisionScope={divisionScope}
               selectedProjectCode={selectedProjectCode}
@@ -837,6 +841,7 @@ export function App() {
               onResetExplorerControls={resetExplorerControls}
               onSelectProject={setSelectedProjectCode}
               onOpenWorkspace={openWorkspace}
+              onRetryDetailLoad={retryDetailLoad}
               onRetryPortfolioLoad={retryPortfolioLoad}
             />
           ) : null}
@@ -854,6 +859,7 @@ export function App() {
           {activeView === 'valuation' || activeView === 'risk' ? (
             <WorkspaceView
               activeView={activeView}
+              portfolioProjects={scopedPortfolio.projects}
               selectedProject={selectedProject}
               selectedDetail={selectedDetail}
               detailStatus={selectedDetailStatus}
@@ -870,6 +876,8 @@ export function App() {
               valuationGap={valuationGap}
               riskGuardrailGap={riskGuardrailGap}
               onChangeWorkspaceTab={setActiveWorkspaceTab}
+              onSelectProjectFromValuation={setSelectedProjectCode}
+              onSelectProjectFromRisk={setSelectedProjectCode}
               onWorkspaceTabKeydown={handleWorkspaceTabKeydown}
               onRetryDetailLoad={retryDetailLoad}
             />
