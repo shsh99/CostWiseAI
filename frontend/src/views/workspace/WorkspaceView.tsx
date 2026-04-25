@@ -430,7 +430,6 @@ export function WorkspaceView({
             <h2 className="mt-1 text-[1.9rem] font-bold text-[#182847]">
               {workspaceMeta.title}
             </h2>
-            <p className="mt-1 text-[#607397]">{workspaceMeta.subtitle}</p>
           </div>
           <div className="flex items-center gap-2.5">
             <button

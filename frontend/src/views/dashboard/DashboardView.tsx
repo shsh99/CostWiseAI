@@ -117,9 +117,6 @@ export function DashboardView({
           <h2 className="m-0 text-[2.05rem] font-extrabold tracking-[-0.015em] text-[#172a4a]">
             통합 대시보드
           </h2>
-          <p className="mt-1 text-[1.05rem] text-[#60759f]">
-            전사 5개 본부 · 프로젝트 원가/평가 현황
-          </p>
         </div>
         <span className="text-[1rem] text-[#667da8]">{now}</span>
       </header>

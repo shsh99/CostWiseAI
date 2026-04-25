@@ -238,9 +238,6 @@ export function AccountingView({
           <h2 className="m-0 text-[2.45rem] font-extrabold tracking-[-0.02em] text-[#172a4a]">
             원가 집계·분석
           </h2>
-          <p className="mt-1.5 text-[1.18rem] text-[#5e759f]">
-            본부/프로젝트별 원가 집계 및 표준원가 차이분석
-          </p>
         </div>
         <div className="flex items-center gap-2.5">
           <button
