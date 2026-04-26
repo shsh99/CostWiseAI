@@ -98,12 +98,30 @@ export function WorkspaceView({
     'overflow-x-auto rounded-2xl border border-[#d7e1f1] bg-white shadow-[0_6px_20px_rgba(24,40,71,0.05)]';
   const tableClass =
     'min-w-full border-separate border-spacing-0 text-sm text-[#2b3f63]';
-  const kpiGridClass = 'grid gap-3 sm:grid-cols-2 xl:grid-cols-4';
+  const kpiGridClass = 'grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4';
   const dominantSurfaceClass =
-    'rounded-2xl border border-[#d7e1f1] bg-white p-4 shadow-[0_8px_24px_rgba(24,40,71,0.06)]';
+    'rounded-[20px] border border-[#d7e1f1] bg-white p-3.5 shadow-[0_6px_18px_rgba(24,40,71,0.05)]';
   const supportGridClass = 'grid gap-4 lg:grid-cols-2';
   const workflowNoteClass =
-    'rounded-2xl border border-[#d7e1f1] bg-white p-4 text-[#34496d] shadow-[0_6px_18px_rgba(24,40,71,0.05)]';
+    'rounded-[18px] border border-[#d7e1f1] bg-white p-3.5 text-[#34496d] shadow-[0_4px_14px_rgba(24,40,71,0.05)]';
+  const calmSectionClass =
+    'rounded-[22px] border border-[#d7e1f1] bg-white p-4.5 text-[#34496d] shadow-[0_8px_20px_rgba(24,40,71,0.05)] sm:p-5';
+  const calmSectionTitleClass = 'text-[0.95rem] font-semibold text-[#1f3458]';
+  const calmSectionSubtitleClass = 'mt-1 text-[13px] text-[#6b7fa5]';
+  const calmInsetClass =
+    'rounded-[18px] border border-[#e3eaf6] bg-[#f8fbff] p-3 text-[13px] text-[#41557b]';
+  const compactSectionClass =
+    'rounded-[20px] border border-[#dbe4f3] bg-white p-3.5 text-[#34496d] shadow-[0_6px_18px_rgba(24,40,71,0.045)] sm:p-4';
+  const compactSectionHeaderClass =
+    'flex flex-col gap-2 border-b border-[#e7edf8] pb-2.5 sm:flex-row sm:items-end sm:justify-between';
+  const compactInsetClass =
+    'rounded-[16px] border border-[#e4ebf7] bg-[#fafcff] px-3 py-2.5 text-[13px] text-[#41557b]';
+  const compactMetricLabelClass =
+    'text-[10px] font-semibold uppercase tracking-[0.08em] text-[#6f86ad]';
+  const compactTableHeadClass =
+    'border-b border-[#d7e1f1] px-2.5 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.04em] text-[#5a7096]';
+  const compactTableCellClass =
+    'border-b border-[#e5ecf8] px-2.5 py-2 text-[13px] text-[#33486d]';
   const listClass = 'mt-3 grid gap-2';
   const listItemClass =
     'rounded-xl border border-[#e0e8f5] bg-[#f9fbff] px-3 py-2 text-sm text-[#41557b]';
@@ -479,38 +497,38 @@ export function WorkspaceView({
   }
 
   return (
-    <section className="grid gap-4">
-      <header className="grid gap-4 rounded-2xl border border-[#d7e1f1] bg-white p-5 shadow-[0_8px_22px_rgba(24,40,71,0.06)]">
+    <section className="grid gap-3.5">
+      <header className="grid gap-3 rounded-[20px] border border-[#d7e1f1] bg-white p-4 shadow-[0_6px_18px_rgba(24,40,71,0.05)]">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.06em] text-[#6881aa]">
               {workspaceMeta.heroLabel}
             </p>
-            <h2 className="mt-1 text-[1.9rem] font-bold text-[#182847]">
+            <h2 className="mt-1 text-[1.55rem] font-bold text-[#182847]">
               {workspaceMeta.title}
             </h2>
           </div>
           <div className="flex items-center gap-2.5">
             <button
-              className="rounded-[10px] border border-[#cbd6ea] bg-white px-3.5 py-2.5 font-bold text-[#2f4570]"
+              className="rounded-[10px] border border-[#cbd6ea] bg-white px-3 py-2 text-sm font-semibold text-[#2f4570]"
               type="button"
             >
               CSV
             </button>
             <button
-              className="rounded-[10px] bg-[#2b4dbf] px-3.5 py-2.5 font-extrabold text-white"
+              className="rounded-[10px] bg-[#2b4dbf] px-3 py-2 text-sm font-semibold text-white"
               type="button"
             >
               {workspaceMeta.actionLabel}
             </button>
           </div>
         </div>
-        <div className="grid gap-4 lg:grid-cols-[1.6fr_1fr]">
+        <div className="grid gap-3 lg:grid-cols-[1.6fr_1fr]">
           <div>
-            <h3 className="text-2xl font-bold text-[#182847]">
+            <h3 className="text-[1.28rem] font-bold text-[#182847]">
               {selectedProject?.name ?? '선택된 프로젝트 없음'}
             </h3>
-            <p className="mt-2 text-sm text-[#5f7498]">
+            <p className="mt-1.5 text-[13px] text-[#5f7498]">
               {hasSelectedProject && detailStatus === 'ready' && selectedDetail
                 ? `${selectedProject?.headquarter} · ${selectedDetail.assetCategory} · ${selectedDetail.headline}`
                 : hasSelectedProject
@@ -955,158 +973,207 @@ export function WorkspaceView({
                 </div>
               </article>
             </section>
-            <section className="grid grid-cols-[1.8fr_1fr] gap-4 max-[1280px]:grid-cols-1">
-              <Panel
-                title="시나리오 가치 분석 테이블"
-                subtitle="NPV 및 확률 기여도 비교"
-              >
-                <div className={tableShellClass}>
-                  <table className={tableClass}>
-                    <thead className="bg-[#f1f5fc] text-xs uppercase tracking-[0.03em] text-[#5a7096]">
-                      <tr>
-                        <th className="border-b border-[#d7e1f1] px-4 py-3 text-left font-semibold">
-                          시나리오
-                        </th>
-                        <th className="border-b border-[#d7e1f1] px-4 py-3 text-left font-semibold">
-                          확률
-                        </th>
-                        <th className="border-b border-[#d7e1f1] px-4 py-3 text-left font-semibold">
-                          NPV
-                        </th>
-                        <th className="border-b border-[#d7e1f1] px-4 py-3 text-left font-semibold">
-                          확률가중값
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {selectedDetail.scenarioReturns.map((scenario) => {
-                        const weighted = Math.round(
-                          scenario.npvKrw * scenario.probability
-                        );
-                        const isExpected =
-                          scenario.label === valuationExpectedCase?.label;
-                        return (
-                          <tr
-                            key={scenario.label}
-                            className={
-                              isExpected ? 'bg-[#f3f7ff]' : 'bg-transparent'
-                            }
-                          >
-                            <td className="border-b border-[#e5ecf8] px-4 py-3 font-semibold text-[#2a4168]">
-                              {isExpected
-                                ? `${scenario.label} (기준)`
-                                : scenario.label}
-                            </td>
-                            <td className="border-b border-[#e5ecf8] px-4 py-3">
-                              {formatPercent(scenario.probability)}
-                            </td>
-                            <td className="border-b border-[#e5ecf8] px-4 py-3">
-                              {formatKrwCompact(scenario.npvKrw)}
-                            </td>
-                            <td className="border-b border-[#e5ecf8] px-4 py-3">
-                              {formatKrwCompact(weighted)}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                    <tfoot>
-                      <tr className="bg-[#eef3fd] text-[#2a4168]">
-                        <td
-                          className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.03em]"
-                          colSpan={3}
-                        >
-                          확률가중 합계
-                        </td>
-                        <td className="px-4 py-3 text-sm font-bold">
-                          {formatKrwCompact(
-                            Math.round(
-                              selectedDetail.scenarioReturns.reduce(
-                                (sum, scenario) =>
-                                  sum + scenario.npvKrw * scenario.probability,
-                                0
-                              )
-                            )
-                          )}
-                        </td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              </Panel>
-              <Panel title="평가 판단 패널" subtitle="승인 전 체크 포인트">
-                <div className="grid gap-3">
-                  <article className={miniStatClass}>
-                    <strong className="block text-[#1f3458]">Gap Signal</strong>
-                    <p className="mt-1">
-                      기준 대비 비관 격차 {formatKrwCompact(valuationGap)}
-                    </p>
-                  </article>
-                  <article className={miniStatClass}>
-                    <strong className="block text-[#1f3458]">
-                      Valuation Basis
-                    </strong>
-                    <p className="mt-1">
-                      할인율{' '}
-                      {formatPercent(selectedDetail.valuation.discountRate)} /
-                      리스크 프리미엄{' '}
-                      {formatPercent(selectedDetail.valuation.riskPremium)}
-                    </p>
-                  </article>
-                  <article className={miniStatClass}>
-                    <strong className="block text-[#1f3458]">
-                      Approval Memo
-                    </strong>
-                    <p className="mt-1">
-                      승인 코멘트에 시나리오 근거와 민감도 차이를 함께 남기세요.
-                    </p>
-                  </article>
-                </div>
-              </Panel>
-            </section>
             <section
-              className={supportGridClass}
-              aria-label="평가 근거와 시나리오 가정"
+              className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.5fr)_minmax(320px,0.9fr)]"
+              aria-label="시나리오 가치 분석과 평가 근거"
             >
-              <article className={workflowNoteClass}>
-                <strong>평가 근거</strong>
-                <p className="mt-2 text-sm">
-                  할인율 {formatPercent(selectedDetail.valuation.discountRate)}{' '}
-                  · 리스크 프리미엄{' '}
-                  {formatPercent(selectedDetail.valuation.riskPremium)}
-                </p>
-                <p className="mt-1 text-sm">
-                  {selectedDetail.valuation.interpretation}
-                </p>
+              <article className={calmSectionClass}>
+                <div className="flex flex-col gap-3 border-b border-[#e7edf8] pb-4 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <h3 className={calmSectionTitleClass}>
+                      시나리오 가치 분석
+                    </h3>
+                    <p className={calmSectionSubtitleClass}>
+                      NPV와 확률가중값을 한 번에 비교하는 기준 테이블
+                    </p>
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <div className={calmInsetClass}>
+                      <span className="text-xs text-[#6881aa]">기준 시나리오</span>
+                      <strong className="mt-1 block text-[#1f3458]">
+                        {valuationExpectedCase?.label ?? '-'}
+                      </strong>
+                    </div>
+                    <div className={calmInsetClass}>
+                      <span className="text-xs text-[#6881aa]">확률가중 합계</span>
+                      <strong className="mt-1 block text-[#1f3458]">
+                        {formatKrwCompact(
+                          Math.round(
+                            selectedDetail.scenarioReturns.reduce(
+                              (sum, scenario) =>
+                                sum + scenario.npvKrw * scenario.probability,
+                              0
+                            )
+                          )
+                        )}
+                      </strong>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <div className={tableShellClass}>
+                    <table className={tableClass}>
+                      <thead className="bg-[#f7faff]">
+                        <tr>
+                          <th className={compactTableHeadClass}>시나리오</th>
+                          <th className={compactTableHeadClass}>확률</th>
+                          <th className={compactTableHeadClass}>NPV</th>
+                          <th className={compactTableHeadClass}>확률가중값</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {selectedDetail.scenarioReturns.map((scenario) => {
+                          const weighted = Math.round(
+                            scenario.npvKrw * scenario.probability
+                          );
+                          const isExpected =
+                            scenario.label === valuationExpectedCase?.label;
+                          return (
+                            <tr
+                              key={scenario.label}
+                              className={
+                                isExpected ? 'bg-[#f7faff]' : 'bg-transparent'
+                              }
+                            >
+                              <td
+                                className={`${compactTableCellClass} font-semibold text-[#2a4168]`}
+                              >
+                                {isExpected
+                                  ? `${scenario.label} (기준)`
+                                  : scenario.label}
+                              </td>
+                              <td
+                                className={`${compactTableCellClass} tabular-nums`}
+                              >
+                                {formatPercent(scenario.probability)}
+                              </td>
+                              <td
+                                className={`${compactTableCellClass} tabular-nums`}
+                              >
+                                {formatKrwCompact(scenario.npvKrw)}
+                              </td>
+                              <td
+                                className={`${compactTableCellClass} tabular-nums`}
+                              >
+                                {formatKrwCompact(weighted)}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </article>
-              <article className={workflowNoteClass}>
-                <strong>시나리오 가정</strong>
-                {selectedDetail.valuation.assumptions.length === 0 ? (
-                  <p className="mt-2 text-sm">
-                    등록된 시나리오 가정이 없습니다.
-                  </p>
-                ) : (
-                  <ol className={listClass}>
-                    {selectedDetail.valuation.assumptions.map((item) => (
-                      <li
-                        key={`${item.label}-${item.note}`}
-                        className={listItemClass}
-                      >
-                        <strong className="block text-[#1f3458]">
-                          {item.label}
-                        </strong>
-                        <span className="mt-1 block">
-                          NPV {formatKrwCompact(item.npvKrw)} · 확률{' '}
-                          {formatPercent(item.probability)}
-                        </span>
-                        <small className="mt-1 block text-xs text-[#6c82aa]">
-                          {item.note || '-'}
-                        </small>
-                      </li>
-                    ))}
-                  </ol>
-                )}
-              </article>
+              <div className="grid gap-3">
+                <article className={compactSectionClass}>
+                  <div className={compactSectionHeaderClass}>
+                    <div>
+                      <h3 className="text-[0.96rem] font-semibold text-[#1f3458]">
+                        평가 판단 패널
+                      </h3>
+                      <p className="mt-1 text-[13px] text-[#6b7fa5]">
+                        승인 직전 다시 확인할 기준과 메모
+                      </p>
+                    </div>
+                    <div className={`${compactInsetClass} min-w-[9rem]`}>
+                      <span className={compactMetricLabelClass}>Gap Signal</span>
+                      <strong className="mt-1 block text-sm font-semibold text-[#1f3458]">
+                        {formatKrwCompact(valuationGap)}
+                      </strong>
+                    </div>
+                  </div>
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                    <article className={compactInsetClass}>
+                      <span className={compactMetricLabelClass}>
+                        Valuation Basis
+                      </span>
+                      <p className="mt-1 text-[13px] leading-5 text-[#41557b]">
+                        할인율 {formatPercent(selectedDetail.valuation.discountRate)} ·
+                        리스크 프리미엄{' '}
+                        {formatPercent(selectedDetail.valuation.riskPremium)}
+                      </p>
+                    </article>
+                    <article className={compactInsetClass}>
+                      <span className={compactMetricLabelClass}>
+                        Approval Memo
+                      </span>
+                      <p className="mt-1 text-[13px] leading-5 text-[#41557b]">
+                        승인 코멘트에 시나리오 근거와 민감도 차이를 함께 남기세요.
+                      </p>
+                    </article>
+                  </div>
+                </article>
+                <article className={compactSectionClass}>
+                  <div className={compactSectionHeaderClass}>
+                    <div>
+                      <h3 className="text-[0.96rem] font-semibold text-[#1f3458]">
+                        평가 근거
+                      </h3>
+                      <p className="mt-1 text-[13px] text-[#6b7fa5]">
+                        할인율과 해석 코멘트를 짧게 정리한 메모
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-3 grid gap-2">
+                    <div className={compactInsetClass}>
+                      <span className={compactMetricLabelClass}>평가 기준</span>
+                      <p className="mt-1 text-[13px] leading-5 text-[#34496d]">
+                        할인율 {formatPercent(selectedDetail.valuation.discountRate)}{' '}
+                        · 리스크 프리미엄{' '}
+                        {formatPercent(selectedDetail.valuation.riskPremium)}
+                      </p>
+                    </div>
+                    <div className={compactInsetClass}>
+                      <span className={compactMetricLabelClass}>해석</span>
+                      <p className="mt-1 text-[13px] leading-5 text-[#34496d]">
+                        {selectedDetail.valuation.interpretation}
+                      </p>
+                    </div>
+                  </div>
+                </article>
+                <article className={compactSectionClass}>
+                  <div className={compactSectionHeaderClass}>
+                    <div>
+                      <h3 className="text-[0.96rem] font-semibold text-[#1f3458]">
+                        시나리오 가정
+                      </h3>
+                      <p className="mt-1 text-[13px] text-[#6b7fa5]">
+                        근거와 수치를 분리해 빠르게 훑을 수 있게 정리
+                      </p>
+                    </div>
+                  </div>
+                  {selectedDetail.valuation.assumptions.length === 0 ? (
+                    <p className="mt-3 text-sm text-[#5f7297]">
+                      등록된 시나리오 가정이 없습니다.
+                    </p>
+                  ) : (
+                    <ol className="mt-3 grid gap-2">
+                      {selectedDetail.valuation.assumptions.map((item) => (
+                        <li
+                          key={`${item.label}-${item.note}`}
+                          className={compactInsetClass}
+                        >
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                            <div className="min-w-0">
+                              <strong className="block text-sm font-semibold text-[#1f3458]">
+                                {item.label}
+                              </strong>
+                              <small className="mt-1 block text-[12px] leading-5 text-[#6c82aa]">
+                                {item.note || '-'}
+                              </small>
+                            </div>
+                            <div className="grid gap-1 text-[13px] text-[#41557b] sm:text-right">
+                              <span>NPV {formatKrwCompact(item.npvKrw)}</span>
+                              <span>확률 {formatPercent(item.probability)}</span>
+                            </div>
+                          </div>
+                        </li>
+                      ))}
+                    </ol>
+                  )}
+                </article>
+              </div>
             </section>
           </>
         ) : null}
@@ -1142,159 +1209,210 @@ export function WorkspaceView({
                 summary={`VaR 대비 하방 격차 ${formatKrwCompact(riskGuardrailGap)}`}
               />
             </section>
-            <section className={supportGridClass} aria-label="리스크 해석">
-              <DecisionSummary
-                title="리스크 의미"
-                items={[
-                  '심각도 등급이 아니라 현금흐름 방어력 확인이 핵심',
-                  `하방 격차 ${formatKrwCompact(riskGuardrailGap)}는 승인 임계치 근거`,
-                  '손실 허용 범위와 승인 조건을 함께 검증'
-                ]}
-              />
-              <article className={workflowNoteClass}>
-                <strong>신호 해석 요약</strong>
-                <div className="mt-3 grid gap-2">
-                  <div className={miniStatClass}>
-                    <span className="text-xs text-[#6881aa]">
-                      하방 격차 신호
-                    </span>
-                    <strong className="mt-1 block text-[#1f3458]">
-                      {formatKrwCompact(riskGuardrailGap)}
-                    </strong>
+            <section
+              className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.95fr)]"
+              aria-label="리스크 상세 해석과 대응"
+            >
+              <div className="grid gap-3">
+                <article className={compactSectionClass}>
+                  <div className={compactSectionHeaderClass}>
+                    <div>
+                      <h3 className="text-[0.96rem] font-semibold text-[#1f3458]">
+                        리스크 의미
+                      </h3>
+                      <p className="mt-1 text-[13px] text-[#6b7fa5]">
+                        하방 격차와 승인 기준을 한 번에 읽는 요약 영역
+                      </p>
+                    </div>
                   </div>
-                  <div className={miniStatClass}>
-                    <span className="text-xs text-[#6881aa]">
-                      신용 모니터링
-                    </span>
-                    <strong className="mt-1 block text-[#1f3458]">
-                      {selectedDetail.valuation.creditGrade} ·{' '}
-                      {selectedDetail.valuation.creditRiskScore}점
-                    </strong>
+                  <div className="mt-3 grid gap-2">
+                    {[
+                      '심각도 등급이 아니라 현금흐름 방어력 확인이 핵심',
+                      `하방 격차 ${formatKrwCompact(riskGuardrailGap)}는 승인 임계치 근거`,
+                      '손실 허용 범위와 승인 조건을 함께 검증'
+                    ].map((item) => (
+                      <div key={item} className={compactInsetClass}>
+                        {item}
+                      </div>
+                    ))}
                   </div>
-                  <div className={miniStatClass}>
-                    <span className="text-xs text-[#6881aa]">즉시 액션</span>
-                    <strong className="mt-1 block text-[#1f3458]">
-                      비관 확률 재추정 후 승인 조건 갱신
-                    </strong>
+                </article>
+                <article className={compactSectionClass}>
+                  <div className={compactSectionHeaderClass}>
+                    <div>
+                      <h3 className="text-[0.96rem] font-semibold text-[#1f3458]">
+                        VaR/손실 한계 분석
+                      </h3>
+                      <p className="mt-1 text-[13px] text-[#6b7fa5]">
+                        손실 한도와 신용·금리 민감도를 밀도 있게 점검
+                      </p>
+                    </div>
+                    <div className={`${compactInsetClass} min-w-[9rem]`}>
+                      <span className={compactMetricLabelClass}>하방 격차</span>
+                      <strong className="mt-1 block text-sm font-semibold text-[#1f3458]">
+                        {formatKrwCompact(riskGuardrailGap)}
+                      </strong>
+                    </div>
                   </div>
-                </div>
-              </article>
-            </section>
-            <section className="grid grid-cols-[1.8fr_1fr] gap-4 max-[1280px]:grid-cols-1">
-              <Panel
-                title="VaR/손실 한계 분석 테이블"
-                subtitle="손실 한도와 신용·금리 민감도 점검"
-              >
-                <div className={tableShellClass}>
-                  <table className={tableClass}>
-                    <thead className="bg-[#f1f5fc] text-xs uppercase tracking-[0.03em] text-[#5a7096]">
-                      <tr>
-                        <th className="border-b border-[#d7e1f1] px-4 py-3 text-left font-semibold">
-                          지표
-                        </th>
-                        <th className="border-b border-[#d7e1f1] px-4 py-3 text-left font-semibold">
-                          값
-                        </th>
-                        <th className="border-b border-[#d7e1f1] px-4 py-3 text-left font-semibold">
-                          판정
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {[
-                        {
-                          label: 'VaR 95%',
-                          value: formatKrwCompact(
-                            selectedDetail.valuation.var95Krw
-                          ),
-                          ok:
-                            selectedDetail.valuation.var95Krw <=
-                            selectedDetail.valuation.fairValueKrw
-                        },
-                        {
-                          label: 'VaR 99%',
-                          value: formatKrwCompact(
-                            selectedDetail.valuation.var99Krw
-                          ),
-                          ok:
-                            selectedDetail.valuation.var99Krw <=
-                            selectedDetail.valuation.fairValueKrw
-                        },
-                        {
-                          label: 'CVaR 95%',
-                          value: formatKrwCompact(
-                            selectedDetail.valuation.cvar95Krw
-                          ),
-                          ok:
-                            selectedDetail.valuation.cvar95Krw <=
-                            selectedDetail.valuation.fairValueKrw
-                        },
-                        {
-                          label: '신용점수',
-                          value: `${selectedDetail.valuation.creditRiskScore}점`,
-                          ok: selectedDetail.valuation.creditRiskScore >= 70
-                        },
-                        {
-                          label: '듀레이션',
-                          value: `${selectedDetail.valuation.duration}년`,
-                          ok: selectedDetail.valuation.duration <= 5
-                        }
-                      ].map((item) => (
-                        <tr key={item.label}>
-                          <td className="border-b border-[#e5ecf8] px-4 py-3">
-                            {item.label}
-                          </td>
-                          <td className="border-b border-[#e5ecf8] px-4 py-3">
-                            {item.value}
-                          </td>
-                          <td className="border-b border-[#e5ecf8] px-4 py-3">
-                            <span
-                              className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${
-                                item.ok
-                                  ? 'border-[#b9ecd8] bg-[#ecfbf4] text-[#1f8a63]'
-                                  : 'border-[#f7caca] bg-[#fff0f0] text-[#b64040]'
-                              }`}
-                            >
-                              {item.ok ? '관리 범위' : '주의'}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </Panel>
-              <Panel title="리스크 대응 패널" subtitle="승인 조건 및 모니터링">
-                <div className="grid gap-3">
-                  <article className={miniStatClass}>
-                    <span className="text-xs font-semibold text-[#6f86ad]">
-                      STEP 1
-                    </span>
-                    <p className="mt-1">
-                      하방 격차 {formatKrwCompact(riskGuardrailGap)} 기준으로
-                      조건부 한도를 조정합니다.
-                    </p>
-                  </article>
-                  <article className={miniStatClass}>
-                    <span className="text-xs font-semibold text-[#6f86ad]">
-                      STEP 2
-                    </span>
-                    <p className="mt-1">
-                      신용등급 {selectedDetail.valuation.creditGrade} / 점수{' '}
-                      {selectedDetail.valuation.creditRiskScore}점을
-                      모니터링합니다.
-                    </p>
-                  </article>
-                  <article className={miniStatClass}>
-                    <span className="text-xs font-semibold text-[#6f86ad]">
-                      STEP 3
-                    </span>
-                    <p className="mt-1">
-                      다음 승인 단계: {selectedDetail.workflow.nextStep}
-                    </p>
-                  </article>
-                </div>
-              </Panel>
+                  <div className="mt-3">
+                    <div className={tableShellClass}>
+                      <table className={tableClass}>
+                        <thead className="bg-[#f7faff]">
+                          <tr>
+                            <th className={compactTableHeadClass}>지표</th>
+                            <th className={compactTableHeadClass}>값</th>
+                            <th className={compactTableHeadClass}>판정</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {[
+                            {
+                              label: 'VaR 95%',
+                              value: formatKrwCompact(
+                                selectedDetail.valuation.var95Krw
+                              ),
+                              ok:
+                                selectedDetail.valuation.var95Krw <=
+                                selectedDetail.valuation.fairValueKrw
+                            },
+                            {
+                              label: 'VaR 99%',
+                              value: formatKrwCompact(
+                                selectedDetail.valuation.var99Krw
+                              ),
+                              ok:
+                                selectedDetail.valuation.var99Krw <=
+                                selectedDetail.valuation.fairValueKrw
+                            },
+                            {
+                              label: 'CVaR 95%',
+                              value: formatKrwCompact(
+                                selectedDetail.valuation.cvar95Krw
+                              ),
+                              ok:
+                                selectedDetail.valuation.cvar95Krw <=
+                                selectedDetail.valuation.fairValueKrw
+                            },
+                            {
+                              label: '신용점수',
+                              value: `${selectedDetail.valuation.creditRiskScore}점`,
+                              ok:
+                                selectedDetail.valuation.creditRiskScore >= 70
+                            },
+                            {
+                              label: '듀레이션',
+                              value: `${selectedDetail.valuation.duration}년`,
+                              ok: selectedDetail.valuation.duration <= 5
+                            }
+                          ].map((item) => (
+                            <tr key={item.label}>
+                              <td className={compactTableCellClass}>
+                                {item.label}
+                              </td>
+                              <td
+                                className={`${compactTableCellClass} tabular-nums`}
+                              >
+                                {item.value}
+                              </td>
+                              <td className={compactTableCellClass}>
+                                <span
+                                  className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${
+                                    item.ok
+                                      ? 'border-[#b9ecd8] bg-[#ecfbf4] text-[#1f8a63]'
+                                      : 'border-[#f7caca] bg-[#fff0f0] text-[#b64040]'
+                                  }`}
+                                >
+                                  {item.ok ? '관리 범위' : '주의'}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </article>
+              </div>
+              <div className="grid gap-3">
+                <article className={compactSectionClass}>
+                  <div className={compactSectionHeaderClass}>
+                    <div>
+                      <h3 className="text-[0.96rem] font-semibold text-[#1f3458]">
+                        신호 해석 요약
+                      </h3>
+                      <p className="mt-1 text-[13px] text-[#6b7fa5]">
+                        핵심 모니터링 포인트만 분리한 미니 카드
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-3 grid gap-2">
+                    <div className={compactInsetClass}>
+                      <span className={compactMetricLabelClass}>
+                        하방 격차 신호
+                      </span>
+                      <strong className="mt-1 block text-sm font-semibold text-[#1f3458]">
+                        {formatKrwCompact(riskGuardrailGap)}
+                      </strong>
+                    </div>
+                    <div className={compactInsetClass}>
+                      <span className={compactMetricLabelClass}>
+                        신용 모니터링
+                      </span>
+                      <strong className="mt-1 block text-sm font-semibold text-[#1f3458]">
+                        {selectedDetail.valuation.creditGrade} ·{' '}
+                        {selectedDetail.valuation.creditRiskScore}점
+                      </strong>
+                    </div>
+                    <div className={compactInsetClass}>
+                      <span className={compactMetricLabelClass}>즉시 액션</span>
+                      <strong className="mt-1 block text-sm font-semibold text-[#1f3458]">
+                        비관 확률 재추정 후 승인 조건 갱신
+                      </strong>
+                    </div>
+                  </div>
+                </article>
+                <article className={compactSectionClass}>
+                  <div className={compactSectionHeaderClass}>
+                    <div>
+                      <h3 className="text-[0.96rem] font-semibold text-[#1f3458]">
+                        리스크 대응 패널
+                      </h3>
+                      <p className="mt-1 text-[13px] text-[#6b7fa5]">
+                        승인 조건과 모니터링 순서를 간결하게 정리
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-3 grid gap-2">
+                    <article className={compactInsetClass}>
+                      <span className={compactMetricLabelClass}>
+                        STEP 1
+                      </span>
+                      <p className="mt-1 text-[13px] leading-5">
+                        하방 격차 {formatKrwCompact(riskGuardrailGap)} 기준으로
+                        조건부 한도를 조정합니다.
+                      </p>
+                    </article>
+                    <article className={compactInsetClass}>
+                      <span className={compactMetricLabelClass}>
+                        STEP 2
+                      </span>
+                      <p className="mt-1 text-[13px] leading-5">
+                        신용등급 {selectedDetail.valuation.creditGrade} / 점수{' '}
+                        {selectedDetail.valuation.creditRiskScore}점을
+                        모니터링합니다.
+                      </p>
+                    </article>
+                    <article className={compactInsetClass}>
+                      <span className={compactMetricLabelClass}>
+                        STEP 3
+                      </span>
+                      <p className="mt-1 text-[13px] leading-5">
+                        다음 승인 단계: {selectedDetail.workflow.nextStep}
+                      </p>
+                    </article>
+                  </div>
+                </article>
+              </div>
             </section>
           </>
         ) : null}
