@@ -34,9 +34,14 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfig {
 
     private static final String INVALID_AUDIENCE_ERROR = "invalid_token";
-    private static final String[] BUSINESS_ROLES =
-            {"ADMIN", "PLANNER", "PM", "FINANCE_REVIEWER", "ACCOUNTANT", "EXECUTIVE"};
-    private static final String[] AUDIT_ROLES = {"EXECUTIVE", "AUDITOR", "ADMIN"};
+    private static final String[] DASHBOARD_ROLES = {"ADMIN", "PLANNER", "FINANCE_REVIEWER", "EXECUTIVE"};
+    private static final String[] PORTFOLIO_ROLES = {"ADMIN", "PLANNER"};
+    private static final String[] ANALYTICS_ROLES = {"ADMIN", "FINANCE_REVIEWER"};
+    private static final String[] PROJECT_AUTHOR_ROLES = {"ADMIN", "PLANNER"};
+    private static final String[] REVIEW_APPROVER_ROLES = {"ADMIN", "FINANCE_REVIEWER", "EXECUTIVE"};
+    private static final String[] WORKFLOW_ROLES = {"ADMIN", "PLANNER", "FINANCE_REVIEWER", "EXECUTIVE"};
+    private static final String[] AUDIT_READ_ROLES = {"ADMIN", "AUDITOR"};
+    private static final String[] AUDIT_WRITE_ROLES = {"ADMIN", "EXECUTIVE"};
 
     private final JwtSecurityProperties jwtSecurityProperties;
     private final SupabaseJwtAuthenticationConverter jwtAuthenticationConverter;
@@ -106,19 +111,34 @@ public class SecurityConfig {
                 auth -> auth
                         .requestMatchers("/api/health")
                         .permitAll()
-                        .requestMatchers("/api/dashboard",
-                                "/api/portfolio/summary",
+                        .requestMatchers("/api/dashboard")
+                        .hasAnyRole(DASHBOARD_ROLES)
+                        .requestMatchers("/api/portfolio", "/api/portfolio/summary")
+                        .hasAnyRole(PORTFOLIO_ROLES)
+                        .requestMatchers("/api/cost-accounting",
                                 "/api/cost-accounting/summary",
-                                "/api/valuation-risk/projects/**",
-                                "/api/compute")
-                        .hasAnyRole(BUSINESS_ROLES)
+                                "/api/valuation-risk",
+                                "/api/valuation-risk/projects/**")
+                        .hasAnyRole(ANALYTICS_ROLES)
+                        .requestMatchers("/api/compute")
+                        .hasAnyRole(DASHBOARD_ROLES)
+                        .requestMatchers(HttpMethod.POST, "/api/projects", "/api/projects/*/submit-review")
+                        .hasAnyRole(PROJECT_AUTHOR_ROLES)
+                        .requestMatchers(HttpMethod.PUT, "/api/projects/*")
+                        .hasAnyRole(PROJECT_AUTHOR_ROLES)
+                        .requestMatchers(HttpMethod.POST, "/api/review/*/approve")
+                        .hasAnyRole(REVIEW_APPROVER_ROLES)
+                        .requestMatchers("/api/projects/*/workflow", "/api/projects/*/review")
+                        .hasAnyRole(WORKFLOW_ROLES)
+                        .requestMatchers(HttpMethod.GET, "/api/audit-logs")
+                        .hasAnyRole(AUDIT_READ_ROLES)
+                        .requestMatchers(HttpMethod.POST, "/api/audit-logs")
+                        .hasAnyRole(AUDIT_WRITE_ROLES)
                         .requestMatchers("/actuator/health", "/actuator/info")
                         .permitAll()
                         .requestMatchers("/actuator/**")
                         .access((authentication, context) ->
                                 new AuthorizationDecision(securityPolicyProperties.actuatorAllPublic()))
-                        .requestMatchers("/api/projects/*/workflow", "/api/projects/*/review").authenticated()
-                        .requestMatchers("/api/audit-logs").hasAnyRole(AUDIT_ROLES)
                         .requestMatchers(HttpMethod.OPTIONS, "/**")
                         .permitAll()
                         .requestMatchers("/v3/api-docs",

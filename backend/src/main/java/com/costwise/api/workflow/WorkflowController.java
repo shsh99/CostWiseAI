@@ -29,13 +29,36 @@ public class WorkflowController {
     }
 
     @GetMapping("/projects/{projectId}/workflow")
-    @PreAuthorize("hasAnyRole('PLANNER', 'PM', 'FINANCE_REVIEWER', 'ACCOUNTANT', 'EXECUTIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PLANNER', 'FINANCE_REVIEWER', 'EXECUTIVE')")
     public ApprovalWorkflowResponse workflow(@PathVariable String projectId) {
         return approvalWorkflowService.loadWorkflow(projectId);
     }
 
+    @PostMapping("/projects/{projectId}/submit-review")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PLANNER')")
+    public ApprovalWorkflowResponse submitReview(
+            @PathVariable String projectId,
+            Authentication authentication,
+            @RequestBody(required = false) ReviewCommand command) {
+        String actor = authentication == null ? null : authentication.getName();
+        String comment = command == null ? null : command.comment();
+        return approvalWorkflowService.transition(projectId, "PLANNER", "SUBMIT", actor, comment);
+    }
+
+    @PostMapping("/review/{projectId}/approve")
+    @PreAuthorize("hasAnyRole('ADMIN', 'FINANCE_REVIEWER', 'EXECUTIVE')")
+    public ApprovalWorkflowResponse approve(
+            @PathVariable String projectId,
+            Authentication authentication,
+            @RequestBody(required = false) ReviewCommand command) {
+        String role = resolveWorkflowRole(authentication);
+        String actor = authentication == null ? null : authentication.getName();
+        String comment = command == null ? null : command.comment();
+        return approvalWorkflowService.transition(projectId, role, "APPROVE", actor, comment);
+    }
+
     @PostMapping("/projects/{projectId}/review")
-    @PreAuthorize("hasAnyRole('PLANNER', 'PM', 'FINANCE_REVIEWER', 'ACCOUNTANT', 'EXECUTIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PLANNER', 'FINANCE_REVIEWER', 'EXECUTIVE')")
     public ApprovalWorkflowResponse review(
             @PathVariable String projectId,
             Authentication authentication,
@@ -65,6 +88,7 @@ public class WorkflowController {
     private String normalizeWorkflowRole(String authority) {
         String normalized = authority.replaceFirst("^ROLE_", "").trim().toUpperCase(Locale.ROOT);
         return switch (normalized) {
+            case "ADMIN" -> "EXECUTIVE";
             case "PM" -> "PLANNER";
             case "ACCOUNTANT" -> "FINANCE_REVIEWER";
             default -> normalized;
