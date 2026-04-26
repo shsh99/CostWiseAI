@@ -434,9 +434,9 @@ export function AccountingView({
                   </tr>
                 </thead>
                 <tbody>
-                  {accountingTransactions.map((row) => (
+                  {accountingTransactions.map((row, index) => (
                     <tr
-                      key={`${row.date}-${row.project}`}
+                      key={`${row.date}-${row.project}-${row.item}-${index}`}
                       className="border-t border-[#e6edf8] transition-colors hover:bg-[#f9fbff]"
                     >
                       <td className="px-5 py-3.5 text-[#2a4168]">{row.date}</td>

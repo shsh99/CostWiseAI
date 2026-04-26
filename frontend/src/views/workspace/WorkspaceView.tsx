@@ -1,5 +1,23 @@
 /* eslint-disable no-unused-vars */
-import { useMemo, type KeyboardEvent } from 'react';
+import { useMemo, type KeyboardEvent, type ReactNode } from 'react';
+import {
+  ArrowRightCircle,
+  BarChart3,
+  Building2,
+  CircleDot,
+  ClipboardList,
+  Clock3,
+  FileText,
+  FolderCode,
+  Gauge,
+  LayoutGrid,
+  ListChecks,
+  ShieldCheck,
+  Sparkles,
+  Table2,
+  TrendingDown,
+  TrendingUp
+} from 'lucide-react';
 import {
   buildProjectDetail,
   detailTabs,
@@ -125,6 +143,14 @@ export function WorkspaceView({
   const listClass = 'mt-3 grid gap-2';
   const listItemClass =
     'rounded-xl border border-[#e0e8f5] bg-[#f9fbff] px-3 py-2 text-sm text-[#41557b]';
+  const riskTopSummaryCardClass =
+    'rounded-2xl border border-[#f0dcc6] bg-[linear-gradient(145deg,#fff7ef_0%,#fffdf9_62%,#ffffff_100%)] p-4 shadow-[0_7px_20px_rgba(111,73,28,0.08)]';
+  const riskMetaCardClass =
+    'rounded-2xl border border-[#ecd9c3] bg-white px-4 py-3.5 shadow-[0_5px_16px_rgba(99,65,28,0.06)]';
+  const riskScanCardClass =
+    'rounded-2xl border border-[#ecdac7] bg-[linear-gradient(180deg,#fffdfa_0%,#fff8f1_100%)] p-4 shadow-[0_6px_16px_rgba(100,66,30,0.06)]';
+  const riskScanStepBadgeClass =
+    'inline-flex h-6 min-w-6 items-center justify-center rounded-full border border-[#ebcfb0] bg-[#fff2e2] px-2 text-[0.68rem] font-extrabold text-[#a15b1c]';
   const focusCardClass =
     'rounded-2xl border border-[#c6d8f5] bg-[linear-gradient(130deg,#eef4ff_0%,#f8fbff_65%,#ffffff_100%)] p-4 text-[#304668] shadow-[0_8px_22px_rgba(24,40,71,0.08)]';
   const miniStatClass =
@@ -179,6 +205,110 @@ export function WorkspaceView({
       };
     });
   }, [activeView, portfolioProjects]);
+  const riskOverview = useMemo(() => {
+    const projectCount = portfolioProjects.length;
+    if (projectCount === 0) {
+      return {
+        projectCount: 0,
+        averageIrr: 0,
+        averageNpvKrw: 0,
+        highRiskCount: 0,
+        reviewQueueCount: 0
+      };
+    }
+
+    const averageIrr =
+      portfolioProjects.reduce((sum, project) => sum + project.irr, 0) /
+      projectCount;
+    const averageNpvKrw =
+      portfolioProjects.reduce((sum, project) => sum + project.npvKrw, 0) /
+      projectCount;
+    const highRiskCount = portfolioProjects.filter(
+      (project) => project.risk === '높음'
+    ).length;
+    const reviewQueueCount = portfolioProjects.filter(
+      (project) =>
+        project.status === '검토중' || project.status === '조건부 진행'
+    ).length;
+
+    return {
+      projectCount,
+      averageIrr,
+      averageNpvKrw,
+      highRiskCount,
+      reviewQueueCount
+    };
+  }, [portfolioProjects]);
+  const workspaceMetaItems = [
+    ...cockpitMetaItems,
+    { label: '다음 단계', value: selectedDetail?.workflow.nextStep ?? '-' }
+  ];
+  const metaToneByLabel: Record<
+    string,
+    { ring: string; badge: string; tone: string }
+  > = {
+    우선순위: {
+      ring: 'border-[#d7e6ff]',
+      badge: 'bg-[#eaf2ff] text-[#2f5fcf]',
+      tone: 'text-[#2f5fcf]'
+    },
+    Owner: {
+      ring: 'border-[#d6ecff]',
+      badge: 'bg-[#e9f7ff] text-[#0f7aa5]',
+      tone: 'text-[#0f7aa5]'
+    },
+    'Current Stage': {
+      ring: 'border-[#d9f1e4]',
+      badge: 'bg-[#eafaf2] text-[#1e8758]',
+      tone: 'text-[#1e8758]'
+    },
+    '리스크 상태': {
+      ring: 'border-[#ffe6d1]',
+      badge: 'bg-[#fff3e8] text-[#c76f1d]',
+      tone: 'text-[#c76f1d]'
+    },
+    '다음 단계': {
+      ring: 'border-[#e6dcff]',
+      badge: 'bg-[#f2ecff] text-[#6f49c9]',
+      tone: 'text-[#6f49c9]'
+    }
+  };
+  const iconChipBaseClass =
+    'inline-flex h-5 w-5 items-center justify-center rounded-full border border-current/20 bg-current/10';
+  const iconChipByTabKey: Record<WorkspaceTabKey, ReactNode> = {
+    allocation: (
+      <span
+        className={`${iconChipBaseClass} text-[#76a3ff]`}
+        aria-hidden="true"
+      >
+        <LayoutGrid className="h-3.5 w-3.5" />
+      </span>
+    ),
+    valuation: (
+      <span
+        className={`${iconChipBaseClass} text-[#5a73c4]`}
+        aria-hidden="true"
+      >
+        <BarChart3 className="h-3.5 w-3.5" />
+      </span>
+    ),
+    risk: (
+      <span
+        className={`${iconChipBaseClass} text-[#d8843f]`}
+        aria-hidden="true"
+      >
+        <ShieldCheck className="h-3.5 w-3.5" />
+      </span>
+    ),
+    workflow: (
+      <span
+        className={`${iconChipBaseClass} text-[#4f8e6a]`}
+        aria-hidden="true"
+      >
+        <ArrowRightCircle className="h-3.5 w-3.5" />
+      </span>
+    )
+  };
 
   if (activeView === 'accounting') {
     const allocationRows = selectedDetail?.allocation.rules ?? [];
@@ -577,49 +707,288 @@ export function WorkspaceView({
         </section>
       ) : null}
 
-      <div
-        className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
-        aria-label="요약 메타 정보"
-      >
-        {cockpitMetaItems.map((item) => (
-          <InfoTile key={item.label} label={item.label} value={item.value} />
-        ))}
-        <InfoTile
-          label="다음 단계"
-          value={selectedDetail?.workflow.nextStep ?? '-'}
-        />
-      </div>
-      <div
-        className="grid gap-3 md:grid-cols-3"
-        aria-label="의사결정 스캔 경로"
-      >
-        <article className="rounded-2xl border border-[#d7e1f1] bg-white p-4 shadow-[0_6px_18px_rgba(24,40,71,0.05)]">
-          <span className="text-xs font-semibold text-[#6c83ab]">01</span>
-          <strong className="mt-1 block text-[#1f3458]">핵심 신호</strong>
-          <p className="mt-1 text-sm text-[#4a6087]">
-            {selectedProject
-              ? `${selectedProject.name} 핵심 KPI를 먼저 확인합니다.`
-              : '프로젝트를 선택하세요.'}
-          </p>
-        </article>
-        <article className="rounded-2xl border border-[#d7e1f1] bg-white p-4 shadow-[0_6px_18px_rgba(24,40,71,0.05)]">
-          <span className="text-xs font-semibold text-[#6c83ab]">02</span>
-          <strong className="mt-1 block text-[#1f3458]">의사결정 포인트</strong>
-          <p className="mt-1 text-sm text-[#4a6087]">
-            {selectedDetail?.workflow.nextStep ?? '다음 결정을 확인합니다.'}
-          </p>
-        </article>
-        <article className="rounded-2xl border border-[#d7e1f1] bg-white p-4 shadow-[0_6px_18px_rgba(24,40,71,0.05)]">
-          <span className="text-xs font-semibold text-[#6c83ab]">03</span>
-          <strong className="mt-1 block text-[#1f3458]">검증</strong>
-          <p className="mt-1 text-sm text-[#4a6087]">
-            탭별 근거를 확인한 뒤 승인/보류를 확정합니다.
-          </p>
-        </article>
-      </div>
+      {activeView === 'valuation' ? (
+        <>
+          <section
+            className="grid gap-3.5 xl:grid-cols-[minmax(0,2.1fr)_minmax(280px,1fr)]"
+            aria-label="요약 메타 정보"
+          >
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+              {workspaceMetaItems.map((item) => {
+                const tone = metaToneByLabel[item.label] ?? {
+                  ring: 'border-[#d7e1f1]',
+                  badge: 'bg-[#eef3fb] text-[#46608a]',
+                  tone: 'text-[#46608a]'
+                };
+                return (
+                  <article
+                    key={item.label}
+                    className={`rounded-2xl border bg-white px-4 py-3.5 shadow-[0_5px_16px_rgba(24,40,71,0.05)] ${tone.ring}`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[0.72rem] font-semibold uppercase tracking-[0.06em] text-[#6f86ad]">
+                        {item.label}
+                      </span>
+                      <span
+                        className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[0.64rem] font-bold ${tone.badge}`}
+                      >
+                        <CircleDot className="h-3 w-3" aria-hidden="true" />
+                        LIVE
+                      </span>
+                    </div>
+                    <strong
+                      className={`mt-2 block text-[1.04rem] font-extrabold leading-tight text-[#1d3053] ${tone.tone}`}
+                    >
+                      {item.value}
+                    </strong>
+                  </article>
+                );
+              })}
+            </div>
+            <article className="rounded-2xl border border-[#cfdbf0] bg-[linear-gradient(135deg,#edf3ff_0%,#f8fbff_48%,#ffffff_100%)] p-4 shadow-[0_6px_18px_rgba(24,40,71,0.06)]">
+              <span className="text-[0.7rem] font-semibold uppercase tracking-[0.08em] text-[#6a83ae]">
+                Decision Brief
+              </span>
+              <strong className="mt-2 block text-[1.02rem] font-bold text-[#1f3458]">
+                {selectedDetail?.workflow.nextStep ?? '결정 단계 확인 필요'}
+              </strong>
+              <p className="mt-1.5 text-[0.82rem] text-[#4a6087]">
+                {cockpitNextAction}
+              </p>
+              <div className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-[#ced9ed] bg-white px-2.5 py-1 text-[0.72rem] font-semibold text-[#556d96]">
+                <Clock3
+                  className="h-3.5 w-3.5 text-[#6f86ad]"
+                  aria-hidden="true"
+                />
+                최신 스냅샷 · {snapshotTime}
+              </div>
+            </article>
+          </section>
+
+          <section
+            className="grid gap-3 md:grid-cols-3"
+            aria-label="의사결정 스캔 경로"
+          >
+            <article className="rounded-2xl border border-[#d7e1f1] bg-white p-4 shadow-[0_6px_18px_rgba(24,40,71,0.05)]">
+              <span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-[#cddcf8] bg-[#f1f6ff] px-2.5 text-[0.67rem] font-extrabold text-[#2f5fcf]">
+                <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+                01
+              </span>
+              <strong className="mt-2 block text-[#1f3458]">핵심 신호</strong>
+              <p className="mt-1 text-sm text-[#4a6087]">
+                {selectedProject
+                  ? `${selectedProject.name} 핵심 KPI를 먼저 확인합니다.`
+                  : '프로젝트를 선택하세요.'}
+              </p>
+            </article>
+            <article className="rounded-2xl border border-[#d7e1f1] bg-white p-4 shadow-[0_6px_18px_rgba(24,40,71,0.05)]">
+              <span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-[#c8e8f4] bg-[#f1fbff] px-2.5 text-[0.67rem] font-extrabold text-[#147ea8]">
+                <Gauge className="h-3.5 w-3.5" aria-hidden="true" />
+                02
+              </span>
+              <strong className="mt-2 block text-[#1f3458]">
+                의사결정 포인트
+              </strong>
+              <p className="mt-1 text-sm text-[#4a6087]">
+                {selectedDetail?.workflow.nextStep ?? '다음 결정을 확인합니다.'}
+              </p>
+            </article>
+            <article className="rounded-2xl border border-[#d7e1f1] bg-white p-4 shadow-[0_6px_18px_rgba(24,40,71,0.05)]">
+              <span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-[#f2d8bc] bg-[#fff6ee] px-2.5 text-[0.67rem] font-extrabold text-[#c66e1c]">
+                <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
+                03
+              </span>
+              <strong className="mt-2 block text-[#1f3458]">검증</strong>
+              <p className="mt-1 text-sm text-[#4a6087]">
+                탭별 근거를 확인한 뒤 승인/보류를 확정합니다.
+              </p>
+            </article>
+          </section>
+        </>
+      ) : activeView === 'risk' ? (
+        <>
+          <section
+            className="grid gap-3.5 xl:grid-cols-[minmax(0,2.1fr)_minmax(300px,1fr)]"
+            aria-label="리스크 상단 요약 대시보드"
+          >
+            <div className="grid gap-3 sm:grid-cols-3">
+              <article className={riskTopSummaryCardClass}>
+                <span className="text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-[#946333]">
+                  프로젝트 수
+                </span>
+                <strong className="mt-2 block text-[1.42rem] font-extrabold text-[#513116]">
+                  {riskOverview.projectCount}개
+                </strong>
+                <p className="mt-1 text-[0.82rem] text-[#7c5633]">
+                  분석 가능한 전체 리스크 프로젝트
+                </p>
+              </article>
+              <article className={riskTopSummaryCardClass}>
+                <span className="text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-[#946333]">
+                  평균 IRR
+                </span>
+                <strong className="mt-2 block text-[1.42rem] font-extrabold text-[#513116]">
+                  {formatPercent(riskOverview.averageIrr)}
+                </strong>
+                <p className="mt-1 text-[0.82rem] text-[#7c5633]">
+                  기대 수익률의 포트폴리오 평균값
+                </p>
+              </article>
+              <article className={riskTopSummaryCardClass}>
+                <span className="text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-[#946333]">
+                  평균 NPV
+                </span>
+                <strong className="mt-2 block text-[1.42rem] font-extrabold text-[#513116]">
+                  {formatKrwCompact(Math.round(riskOverview.averageNpvKrw))}
+                </strong>
+                <p className="mt-1 text-[0.82rem] text-[#7c5633]">
+                  프로젝트당 기대 순현재가치 평균
+                </p>
+              </article>
+            </div>
+            <article className={riskTopSummaryCardClass}>
+              <span className="text-[0.7rem] font-semibold uppercase tracking-[0.08em] text-[#946333]">
+                Risk Brief
+              </span>
+              <strong className="mt-2 block text-[1.02rem] font-bold text-[#513116]">
+                {selectedDetail?.workflow.nextStep ?? '검토 우선순위 확인 필요'}
+              </strong>
+              <p className="mt-1.5 text-[0.84rem] text-[#745131]">
+                {cockpitNextAction}
+              </p>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                <div className="rounded-xl border border-[#edd9c2] bg-white px-3 py-2">
+                  <span className="text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-[#9a6632]">
+                    고위험
+                  </span>
+                  <strong className="mt-1 block text-sm font-bold text-[#523218]">
+                    {riskOverview.highRiskCount}개
+                  </strong>
+                </div>
+                <div className="rounded-xl border border-[#edd9c2] bg-white px-3 py-2">
+                  <span className="text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-[#9a6632]">
+                    검토 대기
+                  </span>
+                  <strong className="mt-1 block text-sm font-bold text-[#523218]">
+                    {riskOverview.reviewQueueCount}개
+                  </strong>
+                </div>
+              </div>
+              <div className="mt-3 inline-flex items-center rounded-full border border-[#eccdaf] bg-white px-2.5 py-1 text-[0.72rem] font-semibold text-[#7f572f]">
+                최신 스냅샷 · {snapshotTime}
+              </div>
+            </article>
+          </section>
+
+          <section
+            className="grid gap-3.5 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]"
+            aria-label="리스크 메타 및 스캔 카드"
+          >
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {workspaceMetaItems.map((item) => (
+                <article key={item.label} className={riskMetaCardClass}>
+                  <span className="text-[0.7rem] font-semibold uppercase tracking-[0.07em] text-[#89603d]">
+                    {item.label}
+                  </span>
+                  <strong className="mt-2 block text-[0.98rem] font-bold leading-tight text-[#3e2612]">
+                    {item.value}
+                  </strong>
+                </article>
+              ))}
+            </div>
+            <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-1">
+              <article className={riskScanCardClass}>
+                <span className={riskScanStepBadgeClass}>01</span>
+                <strong className="mt-2 block text-[#41270f]">
+                  핵심 노출 확인
+                </strong>
+                <p className="mt-1 text-sm text-[#705033]">
+                  {selectedProject
+                    ? `${selectedProject.name}의 VaR·CVaR 기준선을 먼저 확인합니다.`
+                    : '프로젝트를 선택하면 핵심 노출이 표시됩니다.'}
+                </p>
+              </article>
+              <article className={riskScanCardClass}>
+                <span className={riskScanStepBadgeClass}>02</span>
+                <strong className="mt-2 block text-[#41270f]">
+                  조건부 승인 점검
+                </strong>
+                <p className="mt-1 text-sm text-[#705033]">
+                  {selectedDetail?.workflow.nextStep ??
+                    '다음 승인 조건과 대응 기준을 점검합니다.'}
+                </p>
+              </article>
+              <article className={riskScanCardClass}>
+                <span className={riskScanStepBadgeClass}>03</span>
+                <strong className="mt-2 block text-[#41270f]">
+                  모니터링 확정
+                </strong>
+                <p className="mt-1 text-sm text-[#705033]">
+                  탭별 근거를 검토한 뒤 리스크 대응 순서를 확정합니다.
+                </p>
+              </article>
+            </div>
+          </section>
+        </>
+      ) : (
+        <>
+          <div
+            className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
+            aria-label="요약 메타 정보"
+          >
+            {cockpitMetaItems.map((item) => (
+              <InfoTile
+                key={item.label}
+                label={item.label}
+                value={item.value}
+              />
+            ))}
+            <InfoTile
+              label="다음 단계"
+              value={selectedDetail?.workflow.nextStep ?? '-'}
+            />
+          </div>
+          <div
+            className="grid gap-3 md:grid-cols-3"
+            aria-label="의사결정 스캔 경로"
+          >
+            <article className="rounded-2xl border border-[#d7e1f1] bg-white p-4 shadow-[0_6px_18px_rgba(24,40,71,0.05)]">
+              <span className="text-xs font-semibold text-[#6c83ab]">01</span>
+              <strong className="mt-1 block text-[#1f3458]">핵심 신호</strong>
+              <p className="mt-1 text-sm text-[#4a6087]">
+                {selectedProject
+                  ? `${selectedProject.name} 핵심 KPI를 먼저 확인합니다.`
+                  : '프로젝트를 선택하세요.'}
+              </p>
+            </article>
+            <article className="rounded-2xl border border-[#d7e1f1] bg-white p-4 shadow-[0_6px_18px_rgba(24,40,71,0.05)]">
+              <span className="text-xs font-semibold text-[#6c83ab]">02</span>
+              <strong className="mt-1 block text-[#1f3458]">
+                의사결정 포인트
+              </strong>
+              <p className="mt-1 text-sm text-[#4a6087]">
+                {selectedDetail?.workflow.nextStep ?? '다음 결정을 확인합니다.'}
+              </p>
+            </article>
+            <article className="rounded-2xl border border-[#d7e1f1] bg-white p-4 shadow-[0_6px_18px_rgba(24,40,71,0.05)]">
+              <span className="text-xs font-semibold text-[#6c83ab]">03</span>
+              <strong className="mt-1 block text-[#1f3458]">검증</strong>
+              <p className="mt-1 text-sm text-[#4a6087]">
+                탭별 근거를 확인한 뒤 승인/보류를 확정합니다.
+              </p>
+            </article>
+          </div>
+        </>
+      )}
 
       <div
-        className="rounded-2xl border border-[#d7e1f1] bg-white p-2 shadow-[0_6px_18px_rgba(24,40,71,0.05)]"
+        className={`rounded-2xl border p-2 shadow-[0_6px_18px_rgba(24,40,71,0.05)] ${
+          activeView === 'valuation'
+            ? 'border-[#d7e1f1] bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)]'
+            : activeView === 'risk'
+              ? 'border-[#ead5bc] bg-[linear-gradient(180deg,#fffdfa_0%,#fff7ee_100%)]'
+              : 'border-[#d7e1f1] bg-white'
+        }`}
         role="tablist"
         aria-label="프로젝트 분석 탭"
       >
@@ -636,14 +1005,19 @@ export function WorkspaceView({
               aria-controls={panelId}
               aria-selected={selected}
               tabIndex={selected ? 0 : -1}
-              className={`inline-flex min-w-[100px] items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
+              className={`inline-flex min-w-[114px] items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition ${
                 selected
-                  ? 'bg-[#2b4dbf] text-white shadow-[0_6px_14px_rgba(43,77,191,0.25)]'
-                  : 'text-[#445b83] hover:bg-[#f1f5fc]'
+                  ? activeView === 'risk'
+                    ? 'border-[#d57a31] bg-[#e28636] text-white shadow-[0_7px_14px_rgba(170,95,28,0.3)]'
+                    : 'border-[#2b4dbf] bg-[#2b4dbf] text-white shadow-[0_6px_14px_rgba(43,77,191,0.25)]'
+                  : activeView === 'risk'
+                    ? 'border-transparent text-[#6e4b2a] hover:border-[#ecd4b8] hover:bg-[#fff3e6]'
+                    : 'border-transparent text-[#445b83] hover:bg-[#f1f5fc]'
               }`}
               onClick={() => onChangeWorkspaceTab(tab.key)}
               onKeyDown={(event) => onWorkspaceTabKeydown(event, index)}
             >
+              {activeView === 'valuation' ? iconChipByTabKey[tab.key] : null}
               {tab.label}
             </button>
           );
@@ -654,21 +1028,39 @@ export function WorkspaceView({
         id={`workspace-panel-${activeWorkspaceTab}`}
         role="tabpanel"
         aria-labelledby={`workspace-tab-${activeWorkspaceTab}`}
-        className="grid gap-5 rounded-2xl border border-[#d7e1f1] bg-[#f7faff] p-5 shadow-[0_8px_22px_rgba(24,40,71,0.06)]"
+        className={`grid rounded-2xl border p-5 shadow-[0_8px_22px_rgba(24,40,71,0.06)] ${
+          activeView === 'valuation' && activeWorkspaceTab === 'valuation'
+            ? 'gap-6 border-[#d4deef] bg-[linear-gradient(180deg,#fcfdff_0%,#f4f8ff_100%)]'
+            : 'gap-5 border-[#d7e1f1] bg-[#f7faff]'
+        }`}
       >
         {activeView === 'valuation' ? (
-          <header className="rounded-2xl border border-[#d8e2f2] bg-white px-4 py-3.5 shadow-[0_4px_14px_rgba(24,40,71,0.05)]">
-            <p className="text-xs font-semibold uppercase tracking-[0.05em] text-[#6981a9]">
-              Project Detail
-            </p>
-            <h3 className="mt-1 text-[1.25rem] font-bold text-[#1d3053]">
-              프로젝트 상세
-            </h3>
-            <p className="mt-1 text-sm text-[#60759a]">
-              {selectedProject
-                ? `${selectedProject.name}의 가치평가 근거와 시나리오를 탭별로 검토합니다.`
-                : '상단 탐색기 목록에서 프로젝트를 선택하면 상세 분석이 표시됩니다.'}
-            </p>
+          <header className="rounded-[22px] border border-[#d7e2f3] bg-[linear-gradient(135deg,#ffffff_0%,#f5f8ff_52%,#edf2ff_100%)] px-5 py-4 shadow-[0_6px_16px_rgba(24,40,71,0.06)]">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <p className="text-[0.7rem] font-semibold uppercase tracking-[0.09em] text-[#6b82ab]">
+                  Project Detail
+                </p>
+                <h3 className="mt-1.5 text-[1.32rem] font-semibold tracking-[-0.01em] text-[#1a2f53]">
+                  프로젝트 상세
+                </h3>
+                <p className="mt-1.5 text-[0.92rem] leading-6 text-[#60759a]">
+                  {selectedProject
+                    ? `${selectedProject.name}의 가치평가 근거와 시나리오를 탭별로 검토합니다.`
+                    : '상단 탐색기 목록에서 프로젝트를 선택하면 상세 분석이 표시됩니다.'}
+                </p>
+              </div>
+              <div className="grid gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-[#d2def2] bg-white px-3 py-1 text-[0.72rem] font-semibold text-[#536b95]">
+                  <FolderCode className="h-3.5 w-3.5" aria-hidden="true" />
+                  {selectedProject?.code ?? 'PROJECT'}
+                </span>
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-[#d2def2] bg-white px-3 py-1 text-[0.72rem] font-semibold text-[#536b95]">
+                  <Building2 className="h-3.5 w-3.5" aria-hidden="true" />
+                  {selectedProject?.headquarter ?? '본부 미지정'}
+                </span>
+              </div>
+            </div>
           </header>
         ) : null}
 
@@ -736,34 +1128,70 @@ export function WorkspaceView({
 
         {activeWorkspaceTab === 'allocation' && selectedDetail ? (
           <>
-            <section className={kpiGridClass} aria-label="배분 핵심 지표">
-              <InfoTile
-                label="배분 원가"
-                value={formatKrwCompact(
-                  selectedDetail.allocation.allocatedCostKrw
-                )}
-              />
-              <InfoTile
-                label="표준 원가"
-                value={formatKrwCompact(
-                  selectedDetail.allocation.standardCostKrw
-                )}
-              />
-              <InfoTile
-                label="효율 갭"
-                value={formatKrwCompact(
-                  selectedDetail.allocation.efficiencyGapKrw
-                )}
-              />
-              <InfoTile
-                label="성과 갭"
-                value={formatKrwCompact(
-                  selectedDetail.allocation.performanceGapKrw
-                )}
-              />
+            <section
+              className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+              aria-label="배분 핵심 지표"
+            >
+              {[
+                {
+                  label: '배분 원가',
+                  value: formatKrwCompact(
+                    selectedDetail.allocation.allocatedCostKrw
+                  ),
+                  accent:
+                    'border-[#cfe0ff] bg-[linear-gradient(180deg,#f8fbff_0%,#eef4ff_100%)] text-[#2f5fcf]',
+                  icon: <BarChart3 className="h-3.5 w-3.5" aria-hidden="true" />
+                },
+                {
+                  label: '표준 원가',
+                  value: formatKrwCompact(
+                    selectedDetail.allocation.standardCostKrw
+                  ),
+                  accent:
+                    'border-[#d8e6f4] bg-[linear-gradient(180deg,#f8fcff_0%,#f0f7fc_100%)] text-[#3e6d90]',
+                  icon: <FileText className="h-3.5 w-3.5" aria-hidden="true" />
+                },
+                {
+                  label: '효율 갭',
+                  value: formatKrwCompact(
+                    selectedDetail.allocation.efficiencyGapKrw
+                  ),
+                  accent:
+                    'border-[#ffe4d3] bg-[linear-gradient(180deg,#fffaf6_0%,#fff1e7_100%)] text-[#bf6224]',
+                  icon: (
+                    <TrendingDown className="h-3.5 w-3.5" aria-hidden="true" />
+                  )
+                },
+                {
+                  label: '성과 갭',
+                  value: formatKrwCompact(
+                    selectedDetail.allocation.performanceGapKrw
+                  ),
+                  accent:
+                    'border-[#d2eadb] bg-[linear-gradient(180deg,#f8fdf9_0%,#eefaf3_100%)] text-[#1d8355]',
+                  icon: (
+                    <TrendingUp className="h-3.5 w-3.5" aria-hidden="true" />
+                  )
+                }
+              ].map((metric) => (
+                <article
+                  key={metric.label}
+                  className="rounded-[22px] border border-[#d7e1f1] bg-white px-4 py-4.5 shadow-[0_7px_18px_rgba(24,40,71,0.055)]"
+                >
+                  <span
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[0.66rem] font-bold uppercase tracking-[0.06em] ${metric.accent}`}
+                  >
+                    {metric.icon}
+                    {metric.label}
+                  </span>
+                  <strong className="mt-3 block text-[1.82rem] font-semibold leading-none tracking-[-0.015em] text-[#182a49]">
+                    {metric.value}
+                  </strong>
+                </article>
+              ))}
             </section>
             <section
-              className={dominantSurfaceClass}
+              className="rounded-[22px] border border-[#d7e1f1] bg-white p-4.5 shadow-[0_8px_20px_rgba(24,40,71,0.06)]"
               aria-label="배분 비교 surface"
             >
               <DecisionBarChart
@@ -774,32 +1202,70 @@ export function WorkspaceView({
               />
             </section>
             <section
-              className={supportGridClass}
+              className="grid gap-4 lg:grid-cols-2"
               aria-label="배분 해석 및 다음 행동"
             >
-              <DecisionSummary
-                title="배분 해석"
-                items={[
-                  `표준 대비 ${formatKrwCompact(selectedDetail.allocation.efficiencyGapKrw)} 초과`,
-                  `성과 갭 ${formatKrwCompact(selectedDetail.allocation.performanceGapKrw)}로 수익성 압박`,
-                  '인력·공통원가 배부 룰 검증 우선'
-                ]}
-              />
-              <DecisionSummary
-                title="다음 행동"
-                items={[
-                  '원가담당자/재무검토자가 기준안 합의',
-                  '배부 기준 변경 후 재배분 시뮬레이션 실행',
-                  '승인 전 기준안과 수정안 차이 기록'
-                ]}
-              />
+              <article className="rounded-[20px] border border-[#dbe4f3] bg-white p-4 text-[#34496d] shadow-[0_8px_20px_rgba(24,40,71,0.05)]">
+                <strong className="flex items-center gap-2 text-[0.98rem] font-semibold text-[#1f3458]">
+                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-[#d4e0f3] bg-[#f4f8ff] text-[#4a6dbc]">
+                    <BarChart3 className="h-3.5 w-3.5" aria-hidden="true" />
+                  </span>
+                  배분 해석
+                </strong>
+                <ul className="mt-3.5 grid gap-2.5 text-[0.87rem] font-medium text-[#566a89]">
+                  <li className="rounded-lg border border-slate-100 bg-slate-50/50 px-3 py-2">
+                    표준 대비{' '}
+                    {formatKrwCompact(
+                      selectedDetail.allocation.efficiencyGapKrw
+                    )}{' '}
+                    초과
+                  </li>
+                  <li className="rounded-lg border border-slate-100 bg-slate-50/50 px-3 py-2">
+                    성과 갭{' '}
+                    {formatKrwCompact(
+                      selectedDetail.allocation.performanceGapKrw
+                    )}
+                    로 수익성 압박
+                  </li>
+                  <li className="rounded-lg border border-slate-100 bg-slate-50/50 px-3 py-2">
+                    인력·공통원가 배부 룰 검증 우선
+                  </li>
+                </ul>
+              </article>
+              <article className="rounded-[20px] border border-[#dbe4f3] bg-white p-4 text-[#34496d] shadow-[0_8px_20px_rgba(24,40,71,0.05)]">
+                <strong className="flex items-center gap-2 text-[0.98rem] font-semibold text-[#1f3458]">
+                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-[#d4e0f3] bg-[#f4f8ff] text-[#4a6dbc]">
+                    <ArrowRightCircle
+                      className="h-3.5 w-3.5"
+                      aria-hidden="true"
+                    />
+                  </span>
+                  다음 행동
+                </strong>
+                <ul className="mt-3.5 grid gap-2.5 text-[0.87rem] font-medium text-[#566a89]">
+                  <li className="rounded-lg border border-slate-100 bg-slate-50/50 px-3 py-2">
+                    원가담당자/재무검토자가 기준안 합의
+                  </li>
+                  <li className="rounded-lg border border-slate-100 bg-slate-50/50 px-3 py-2">
+                    배부 기준 변경 후 재배분 시뮬레이션 실행
+                  </li>
+                  <li className="rounded-lg border border-slate-100 bg-slate-50/50 px-3 py-2">
+                    승인 전 기준안과 수정안 차이 기록
+                  </li>
+                </ul>
+              </article>
             </section>
             <section
-              className={supportGridClass}
+              className="grid gap-4 lg:grid-cols-2"
               aria-label="배부 기준과 변경 이력"
             >
-              <article className={workflowNoteClass}>
-                <strong>계산 근거</strong>
+              <article className="rounded-[20px] border border-[#dbe4f3] bg-white p-4 text-[#34496d] shadow-[0_8px_20px_rgba(24,40,71,0.05)]">
+                <strong className="flex items-center gap-2 text-[0.98rem] font-semibold text-[#1f3458]">
+                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-[#d4e0f3] bg-[#f4f8ff] text-[#4a6dbc]">
+                    <FileText className="h-3.5 w-3.5" aria-hidden="true" />
+                  </span>
+                  계산 근거
+                </strong>
                 <p className="mt-2 text-sm">
                   {selectedDetail.allocation.allocationBasis}
                 </p>
@@ -807,8 +1273,13 @@ export function WorkspaceView({
                   {selectedDetail.allocation.calculationTrace}
                 </p>
               </article>
-              <article className={workflowNoteClass}>
-                <strong>최근 변경 이력</strong>
+              <article className="rounded-[20px] border border-[#dbe4f3] bg-white p-4 text-[#34496d] shadow-[0_8px_20px_rgba(24,40,71,0.05)]">
+                <strong className="flex items-center gap-2 text-[0.98rem] font-semibold text-[#1f3458]">
+                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-[#d4e0f3] bg-[#f4f8ff] text-[#4a6dbc]">
+                    <Clock3 className="h-3.5 w-3.5" aria-hidden="true" />
+                  </span>
+                  최근 변경 이력
+                </strong>
                 {selectedDetail.allocation.changeHistory.length === 0 ? (
                   <p className="mt-2 text-sm">기록된 변경 이력이 없습니다.</p>
                 ) : (
@@ -836,14 +1307,21 @@ export function WorkspaceView({
               </article>
             </section>
             <section
-              className={dominantSurfaceClass}
+              className="rounded-[22px] border border-[#d7e1f1] bg-white p-4.5 shadow-[0_8px_20px_rgba(24,40,71,0.06)]"
               aria-label="배부 규칙 상세"
             >
-              <h3>배부 규칙 상세</h3>
+              <h3 className="flex items-center gap-2 text-[1.02rem] font-semibold text-[#1f3458]">
+                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-[#d4e0f3] bg-[#f4f8ff] text-[#4a6dbc]">
+                  <Table2 className="h-3.5 w-3.5" aria-hidden="true" />
+                </span>
+                배부 규칙 상세
+              </h3>
               {selectedDetail.allocation.rules.length === 0 ? (
-                <p>배부 규칙 상세 데이터가 없습니다.</p>
+                <p className="mt-2 text-sm text-[#60759a]">
+                  배부 규칙 상세 데이터가 없습니다.
+                </p>
               ) : (
-                <div className={tableShellClass}>
+                <div className={`${tableShellClass} mt-3.5`}>
                   <table className={tableClass}>
                     <thead className="bg-[#f1f5fc] text-xs uppercase tracking-[0.03em] text-[#5a7096]">
                       <tr>
@@ -902,26 +1380,87 @@ export function WorkspaceView({
 
         {activeWorkspaceTab === 'valuation' && selectedDetail ? (
           <>
-            <section className={kpiGridClass} aria-label="가치평가 핵심 지표">
-              <InfoTile
-                label="공정가치"
-                value={formatKrwCompact(selectedDetail.valuation.fairValueKrw)}
-              />
-              <InfoTile
-                label="기준 시나리오 NPV"
-                value={formatKrwCompact(valuationExpectedCase?.npvKrw ?? 0)}
-              />
-              <InfoTile
-                label="IRR"
-                value={formatPercent(selectedProject?.irr ?? 0)}
-              />
-              <InfoTile
-                label="회수기간"
-                value={formatYears(selectedProject?.paybackYears ?? 0)}
-              />
-            </section>
+            {activeView === 'valuation' ? (
+              <section
+                className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+                aria-label="가치평가 핵심 지표"
+              >
+                {[
+                  {
+                    label: '공정가치',
+                    value: formatKrwCompact(
+                      selectedDetail.valuation.fairValueKrw
+                    ),
+                    accent:
+                      'border-[#cfe0ff] bg-[linear-gradient(180deg,#f8fbff_0%,#eef4ff_100%)] text-[#2f5fcf]',
+                    icon: (
+                      <BarChart3 className="h-3.5 w-3.5" aria-hidden="true" />
+                    )
+                  },
+                  {
+                    label: '기준 시나리오 NPV',
+                    value: formatKrwCompact(valuationExpectedCase?.npvKrw ?? 0),
+                    accent:
+                      'border-[#cde7f4] bg-[linear-gradient(180deg,#f7fcff_0%,#edf8fe_100%)] text-[#0f7aa5]',
+                    icon: (
+                      <TrendingUp className="h-3.5 w-3.5" aria-hidden="true" />
+                    )
+                  },
+                  {
+                    label: 'IRR',
+                    value: formatPercent(selectedProject?.irr ?? 0),
+                    accent:
+                      'border-[#cfebdd] bg-[linear-gradient(180deg,#f8fdf9_0%,#eefaf3_100%)] text-[#1e8758]',
+                    icon: <Gauge className="h-3.5 w-3.5" aria-hidden="true" />
+                  },
+                  {
+                    label: '회수기간',
+                    value: formatYears(selectedProject?.paybackYears ?? 0),
+                    accent:
+                      'border-[#f0ddc8] bg-[linear-gradient(180deg,#fffbf7_0%,#fff4ea_100%)] text-[#c76f1d]',
+                    icon: <Clock3 className="h-3.5 w-3.5" aria-hidden="true" />
+                  }
+                ].map((metric) => (
+                  <article
+                    key={metric.label}
+                    className="rounded-[22px] border border-[#d7e1f1] bg-white px-4 py-4.5 shadow-[0_7px_18px_rgba(24,40,71,0.055)]"
+                  >
+                    <span
+                      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[0.66rem] font-bold uppercase tracking-[0.06em] ${metric.accent}`}
+                    >
+                      {metric.icon}
+                      {metric.label}
+                    </span>
+                    <strong className="mt-3 block text-[1.9rem] font-semibold leading-none tracking-[-0.015em] text-[#182a49]">
+                      {metric.value}
+                    </strong>
+                  </article>
+                ))}
+              </section>
+            ) : (
+              <section className={kpiGridClass} aria-label="가치평가 핵심 지표">
+                <InfoTile
+                  label="공정가치"
+                  value={formatKrwCompact(
+                    selectedDetail.valuation.fairValueKrw
+                  )}
+                />
+                <InfoTile
+                  label="기준 시나리오 NPV"
+                  value={formatKrwCompact(valuationExpectedCase?.npvKrw ?? 0)}
+                />
+                <InfoTile
+                  label="IRR"
+                  value={formatPercent(selectedProject?.irr ?? 0)}
+                />
+                <InfoTile
+                  label="회수기간"
+                  value={formatYears(selectedProject?.paybackYears ?? 0)}
+                />
+              </section>
+            )}
             <section
-              className={dominantSurfaceClass}
+              className="rounded-[22px] border border-[#d7e1f1] bg-white p-4.5 shadow-[0_8px_20px_rgba(24,40,71,0.06)]"
               aria-label="시나리오 가치 비교 surface"
             >
               <DecisionBarChart
@@ -932,7 +1471,7 @@ export function WorkspaceView({
               />
             </section>
             <section
-              className={supportGridClass}
+              className="grid gap-4 lg:grid-cols-2"
               aria-label="가치평가 보조 정보"
             >
               <DecisionSummary
@@ -943,9 +1482,11 @@ export function WorkspaceView({
                   '확률 가정 변경 시 재계산 후 승인'
                 ]}
               />
-              <article className={workflowNoteClass}>
-                <strong>보조 신호 카드</strong>
-                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              <article className="rounded-[20px] border border-[#d8e3f3] bg-white p-4 shadow-[0_7px_18px_rgba(24,40,71,0.055)]">
+                <strong className="text-[0.96rem] font-semibold text-[#1f3458]">
+                  보조 신호 카드
+                </strong>
+                <div className="mt-3.5 grid gap-2.5 sm:grid-cols-2">
                   <div className={miniStatClass}>
                     <span className="text-xs text-[#6881aa]">신용등급</span>
                     <strong className="mt-1 block text-[#1f3458]">
@@ -974,28 +1515,37 @@ export function WorkspaceView({
               </article>
             </section>
             <section
-              className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.5fr)_minmax(320px,0.9fr)]"
+              className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.52fr)_minmax(325px,0.88fr)]"
               aria-label="시나리오 가치 분석과 평가 근거"
             >
               <article className={calmSectionClass}>
-                <div className="flex flex-col gap-3 border-b border-[#e7edf8] pb-4 sm:flex-row sm:items-end sm:justify-between">
+                <div className="flex flex-col gap-3 border-b border-[#e7edf8] pb-4.5 sm:flex-row sm:items-end sm:justify-between">
                   <div>
-                    <h3 className={calmSectionTitleClass}>
+                    <h3
+                      className={`${calmSectionTitleClass} flex items-center gap-2`}
+                    >
+                      <span className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-[#d4e0f3] bg-[#f4f8ff] text-[#4a6dbc]">
+                        <BarChart3 className="h-3.5 w-3.5" aria-hidden="true" />
+                      </span>
                       시나리오 가치 분석
                     </h3>
                     <p className={calmSectionSubtitleClass}>
                       NPV와 확률가중값을 한 번에 비교하는 기준 테이블
                     </p>
                   </div>
-                  <div className="grid gap-2 sm:grid-cols-2">
+                  <div className="grid gap-2.5 sm:grid-cols-2">
                     <div className={calmInsetClass}>
-                      <span className="text-xs text-[#6881aa]">기준 시나리오</span>
+                      <span className="text-xs text-[#6881aa]">
+                        기준 시나리오
+                      </span>
                       <strong className="mt-1 block text-[#1f3458]">
                         {valuationExpectedCase?.label ?? '-'}
                       </strong>
                     </div>
                     <div className={calmInsetClass}>
-                      <span className="text-xs text-[#6881aa]">확률가중 합계</span>
+                      <span className="text-xs text-[#6881aa]">
+                        확률가중 합계
+                      </span>
                       <strong className="mt-1 block text-[#1f3458]">
                         {formatKrwCompact(
                           Math.round(
@@ -1010,7 +1560,7 @@ export function WorkspaceView({
                     </div>
                   </div>
                 </div>
-                <div className="mt-4">
+                <div className="mt-4.5">
                   <div className={tableShellClass}>
                     <table className={tableClass}>
                       <thead className="bg-[#f7faff]">
@@ -1065,31 +1615,40 @@ export function WorkspaceView({
                   </div>
                 </div>
               </article>
-              <div className="grid gap-3">
-                <article className={compactSectionClass}>
-                  <div className={compactSectionHeaderClass}>
+              <div className="grid gap-4">
+                <article className="rounded-[20px] border border-[#dbe4f3] bg-white p-4 text-[#34496d] shadow-[0_8px_20px_rgba(24,40,71,0.05)]">
+                  <div className="flex flex-col gap-2.5 border-b border-[#e7edf8] pb-3 sm:flex-row sm:items-end sm:justify-between">
                     <div>
-                      <h3 className="text-[0.96rem] font-semibold text-[#1f3458]">
+                      <h3 className="flex items-center gap-2 text-[0.96rem] font-semibold text-[#1f3458]">
+                        <span className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-[#d4e0f3] bg-[#f4f8ff] text-[#4a6dbc]">
+                          <ShieldCheck
+                            className="h-3.5 w-3.5"
+                            aria-hidden="true"
+                          />
+                        </span>
                         평가 판단 패널
                       </h3>
                       <p className="mt-1 text-[13px] text-[#6b7fa5]">
                         승인 직전 다시 확인할 기준과 메모
                       </p>
                     </div>
-                    <div className={`${compactInsetClass} min-w-[9rem]`}>
-                      <span className={compactMetricLabelClass}>Gap Signal</span>
+                    <div className="min-w-[9.2rem] rounded-[16px] border border-[#e4ebf7] bg-[#fafcff] px-3 py-2.5 text-[13px] text-[#41557b]">
+                      <span className={compactMetricLabelClass}>
+                        Gap Signal
+                      </span>
                       <strong className="mt-1 block text-sm font-semibold text-[#1f3458]">
                         {formatKrwCompact(valuationGap)}
                       </strong>
                     </div>
                   </div>
-                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  <div className="mt-3.5 grid gap-2.5 sm:grid-cols-2">
                     <article className={compactInsetClass}>
                       <span className={compactMetricLabelClass}>
                         Valuation Basis
                       </span>
                       <p className="mt-1 text-[13px] leading-5 text-[#41557b]">
-                        할인율 {formatPercent(selectedDetail.valuation.discountRate)} ·
+                        할인율{' '}
+                        {formatPercent(selectedDetail.valuation.discountRate)} ·
                         리스크 프리미엄{' '}
                         {formatPercent(selectedDetail.valuation.riskPremium)}
                       </p>
@@ -1099,15 +1658,22 @@ export function WorkspaceView({
                         Approval Memo
                       </span>
                       <p className="mt-1 text-[13px] leading-5 text-[#41557b]">
-                        승인 코멘트에 시나리오 근거와 민감도 차이를 함께 남기세요.
+                        승인 코멘트에 시나리오 근거와 민감도 차이를 함께
+                        남기세요.
                       </p>
                     </article>
                   </div>
                 </article>
-                <article className={compactSectionClass}>
-                  <div className={compactSectionHeaderClass}>
+                <article className="rounded-[20px] border border-[#dbe4f3] bg-white p-4 text-[#34496d] shadow-[0_8px_20px_rgba(24,40,71,0.05)]">
+                  <div className="flex flex-col gap-2.5 border-b border-[#e7edf8] pb-3 sm:flex-row sm:items-end sm:justify-between">
                     <div>
-                      <h3 className="text-[0.96rem] font-semibold text-[#1f3458]">
+                      <h3 className="flex items-center gap-2 text-[0.96rem] font-semibold text-[#1f3458]">
+                        <span className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-[#d4e0f3] bg-[#f4f8ff] text-[#4a6dbc]">
+                          <FileText
+                            className="h-3.5 w-3.5"
+                            aria-hidden="true"
+                          />
+                        </span>
                         평가 근거
                       </h3>
                       <p className="mt-1 text-[13px] text-[#6b7fa5]">
@@ -1115,12 +1681,13 @@ export function WorkspaceView({
                       </p>
                     </div>
                   </div>
-                  <div className="mt-3 grid gap-2">
+                  <div className="mt-3.5 grid gap-2.5">
                     <div className={compactInsetClass}>
                       <span className={compactMetricLabelClass}>평가 기준</span>
                       <p className="mt-1 text-[13px] leading-5 text-[#34496d]">
-                        할인율 {formatPercent(selectedDetail.valuation.discountRate)}{' '}
-                        · 리스크 프리미엄{' '}
+                        할인율{' '}
+                        {formatPercent(selectedDetail.valuation.discountRate)} ·
+                        리스크 프리미엄{' '}
                         {formatPercent(selectedDetail.valuation.riskPremium)}
                       </p>
                     </div>
@@ -1132,10 +1699,13 @@ export function WorkspaceView({
                     </div>
                   </div>
                 </article>
-                <article className={compactSectionClass}>
-                  <div className={compactSectionHeaderClass}>
+                <article className="rounded-[20px] border border-[#dbe4f3] bg-white p-4 text-[#34496d] shadow-[0_8px_20px_rgba(24,40,71,0.05)]">
+                  <div className="flex flex-col gap-2.5 border-b border-[#e7edf8] pb-3 sm:flex-row sm:items-end sm:justify-between">
                     <div>
-                      <h3 className="text-[0.96rem] font-semibold text-[#1f3458]">
+                      <h3 className="flex items-center gap-2 text-[0.96rem] font-semibold text-[#1f3458]">
+                        <span className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-[#d4e0f3] bg-[#f4f8ff] text-[#4a6dbc]">
+                          <Clock3 className="h-3.5 w-3.5" aria-hidden="true" />
+                        </span>
                         시나리오 가정
                       </h3>
                       <p className="mt-1 text-[13px] text-[#6b7fa5]">
@@ -1148,7 +1718,7 @@ export function WorkspaceView({
                       등록된 시나리오 가정이 없습니다.
                     </p>
                   ) : (
-                    <ol className="mt-3 grid gap-2">
+                    <ol className="mt-3.5 grid gap-2.5">
                       {selectedDetail.valuation.assumptions.map((item) => (
                         <li
                           key={`${item.label}-${item.note}`}
@@ -1165,7 +1735,9 @@ export function WorkspaceView({
                             </div>
                             <div className="grid gap-1 text-[13px] text-[#41557b] sm:text-right">
                               <span>NPV {formatKrwCompact(item.npvKrw)}</span>
-                              <span>확률 {formatPercent(item.probability)}</span>
+                              <span>
+                                확률 {formatPercent(item.probability)}
+                              </span>
                             </div>
                           </div>
                         </li>
@@ -1296,8 +1868,7 @@ export function WorkspaceView({
                             {
                               label: '신용점수',
                               value: `${selectedDetail.valuation.creditRiskScore}점`,
-                              ok:
-                                selectedDetail.valuation.creditRiskScore >= 70
+                              ok: selectedDetail.valuation.creditRiskScore >= 70
                             },
                             {
                               label: '듀레이션',
@@ -1384,18 +1955,14 @@ export function WorkspaceView({
                   </div>
                   <div className="mt-3 grid gap-2">
                     <article className={compactInsetClass}>
-                      <span className={compactMetricLabelClass}>
-                        STEP 1
-                      </span>
+                      <span className={compactMetricLabelClass}>STEP 1</span>
                       <p className="mt-1 text-[13px] leading-5">
                         하방 격차 {formatKrwCompact(riskGuardrailGap)} 기준으로
                         조건부 한도를 조정합니다.
                       </p>
                     </article>
                     <article className={compactInsetClass}>
-                      <span className={compactMetricLabelClass}>
-                        STEP 2
-                      </span>
+                      <span className={compactMetricLabelClass}>STEP 2</span>
                       <p className="mt-1 text-[13px] leading-5">
                         신용등급 {selectedDetail.valuation.creditGrade} / 점수{' '}
                         {selectedDetail.valuation.creditRiskScore}점을
@@ -1403,9 +1970,7 @@ export function WorkspaceView({
                       </p>
                     </article>
                     <article className={compactInsetClass}>
-                      <span className={compactMetricLabelClass}>
-                        STEP 3
-                      </span>
+                      <span className={compactMetricLabelClass}>STEP 3</span>
                       <p className="mt-1 text-[13px] leading-5">
                         다음 승인 단계: {selectedDetail.workflow.nextStep}
                       </p>

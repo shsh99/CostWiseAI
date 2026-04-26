@@ -1337,9 +1337,7 @@ export function PortfolioView({
                     />
                     <div className="grid gap-2 sm:grid-cols-2">
                       <div className="rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2.5">
-                        <span className={metaLabelClass}>
-                          총 투자액
-                        </span>
+                        <span className={metaLabelClass}>총 투자액</span>
                         <strong className="mt-1 block text-sm font-semibold text-slate-900 tabular-nums">
                           {formatKrwCompact(headquarter.totalInvestmentKrw)}
                         </strong>

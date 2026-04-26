@@ -775,7 +775,7 @@ export function App() {
   }
 
   return (
-    <div className="grid min-h-screen overflow-x-hidden bg-cw-page lg:grid-cols-[292px_minmax(0,1fr)]">
+    <div className="grid min-h-screen overflow-x-hidden bg-cw-page md:grid-cols-[286px_minmax(0,1fr)]">
       <a
         className="absolute left-2.5 top-2.5 z-50 -translate-y-[140%] rounded-full bg-white px-3.5 py-2.5 text-cw-text no-underline transition-transform duration-150 focus:translate-y-0"
         href="#main-content"

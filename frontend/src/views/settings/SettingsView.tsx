@@ -1,6 +1,15 @@
 import type { RoleInsight, Role } from '../../app/portfolioData';
 import { getRoleLabel } from '../../features/auth/permissions';
 import { Panel } from '../../shared/components/Panel';
+import {
+  ArrowRightCircle,
+  BadgeCheck,
+  BookOpenCheck,
+  Compass,
+  FileCheck2,
+  Shield,
+  Sparkles
+} from 'lucide-react';
 
 type SettingsViewProps = {
   selectedRole: Role;
@@ -60,52 +69,57 @@ export function SettingsView({
     <section className="grid gap-5 xl:grid-cols-[1.38fr_1fr]">
       <Panel
         title="사용 가이드"
+        titleIcon={<BookOpenCheck className="h-4 w-4" />}
         subtitle="실무에서 바로 쓰는 CostWise 운영 절차를 단계별로 안내합니다."
       >
-        <div className="rounded-2xl border border-[#d9e3f1] bg-[linear-gradient(135deg,#f7fafc_0%,#eef4fd_100%)] px-5 py-4">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#6c7d97]">
-            Guide Board
+        <div className="rounded-2xl border border-[#d8e3f2] bg-[linear-gradient(130deg,#ffffff_0%,#f3f7ff_55%,#ecf3ff_100%)] px-5 py-4 shadow-[0_8px_18px_rgba(24,40,71,0.06)]">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#5f799f]">
+            Operator Playbook
           </p>
           <h3 className="mt-1 text-[29px] font-extrabold leading-[1.2] tracking-[-0.02em] text-[#10213d]">
-            설정 전 확인하면
+            설정 전에 확인할 핵심
             <br />
-            운영 정확도가 올라갑니다.
+            운영 동선을 정리했습니다.
           </h3>
           <p className="mt-2 text-[14px] leading-6 text-[#5e708b]">
-            역할별 기준 화면과 검토 절차를 짧은 카드로 정리했습니다.
+            역할별 기준 화면과 검토 절차를 플레이북 카드로 제공합니다.
           </p>
         </div>
 
         <ul className="mt-3.5 grid gap-2.5 md:grid-cols-2 xl:grid-cols-4">
-          <li className="rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-3">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.09em] text-[#6d7f99]">
+          <li className="rounded-xl border border-[#d9e4f4] bg-[#f8fbff] px-3.5 py-3">
+            <p className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.09em] text-[#5f799f]">
+              <BadgeCheck className="h-3.5 w-3.5" />
               현재 역할
             </p>
-            <p className="mt-1 text-[15px] font-semibold text-[#132744]">
+            <p className="mt-1.5 text-[15px] font-semibold text-[#132744]">
               {selectedRoleLabel}
             </p>
           </li>
-          <li className="rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-3">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.09em] text-[#6d7f99]">
+          <li className="rounded-xl border border-[#d9e4f4] bg-[#f8fbff] px-3.5 py-3">
+            <p className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.09em] text-[#5f799f]">
+              <Compass className="h-3.5 w-3.5" />
               기본 진입
             </p>
-            <p className="mt-1 text-[15px] font-semibold text-[#132744]">
+            <p className="mt-1.5 text-[15px] font-semibold text-[#132744]">
               프로젝트 목록
             </p>
           </li>
-          <li className="rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-3">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.09em] text-[#6d7f99]">
+          <li className="rounded-xl border border-[#d9e4f4] bg-[#f8fbff] px-3.5 py-3">
+            <p className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.09em] text-[#5f799f]">
+              <FileCheck2 className="h-3.5 w-3.5" />
               권장 분석
             </p>
-            <p className="mt-1 text-[15px] font-semibold text-[#132744]">
+            <p className="mt-1.5 text-[15px] font-semibold text-[#132744]">
               가치평가 / 리스크·VaR
             </p>
           </li>
-          <li className="rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-3">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.09em] text-[#6d7f99]">
+          <li className="rounded-xl border border-[#d9e4f4] bg-[#f8fbff] px-3.5 py-3">
+            <p className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.09em] text-[#5f799f]">
+              <Sparkles className="h-3.5 w-3.5" />
               플랫폼명
             </p>
-            <p className="mt-1 text-[15px] font-semibold text-[#132744]">
+            <p className="mt-1.5 text-[15px] font-semibold text-[#132744]">
               CostWise
             </p>
           </li>
@@ -115,7 +129,7 @@ export function SettingsView({
           {usageSteps.map((step) => (
             <li
               key={step.title}
-              className="rounded-xl border border-slate-200 bg-white px-4 py-3.5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]"
+              className="rounded-xl border border-[#dce7f4] bg-white px-4 py-3.5 shadow-[0_4px_12px_rgba(15,23,42,0.04)]"
             >
               <div className="flex gap-3">
                 <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-md border border-[#c7d6eb] bg-[#edf3fc] px-1.5 text-[12px] font-bold text-[#365a84]">
@@ -129,6 +143,7 @@ export function SettingsView({
                     {step.description}
                   </p>
                 </div>
+                <ArrowRightCircle className="ml-auto mt-0.5 h-4 w-4 shrink-0 text-[#7b92b8]" />
               </div>
             </li>
           ))}
@@ -147,10 +162,11 @@ export function SettingsView({
 
       <Panel
         title="역할별 운영 체크포인트"
+        titleIcon={<Shield className="h-4 w-4" />}
         subtitle="역할마다 반드시 확인할 핵심 점검 항목을 간단히 정리했습니다."
       >
         <div className="grid gap-3.5">
-          <div className="rounded-2xl border border-[#cedcf2] bg-[linear-gradient(135deg,#f5f9ff_0%,#edf4ff_100%)] px-[18px] py-4">
+          <div className="rounded-2xl border border-[#cedcf2] bg-[linear-gradient(135deg,#f5f9ff_0%,#edf4ff_100%)] px-[18px] py-4 shadow-[0_7px_16px_rgba(24,40,71,0.05)]">
             <p className="text-[11px] font-semibold uppercase tracking-[0.09em] text-[#5a7295]">
               선택 역할 요약 · {selectedRoleLabel}
             </p>
@@ -176,7 +192,7 @@ export function SettingsView({
                   key={item.role}
                   className={`rounded-xl px-3.5 py-3 ${
                     isSelected
-                      ? 'border border-[#9eb8da] bg-[#edf4ff]'
+                      ? 'border border-[#9eb8da] bg-[linear-gradient(130deg,#eef4ff_0%,#f8fbff_100%)] shadow-[0_6px_14px_rgba(24,40,71,0.05)]'
                       : 'border border-slate-200 bg-white'
                   }`}
                 >
