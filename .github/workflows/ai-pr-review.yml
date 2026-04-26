@@ -2,8 +2,6 @@ name: AI PR Review
 
 on:
   pull_request_target:
-    branches:
-      - dev
     types:
       - opened
       - reopened

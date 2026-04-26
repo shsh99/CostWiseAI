@@ -1,0 +1,73 @@
+spring:
+  application:
+    name: finance-platform-backend
+
+server:
+  port: 8080
+
+app:
+  security:
+    jwt:
+      # Defaults are placeholders for local bootstrapping; production should override them with Supabase values.
+      issuer-uri: ${SUPABASE_JWT_ISSUER_URI:https://example.supabase.co/auth/v1}
+      audience: ${SUPABASE_JWT_AUDIENCE:authenticated}
+      secret-base64: ${SUPABASE_JWT_SECRET_BASE64:ZmFrZS1zdXBhYmFzZS1zZWNyZXQtbXVzdC1iZS1vdmVycmlkZQ==}
+    # Assumption: production runs behind HTTPS termination and should enable HSTS.
+    hsts-enabled: ${APP_SECURITY_HSTS_ENABLED:false}
+    docs-public: ${APP_SECURITY_DOCS_PUBLIC:false}
+    actuator-all-public: ${APP_SECURITY_ACTUATOR_ALL_PUBLIC:false}
+    cors:
+      # Comma-separated allowlist. Example:
+      # APP_SECURITY_CORS_ALLOWED_ORIGINS=https://costwiseai.pages.dev,https://app.example.com
+      allowed-origins: ${APP_SECURITY_CORS_ALLOWED_ORIGINS:http://localhost:5173,http://127.0.0.1:5173}
+      allowed-methods: ${APP_SECURITY_CORS_ALLOWED_METHODS:GET,POST,PUT,PATCH,DELETE,OPTIONS}
+      allowed-headers: ${APP_SECURITY_CORS_ALLOWED_HEADERS:Authorization,Content-Type,Accept,Origin}
+      exposed-headers: ${APP_SECURITY_CORS_EXPOSED_HEADERS:Location}
+      max-age-seconds: ${APP_SECURITY_CORS_MAX_AGE_SECONDS:3600}
+    content-security-policy: ${APP_SECURITY_CONTENT_SECURITY_POLICY:default-src 'self'; base-uri 'self'; frame-ancestors 'none'; object-src 'none'}
+
+  persistence:
+    # Supabase URL format:
+    # postgresql://postgres:[YOUR-PASSWORD]@db.hlddhounxffxvqgvwajl.supabase.co:5432/postgres
+    # Use SUPABASE_DATABASE_URL and convert to JDBC when wiring an actual DataSource.
+    supabase-url: ${SUPABASE_DATABASE_URL:}
+    jdbc-url: ${SUPABASE_JDBC_URL:}
+    username: ${SUPABASE_DB_USERNAME:}
+    password: ${SUPABASE_DB_PASSWORD:}
+    # Assumption: Supabase managed Postgres uses SSL in production.
+    ssl-mode: ${SUPABASE_DB_SSLMODE:require}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+app:
+  security:
+    docs-public: true
+    actuator-all-public: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+app:
+  security:
+    docs-public: false
+    actuator-all-public: false
+    hsts-enabled: true

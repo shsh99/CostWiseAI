@@ -1,0 +1,17 @@
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/*.tsbuildinfo
+frontend/.env.local
+frontend/dev-server.err.log
+frontend/dev-server.out.log
+backend/build/
+backend/.gradle/
+backend/.gradle-user/
+backend/run-backend-local.ps1
+backend/wrapper-build/
+.gradle/
+.worktrees/
+*.local
+.env
+.env.*

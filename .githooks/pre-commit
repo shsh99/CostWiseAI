@@ -1,0 +1,54 @@
+#!/bin/sh
+set -e
+
+cd "$(git rev-parse --show-toplevel)"
+
+STAGED_FILES="$(git diff --cached --name-only --diff-filter=ACMR)"
+
+if [ -z "$STAGED_FILES" ]; then
+  echo "[pre-commit] No staged files. Skipping checks."
+  exit 0
+fi
+
+FRONTEND_CHANGED=0
+BACKEND_CHANGED=0
+
+for path in $STAGED_FILES; do
+  case "$path" in
+    frontend/*)
+      FRONTEND_CHANGED=1
+      ;;
+    backend/*)
+      BACKEND_CHANGED=1
+      ;;
+  esac
+done
+
+if [ "$FRONTEND_CHANGED" -eq 1 ]; then
+  echo "[pre-commit] frontend changes detected -> running lint/format checks"
+  FRONTEND_STAGED_FILES="$(printf '%s\n' "$STAGED_FILES" | grep '^frontend/' || true)"
+  cd frontend
+  npm run lint
+  PRETTIER_TARGETS="$(printf '%s\n' "$FRONTEND_STAGED_FILES" \
+    | sed 's#^frontend/##' \
+    | grep -E '\.(js|jsx|ts|tsx|css|scss|json|md|html|yml|yaml|mjs|cjs)$' || true)"
+
+  if [ -n "$PRETTIER_TARGETS" ]; then
+    echo "[pre-commit] running prettier --check on staged frontend files only"
+    printf '%s\n' "$PRETTIER_TARGETS" | xargs npx prettier --check
+  else
+    echo "[pre-commit] no staged frontend files require prettier check"
+  fi
+  cd ..
+else
+  echo "[pre-commit] no frontend changes -> skipping frontend checks"
+fi
+
+if [ "$BACKEND_CHANGED" -eq 1 ]; then
+  echo "[pre-commit] backend changes detected -> running gradle check"
+  cd backend
+  ./gradlew --no-daemon check
+  cd ..
+else
+  echo "[pre-commit] no backend changes -> skipping backend checks"
+fi

@@ -1,0 +1,14 @@
+feat: short summary in imperative mood
+
+Body:
+- what changed
+- why it changed
+- any behavior or API impact
+
+Refs:
+- #issue-number
+
+Checklist:
+- tests run:
+- docs updated:
+- migration included:

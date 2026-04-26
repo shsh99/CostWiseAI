@@ -1,0 +1,57 @@
+- name: bug
+  color: d73a4a
+  description: Something is broken or produces the wrong result.
+- name: enhancement
+  color: a2eeef
+  description: A new feature or an improvement to existing behavior.
+- name: docs
+  color: 0075ca
+  description: Documentation-only work.
+- name: chore
+  color: cfd3d7
+  description: Maintenance, cleanup, or tooling changes.
+- name: refactor
+  color: c5def5
+  description: Structural code change without a user-facing feature.
+- name: performance
+  color: fbca04
+  description: Work that improves latency, throughput, or resource use.
+- name: security
+  color: b60205
+  description: Work that affects auth, access control, secrets, or data protection.
+- name: frontend
+  color: 1d76db
+  description: User interface, UX, or client-side work.
+- name: backend
+  color: 0052cc
+  description: API, business logic, or server-side work.
+- name: database
+  color: 5319e7
+  description: Schema, migration, query, or data model work.
+- name: deployment
+  color: 0e8a16
+  description: Build, release, CI, or infrastructure work.
+- name: qa
+  color: 7057ff
+  description: Test coverage, verification, or quality assurance work.
+- name: high-priority
+  color: b60205
+  description: Must be addressed soon.
+- name: medium-priority
+  color: fbca04
+  description: Important but not urgent.
+- name: low-priority
+  color: c2e0c6
+  description: Nice to have or deferrable.
+- name: blocked
+  color: d93f0b
+  description: Work that cannot proceed until another dependency is resolved.
+- name: needs-review
+  color: 006b75
+  description: Ready for human review.
+- name: needs-info
+  color: f9d0c4
+  description: Waiting on clarification or missing input.
+- name: good-first-issue
+  color: 7057ff
+  description: Suitable for a new contributor or a small scoped task.
