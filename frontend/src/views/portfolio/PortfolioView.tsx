@@ -1183,11 +1183,11 @@ export function PortfolioView({
   }
 
   const actionButtonBaseClass =
-    'inline-flex h-10 items-center justify-center rounded-lg border px-3.5 text-sm font-semibold tracking-tight transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-45';
+    'inline-flex h-8.5 items-center justify-center rounded-full border px-3 text-[13px] font-medium tracking-tight transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-45';
   const secondaryActionButtonClass = `${actionButtonBaseClass} border-slate-300 bg-white text-slate-700 shadow-sm hover:border-slate-400 hover:bg-slate-50`;
   const primaryActionButtonClass = `${actionButtonBaseClass} border-blue-700 bg-blue-700 text-white shadow-sm hover:bg-blue-600`;
   const controlSurfaceClass =
-    'h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-slate-500 focus:ring-2 focus:ring-slate-200';
+    'h-8.5 w-full rounded-xl border border-slate-300 bg-white px-3 text-[13px] text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-slate-500 focus:ring-2 focus:ring-slate-200';
   const stateBoxClass =
     'grid gap-2 rounded-lg border border-slate-200 bg-slate-50 p-4';
   const stateButtonClass =
@@ -1195,7 +1195,7 @@ export function PortfolioView({
   const statusPillBaseClass =
     'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold leading-none';
   const filterGroupClass =
-    'grid gap-2 rounded-xl border border-slate-200 bg-white/90 p-3';
+    'grid gap-2 rounded-[18px] border border-slate-200/90 bg-white p-3';
   const filterPillBaseClass =
     'inline-flex h-8 items-center rounded-full border px-3 text-xs font-medium transition';
   const projectFormClass = 'mt-4 grid gap-4';
@@ -1208,6 +1208,17 @@ export function PortfolioView({
   const projectFormActionsClass =
     'flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 sm:flex-row sm:items-center sm:justify-between';
   const projectFormHintClass = 'm-0 text-sm leading-6 text-slate-600';
+  const metaLabelClass =
+    'text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500';
+  const compactMetricCardClass =
+    'grid gap-1 rounded-[18px] border border-slate-200/90 bg-white px-3.5 py-2.5';
+  const compactMetricValueClass =
+    'text-[15px] font-semibold tracking-tight text-slate-900 tabular-nums';
+  const tableHeaderClass =
+    'px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500';
+  const tableNumberCellClass =
+    'whitespace-nowrap px-4 py-3 text-sm font-medium tabular-nums text-slate-700';
+  const tableTextCellClass = 'px-4 py-3 text-sm text-slate-700';
 
   function statusPillClass(status: ProjectStatus) {
     if (status === '승인') {
@@ -1263,25 +1274,29 @@ export function PortfolioView({
                 className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
                 aria-label="포트폴리오 개요"
               >
-                <article className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-                  <span className="text-xs text-slate-500">총 투자액</span>
-                  <strong>
+                <article className={compactMetricCardClass}>
+                  <span className={metaLabelClass}>총 투자액</span>
+                  <strong className={compactMetricValueClass}>
                     {formatKrwCompact(portfolio.overview.totalInvestmentKrw)}
                   </strong>
                 </article>
-                <article className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-                  <span className="text-xs text-slate-500">평균 NPV</span>
-                  <strong>
+                <article className={compactMetricCardClass}>
+                  <span className={metaLabelClass}>평균 NPV</span>
+                  <strong className={compactMetricValueClass}>
                     {formatKrwCompact(portfolio.overview.averageNpvKrw)}
                   </strong>
                 </article>
-                <article className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-                  <span className="text-xs text-slate-500">조건부 진행</span>
-                  <strong>{portfolio.overview.conditionalCount}개</strong>
+                <article className={compactMetricCardClass}>
+                  <span className={metaLabelClass}>조건부 진행</span>
+                  <strong className={compactMetricValueClass}>
+                    {portfolio.overview.conditionalCount}개
+                  </strong>
                 </article>
-                <article className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-                  <span className="text-xs text-slate-500">승인 완료</span>
-                  <strong>{portfolio.overview.approvedCount}개</strong>
+                <article className={compactMetricCardClass}>
+                  <span className={metaLabelClass}>승인 완료</span>
+                  <strong className={compactMetricValueClass}>
+                    {portfolio.overview.approvedCount}개
+                  </strong>
                 </article>
               </div>
 
@@ -1289,11 +1304,14 @@ export function PortfolioView({
                 {portfolio.headquarters.map((headquarter) => (
                   <article
                     key={headquarter.code}
-                    className="grid gap-3 rounded-xl border border-slate-200 bg-white p-4"
+                    className="grid gap-3 rounded-2xl border border-slate-200/90 bg-white p-4"
                   >
                     <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <strong>{headquarter.name}</strong>
+                      <div className="min-w-0">
+                        <p className={metaLabelClass}>{headquarter.code}</p>
+                        <strong className="mt-1 block text-base font-semibold text-slate-900">
+                          {headquarter.name}
+                        </strong>
                         <span className="mt-1 block text-sm text-slate-500">
                           {headquarter.projectCount}개 프로젝트
                         </span>
@@ -1318,17 +1336,17 @@ export function PortfolioView({
                       }
                     />
                     <div className="grid gap-2 sm:grid-cols-2">
-                      <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                        <span className="text-xs text-slate-500">
+                      <div className="rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2.5">
+                        <span className={metaLabelClass}>
                           총 투자액
                         </span>
-                        <strong>
+                        <strong className="mt-1 block text-sm font-semibold text-slate-900 tabular-nums">
                           {formatKrwCompact(headquarter.totalInvestmentKrw)}
                         </strong>
                       </div>
-                      <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                        <span className="text-xs text-slate-500">평균 NPV</span>
-                        <strong>
+                      <div className="rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2.5">
+                        <span className={metaLabelClass}>평균 NPV</span>
+                        <strong className="mt-1 block text-sm font-semibold text-slate-900 tabular-nums">
                           {formatKrwCompact(headquarter.averageNpvKrw)}
                         </strong>
                       </div>
@@ -1448,22 +1466,18 @@ export function PortfolioView({
           ) : null}
 
           {!isErrorWithoutData && !isLoadingWithoutData ? (
-            <div className="rounded-2xl border border-slate-200 bg-gradient-to-b from-white via-slate-50/65 to-white p-4 shadow-sm sm:p-5">
-              <div className="grid gap-4 border-b border-slate-200 pb-4 xl:grid-cols-[1fr_auto] xl:items-start">
-                <div className="space-y-2">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                    프로젝트 운영 센터
+            <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 pb-3">
+                <div className="space-y-1">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                    Portfolio
                   </p>
-                  <h3 className="text-xl font-semibold tracking-tight text-slate-900">
+                  <h3 className="text-lg font-semibold tracking-tight text-slate-900">
                     프로젝트 목록
                   </h3>
-                  <p className="max-w-3xl text-sm leading-6 text-slate-600">
-                    검색과 다중 필터로 운영 후보를 좁힌 뒤, 상세 허브에서
-                    컨텍스트를 정리하고 분석 워크스페이스로 이동합니다.
-                  </p>
                 </div>
                 <div
-                  className="grid gap-2 rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm sm:grid-cols-2 xl:w-[26.5rem]"
+                  className="flex flex-wrap items-center justify-end gap-1.5"
                   aria-label="운영 액션"
                 >
                   <button
@@ -1489,7 +1503,7 @@ export function PortfolioView({
                       + 새 프로젝트
                     </button>
                   ) : (
-                    <span className="col-span-full rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800">
+                    <span className="rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs leading-5 text-amber-800">
                       {writeAccessMessage}
                     </span>
                   )}
@@ -1524,12 +1538,12 @@ export function PortfolioView({
               </div>
 
               <div
-                className="mt-4 grid gap-3 xl:grid-cols-12"
+                className="mt-3 grid gap-2.5 xl:grid-cols-12"
                 aria-label="프로젝트 운영 필터"
               >
                 <div className={`${filterGroupClass} xl:col-span-4`}>
                   <label
-                    className="flex min-w-0 flex-col gap-1.5"
+                    className="flex min-w-0 flex-col gap-1"
                     htmlFor="project-search-input"
                   >
                     <span className="text-[11px] font-semibold uppercase tracking-[0.09em] text-slate-500">
@@ -1547,7 +1561,7 @@ export function PortfolioView({
                     />
                   </label>
                   <label
-                    className="flex min-w-0 flex-col gap-1.5"
+                    className="flex min-w-0 flex-col gap-1"
                     htmlFor="project-sort-select"
                   >
                     <span className="text-[11px] font-semibold uppercase tracking-[0.09em] text-slate-500">
@@ -1578,11 +1592,8 @@ export function PortfolioView({
                     <span className="text-[11px] font-semibold uppercase tracking-[0.09em] text-slate-500">
                       빠른 필터
                     </span>
-                    <span className="text-xs text-slate-500">
-                      {explorerQuickFilterOptions.length}개
-                    </span>
                   </div>
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap gap-1">
                     {explorerQuickFilterOptions.map((filter) => (
                       <button
                         key={filter.key}
@@ -1610,11 +1621,8 @@ export function PortfolioView({
                     <span className="text-[11px] font-semibold uppercase tracking-[0.09em] text-slate-500">
                       상태
                     </span>
-                    <span className="text-xs text-slate-500">
-                      {statusFilter === 'all' ? '전체' : statusFilter}
-                    </span>
                   </div>
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap gap-1">
                     {projectStatusFilterOptions.map((filter) => (
                       <button
                         key={filter.key}
@@ -1641,13 +1649,8 @@ export function PortfolioView({
                     <span className="text-[11px] font-semibold uppercase tracking-[0.09em] text-slate-500">
                       본부
                     </span>
-                    <span className="text-xs text-slate-500">
-                      {resolvedHeadquarterFilter === 'all'
-                        ? '전체'
-                        : resolvedHeadquarterFilter}
-                    </span>
                   </div>
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap gap-1">
                     {renderedHeadquarterOptions.map((headquarter) => (
                       <button
                         key={headquarter}
@@ -1667,29 +1670,29 @@ export function PortfolioView({
                 </div>
               </div>
 
-              <div className="mt-4 grid gap-2 rounded-xl border border-slate-200 bg-white p-3 sm:grid-cols-[auto_auto_1fr_auto] sm:items-center">
-                <span className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700">
+              <div className="mt-3 grid gap-2 rounded-lg border border-slate-200 bg-slate-50/70 p-2.5 sm:grid-cols-[auto_auto_1fr_auto] sm:items-center">
+                <span className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700">
                   운영 대상 {displayedProjects.length}
                 </span>
-                <span className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700">
+                <span className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700">
                   필터 결과 {recomputedFilteredProjects.length}
                 </span>
-                <span className="text-sm text-slate-600">
+                <span className="text-xs text-slate-600">
                   전체 프로젝트 <strong>{mergedProjects.length}</strong>
                 </span>
                 <div className="flex flex-wrap items-center justify-end gap-2">
                   {explicitSelectedProject ? (
-                    <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800">
+                    <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-800">
                       현재 선택 {explicitSelectedProject.name}
                     </span>
                   ) : (
-                    <span className="rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+                    <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600">
                       선택된 프로젝트 없음
                     </span>
                   )}
                   <button
                     type="button"
-                    className="inline-flex h-9 items-center rounded-lg border border-slate-300 px-3 text-xs font-medium text-slate-600 transition hover:border-slate-400 hover:bg-slate-50"
+                    className="inline-flex h-8 items-center rounded-md border border-slate-300 px-2.5 text-xs font-medium text-slate-600 transition hover:border-slate-400 hover:bg-white"
                     onClick={resetOperationalFilters}
                   >
                     필터 초기화
@@ -1697,39 +1700,39 @@ export function PortfolioView({
                 </div>
               </div>
 
-              <div className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+              <div className="mt-3 overflow-hidden rounded-lg border border-slate-200 bg-white">
                 <div className="overflow-x-auto">
-                  <table className="min-w-[1000px] w-full border-collapse text-sm">
+                  <table className="min-w-[940px] w-full border-collapse text-sm">
                     <thead className="sticky top-0 z-[1] bg-slate-100/95 backdrop-blur">
                       <tr>
-                        <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
+                        <th className="px-3 py-1.5 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
                           우선
                         </th>
-                        <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
+                        <th className="px-3 py-1.5 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
                           프로젝트
                         </th>
-                        <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
+                        <th className="px-3 py-1.5 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
                           본부
                         </th>
-                        <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
+                        <th className="px-3 py-1.5 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
                           상태
                         </th>
-                        <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
+                        <th className="px-3 py-1.5 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
                           리스크
                         </th>
-                        <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
+                        <th className="px-3 py-1.5 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
                           투자액
                         </th>
-                        <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
+                        <th className="px-3 py-1.5 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
                           NPV
                         </th>
-                        <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
+                        <th className="px-3 py-1.5 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
                           IRR
                         </th>
-                        <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
+                        <th className="px-3 py-1.5 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
                           회수
                         </th>
-                        <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
+                        <th className="px-3 py-1.5 text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
                           허브
                         </th>
                       </tr>
@@ -1756,12 +1759,12 @@ export function PortfolioView({
                             }
                           }}
                         >
-                          <td className="whitespace-nowrap px-3 py-2">
+                          <td className="whitespace-nowrap px-3 py-1.5">
                             <span className="inline-flex rounded-md border border-slate-300 bg-slate-50 px-2 py-0.5 text-xs font-semibold text-slate-600">
                               #{project.rank}
                             </span>
                           </td>
-                          <td className="px-3 py-2">
+                          <td className="px-3 py-1.5">
                             <strong className="font-semibold text-slate-800">
                               {project.name}
                             </strong>
@@ -1769,34 +1772,34 @@ export function PortfolioView({
                               {project.code} · {project.assetCategory}
                             </div>
                           </td>
-                          <td className="whitespace-nowrap px-3 py-2 text-slate-700">
+                          <td className="whitespace-nowrap px-3 py-1.5 text-slate-700">
                             {project.headquarter}
                           </td>
-                          <td className="whitespace-nowrap px-3 py-2">
+                          <td className="whitespace-nowrap px-3 py-1.5">
                             <span className={statusPillClass(project.status)}>
                               <span className="h-1.5 w-1.5 rounded-full bg-current/80" />
                               {project.status}
                             </span>
                           </td>
-                          <td className="whitespace-nowrap px-3 py-2">
+                          <td className="whitespace-nowrap px-3 py-1.5">
                             <span className={riskPillClass(project.risk)}>
                               <span className="h-1.5 w-1.5 rounded-full bg-current/80" />
                               {project.risk}
                             </span>
                           </td>
-                          <td className="whitespace-nowrap px-3 py-2 font-medium text-slate-700">
+                          <td className="whitespace-nowrap px-3 py-1.5 font-medium text-slate-700">
                             {formatKrwCompact(project.investmentKrw)}
                           </td>
-                          <td className="whitespace-nowrap px-3 py-2 font-medium text-slate-700">
+                          <td className="whitespace-nowrap px-3 py-1.5 font-medium text-slate-700">
                             {formatKrwCompact(project.npvKrw)}
                           </td>
-                          <td className="whitespace-nowrap px-3 py-2 text-slate-700">
+                          <td className="whitespace-nowrap px-3 py-1.5 text-slate-700">
                             {(project.irr * 100).toFixed(1)}%
                           </td>
-                          <td className="whitespace-nowrap px-3 py-2 text-slate-700">
+                          <td className="whitespace-nowrap px-3 py-1.5 text-slate-700">
                             {project.paybackYears.toFixed(1)}년
                           </td>
-                          <td className="whitespace-nowrap px-3 py-2">
+                          <td className="whitespace-nowrap px-3 py-1.5">
                             <button
                               type="button"
                               className="inline-flex h-8 items-center rounded-lg border border-slate-300 px-3 text-xs font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-100"
@@ -1817,7 +1820,7 @@ export function PortfolioView({
                   </table>
                 </div>
                 {displayedProjects.length === 0 ? (
-                  <div className="m-3 grid gap-2 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                  <div className="m-2.5 grid gap-1.5 rounded-md border border-slate-200 bg-slate-50 p-3">
                     <p className="m-0 text-sm text-slate-600">
                       조건에 맞는 프로젝트가 없습니다.
                     </p>
