@@ -33,7 +33,7 @@ public class DashboardController {
                 "portfolio", portfolioSummaryService.loadPortfolioSummary());
     }
 
-    @GetMapping("/portfolio/summary")
+    @GetMapping({"/portfolio", "/portfolio/summary"})
     public PortfolioSummaryResponse portfolioSummary() {
         return portfolioSummaryService.loadPortfolioSummary();
     }

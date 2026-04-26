@@ -57,7 +57,8 @@
 |------|-----|
 | **Frontend** | https://costwiseai-frontend.pages.dev |
 | **Backend API** | https://costwiseai-production.up.railway.app |
-| **API 명세** | https://costwiseai-production.up.railway.app/swagger-ui |
+| **Swagger UI** | https://costwiseai-production.up.railway.app/swagger-ui/index.html |
+| **OpenAPI JSON** | https://costwiseai-production.up.railway.app/v3/api-docs |
 | **Health Check** | https://costwiseai-production.up.railway.app/api/health |
 
 
@@ -65,15 +66,19 @@
 
 ## 📊 권한별 기능
 
-| 권한 | 접근 가능 기능 |
-|------|---|
-| **ADMIN** | 모든 API + 감사 로그 + 사용자 관리 |
-| **PLANNER** | 대시보드 · 포트폴리오 · 원가 · 평가 · 워크플로우 |
-| **FINANCE_REVIEWER** | 재무 검토 · 평가 분석 · 워크플로우 리뷰 |
-| **EXECUTIVE** | 최종 승인 결정 · 감사 로그 조회 |
-| **PM** | 프로젝트 단위 조회 · 평가 · 워크플로우 참여 |
-| **ACCOUNTANT** | 원가 · 관리회계 · 포트폴리오 조회 |
-| **AUDITOR** | 감사 로그 중심 접근 |
+### 5.2 Role-Based Access Control (RBAC)
+
+| 역할 | 권한 | API 접근 |
+|------|------|----------|
+| **PLANNER** | 프로젝트 생성/수정 + 검토 요청 | `GET /api/portfolio`, `POST /api/projects`, `PUT /api/projects/{id}`, `POST /api/projects/{id}/submit-review` |
+| **FINANCE_REVIEWER** | 원가/평가 검증 + 검토 의견/승인 | `GET /api/cost-accounting`, `GET /api/valuation-risk?projectId={id}`, `POST /api/review/{id}/approve` |
+| **EXECUTIVE** | 최종 승인/반려 + 감사 로그 등록 | `POST /api/review/{id}/approve`, `POST /api/audit-logs` |
+| **ADMIN** | 모든 권한 + 사용자 관리 | 모든 API |
+| **AUDITOR** | 감사 로그 조회 | `GET /api/audit-logs` |
+
+운영 참고:
+- 레거시 경로(`GET /api/portfolio/summary`, `GET /api/cost-accounting/summary`, `GET /api/valuation-risk/projects/{id}`)도 하위 호환으로 유지합니다.
+- 감사 로그는 읽기(`GET`)와 쓰기(`POST`) 권한을 분리합니다.
 
 ---
 
@@ -201,7 +206,7 @@ cd backend
 open http://localhost:5173
 
 # Backend API 명세
-open http://localhost:8080/swagger-ui
+open http://localhost:8080/swagger-ui/index.html
 
 # 헬스 체크
 curl http://localhost:8080/api/health
@@ -214,17 +219,20 @@ curl http://localhost:8080/api/health
 ### 대시보드 & 포트폴리오
 ```
 GET  /api/dashboard                    # 전체 대시보드 요약
+GET  /api/portfolio                    # 포트폴리오 KPI (RBAC 5.2 표준 경로)
 GET  /api/portfolio/summary            # 포트폴리오 KPI
 ```
 
 ### 원가 분석
 ```
+GET  /api/cost-accounting              # 원가 요약 (RBAC 5.2 표준 경로)
 GET  /api/cost-accounting/summary      # 원가 요약
 GET  /api/cost-accounting/detail       # 원가 상세 (본부별·프로젝트별)
 ```
 
 ### 금융 평가 & 리스크
 ```
+GET  /api/valuation-risk?projectId={projectId}   # 평가/리스크 조회 (RBAC 5.2 표준 경로)
 GET  /api/valuation-risk/projects/{projectId}    # 프로젝트 평가·리스크 지표
 GET  /api/valuation-risk/scenarios                # 시나리오별 분석
 ```
@@ -235,6 +243,7 @@ GET  /api/projects/{id}/workflow               # 승인 상태 조회
 POST /api/projects/{id}/submit-review          # 검토 요청
 POST /api/review/{id}/approve                  # 승인
 POST /api/review/{id}/reject                   # 반려
+POST /api/projects/{id}/review                 # 기존 통합 리뷰 API (하위 호환)
 ```
 
 ### 감사 로그
@@ -249,7 +258,7 @@ GET  /api/users                        # 사용자 목록 (ADMIN만)
 POST /api/users                        # 사용자 생성 (ADMIN만)
 ```
 
-**Swagger 접속**: http://localhost:8080/swagger-ui
+**Swagger 접속**: http://localhost:8080/swagger-ui/index.html
 
 ---
 
@@ -257,7 +266,7 @@ POST /api/users                        # 사용자 생성 (ADMIN만)
 
 ### 인증 & 인가
 - **JWT 기반 토큰**: Supabase에서 발급
-- **역할 기반 접근 제어 (RBAC)**: 7개 권한 역할 정의
+- **역할 기반 접근 제어 (RBAC)**: 5.2 기준 핵심 5역할(`PLANNER`, `FINANCE_REVIEWER`, `EXECUTIVE`, `ADMIN`, `AUDITOR`) 정의
 - **API 엔드포인트별 권한 검증**: Spring Security로 강제
 
 ### 데이터 보호
