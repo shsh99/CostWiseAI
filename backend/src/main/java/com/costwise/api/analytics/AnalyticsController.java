@@ -6,6 +6,7 @@ import com.costwise.service.CostAccountingService;
 import com.costwise.service.ValuationRiskService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -22,9 +23,14 @@ public class AnalyticsController {
         this.valuationRiskService = valuationRiskService;
     }
 
-    @GetMapping("/cost-accounting/summary")
+    @GetMapping({"/cost-accounting", "/cost-accounting/summary"})
     public CostAccountingSummaryResponse costAccountingSummary() {
         return costAccountingService.loadSummary();
+    }
+
+    @GetMapping("/valuation-risk")
+    public ValuationRiskResponse valuationRisk(@RequestParam String projectId) {
+        return valuationRiskService.loadProjectDetail(projectId);
     }
 
     @GetMapping("/valuation-risk/projects/{projectId}")

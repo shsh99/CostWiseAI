@@ -154,7 +154,7 @@ class WorkflowControllerSecurityTest {
     void auditLogsRequireProjectId() throws Exception {
         Instant now = Instant.now();
         mockMvc.perform(get("/api/audit-logs")
-                        .header("Authorization", bearerToken(token("executive", ISSUER, AUDIENCE, now, now.plusSeconds(3600)))))
+                        .header("Authorization", bearerToken(token("auditor", ISSUER, AUDIENCE, now, now.plusSeconds(3600)))))
                 .andExpect(status().isBadRequest());
     }
 
@@ -167,10 +167,10 @@ class WorkflowControllerSecurityTest {
     }
 
     @Test
-    void auditLogsAllowExecutiveRole() throws Exception {
+    void auditLogsAllowAuditorRole() throws Exception {
         Instant now = Instant.now();
         mockMvc.perform(get("/api/audit-logs?projectId=P-100")
-                        .header("Authorization", bearerToken(token("executive", ISSUER, AUDIENCE, now, now.plusSeconds(3600)))))
+                        .header("Authorization", bearerToken(token("auditor", ISSUER, AUDIENCE, now, now.plusSeconds(3600)))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items").isArray());
     }
@@ -193,23 +193,57 @@ class WorkflowControllerSecurityTest {
 
     @Test
     void coreBusinessApisAllowAuthenticatedBusinessRoles() throws Exception {
-        for (String role : List.of("planner", "PM", "finance_reviewer", "ACCOUNTANT", "executive")) {
-            String authHeader = bearerToken(token(role, ISSUER, AUDIENCE, Instant.now(), Instant.now().plusSeconds(3600)));
+        String plannerToken = bearerToken(token("planner", ISSUER, AUDIENCE, Instant.now(), Instant.now().plusSeconds(3600)));
+        mockMvc.perform(get("/api/dashboard").header("Authorization", plannerToken)).andExpect(status().isOk());
+        mockMvc.perform(get("/api/portfolio/summary").header("Authorization", plannerToken)).andExpect(status().isOk());
+        mockMvc.perform(get("/api/cost-accounting/summary").header("Authorization", plannerToken))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/valuation-risk/projects/14").header("Authorization", plannerToken))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(post("/api/compute")
+                        .header("Authorization", plannerToken)
+                        .contentType(APPLICATION_JSON)
+                        .content(validComputeRequest()))
+                .andExpect(status().isOk());
 
-            mockMvc.perform(get("/api/dashboard").header("Authorization", authHeader))
-                    .andExpect(status().isOk());
-            mockMvc.perform(get("/api/portfolio/summary").header("Authorization", authHeader))
-                    .andExpect(status().isOk());
-            mockMvc.perform(get("/api/cost-accounting/summary").header("Authorization", authHeader))
-                    .andExpect(status().isOk());
-            mockMvc.perform(get("/api/valuation-risk/projects/14").header("Authorization", authHeader))
-                    .andExpect(status().isOk());
-            mockMvc.perform(post("/api/compute")
-                            .header("Authorization", authHeader)
-                            .contentType(APPLICATION_JSON)
-                            .content(validComputeRequest()))
-                    .andExpect(status().isOk());
-        }
+        String reviewerToken = bearerToken(token("finance_reviewer", ISSUER, AUDIENCE, Instant.now(), Instant.now().plusSeconds(3600)));
+        mockMvc.perform(get("/api/dashboard").header("Authorization", reviewerToken)).andExpect(status().isOk());
+        mockMvc.perform(get("/api/portfolio/summary").header("Authorization", reviewerToken))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/cost-accounting/summary").header("Authorization", reviewerToken))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/valuation-risk/projects/14").header("Authorization", reviewerToken))
+                .andExpect(status().isOk());
+        mockMvc.perform(post("/api/compute")
+                        .header("Authorization", reviewerToken)
+                        .contentType(APPLICATION_JSON)
+                        .content(validComputeRequest()))
+                .andExpect(status().isOk());
+
+        String executiveToken = bearerToken(token("executive", ISSUER, AUDIENCE, Instant.now(), Instant.now().plusSeconds(3600)));
+        mockMvc.perform(get("/api/dashboard").header("Authorization", executiveToken)).andExpect(status().isOk());
+        mockMvc.perform(get("/api/portfolio/summary").header("Authorization", executiveToken))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/cost-accounting/summary").header("Authorization", executiveToken))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/valuation-risk/projects/14").header("Authorization", executiveToken))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(post("/api/compute")
+                        .header("Authorization", executiveToken)
+                        .contentType(APPLICATION_JSON)
+                        .content(validComputeRequest()))
+                .andExpect(status().isOk());
+
+        String adminToken = bearerToken(token("admin", ISSUER, AUDIENCE, Instant.now(), Instant.now().plusSeconds(3600)));
+        mockMvc.perform(get("/api/dashboard").header("Authorization", adminToken)).andExpect(status().isOk());
+        mockMvc.perform(get("/api/portfolio/summary").header("Authorization", adminToken)).andExpect(status().isOk());
+        mockMvc.perform(get("/api/cost-accounting/summary").header("Authorization", adminToken)).andExpect(status().isOk());
+        mockMvc.perform(get("/api/valuation-risk/projects/14").header("Authorization", adminToken)).andExpect(status().isOk());
+        mockMvc.perform(post("/api/compute")
+                        .header("Authorization", adminToken)
+                        .contentType(APPLICATION_JSON)
+                        .content(validComputeRequest()))
+                .andExpect(status().isOk());
     }
 
     @Test
@@ -258,7 +292,9 @@ class WorkflowControllerSecurityTest {
         return switch (role == null ? "" : role.trim().toLowerCase()) {
             case "pm", "planner" -> "PLANNER";
             case "accountant", "finance_reviewer" -> "FINANCE_REVIEWER";
-            case "admin", "auditor", "executive" -> "EXECUTIVE";
+            case "admin" -> "ADMIN";
+            case "auditor" -> "AUDITOR";
+            case "executive" -> "EXECUTIVE";
             default -> role == null ? "EXECUTIVE" : role.trim().toUpperCase();
         };
     }
