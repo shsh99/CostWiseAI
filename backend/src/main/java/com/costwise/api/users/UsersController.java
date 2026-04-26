@@ -1,6 +1,7 @@
 package com.costwise.api.users;
 
 import com.costwise.api.dto.user.CreateUserRequest;
+import com.costwise.api.dto.user.UpdatePasswordRequest;
 import com.costwise.api.dto.user.UpdateUserRequest;
 import com.costwise.api.dto.user.UserResponse;
 import com.costwise.user.UserRepository;
@@ -23,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/users")
-@PreAuthorize("hasAnyRole('ADMIN', 'EXECUTIVE', 'AUDITOR')")
+@PreAuthorize("hasAnyRole('ADMIN', 'AUDITOR', 'EXECUTIVE')")
 public class UsersController {
 
     private final UserService userService;
@@ -72,6 +73,16 @@ public class UsersController {
                         request.mfaEnabled()),
                 authentication);
         return toResponse(updated);
+    }
+
+    @PutMapping("/{userId}/password")
+    @PreAuthorize("hasRole('ADMIN')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void updatePassword(
+            @PathVariable String userId,
+            @Valid @RequestBody UpdatePasswordRequest request,
+            Authentication authentication) {
+        userService.updateUserPassword(userId, request.password(), authentication);
     }
 
     @DeleteMapping("/{userId}")

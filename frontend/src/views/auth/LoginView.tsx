@@ -2,23 +2,26 @@
 import { useState, type FormEvent } from 'react';
 
 type LoginViewProps = {
-  onLogin(username: string, password: string): boolean;
+  onLogin(username: string, password: string): Promise<void>;
 };
 
 export function LoginView({ onLogin }: LoginViewProps) {
   const [username, setUsername] = useState('admin');
   const [password, setPassword] = useState('admin123');
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const succeeded = onLogin(username.trim(), password);
-    if (!succeeded) {
+    setIsSubmitting(true);
+    try {
+      await onLogin(username.trim(), password);
+      setError(null);
+    } catch {
       setError('아이디 또는 비밀번호가 올바르지 않습니다.');
-      return;
+    } finally {
+      setIsSubmitting(false);
     }
-
-    setError(null);
   }
 
   return (
@@ -78,8 +81,9 @@ export function LoginView({ onLogin }: LoginViewProps) {
           <button
             className="rounded-xl bg-[#2a4ab8] px-3.5 py-[11px] text-[0.98rem] font-extrabold text-white"
             type="submit"
+            disabled={isSubmitting}
           >
-            로그인
+            {isSubmitting ? '로그인 중...' : '로그인'}
           </button>
           {error ? (
             <p className="m-0 text-[0.88rem] text-[#dc2626]" role="alert">

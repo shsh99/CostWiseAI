@@ -433,13 +433,12 @@ from (
 ) audit_rows
 order by project_id, created_at;
 
-insert into users (id, email, display_name, role, division, status, mfa_enabled)
+insert into users (id, username, email, display_name, role, division, status, mfa_enabled, password_hash)
 values
-  ('40000000-0000-0000-0000-000000000001', 'admin@costwise.local', '시스템 관리자', 'ADMIN', '전사', 'ACTIVE', true),
-  ('40000000-0000-0000-0000-000000000002', 'exec.hq01@costwise.local', '투자운용 본부장', 'EXECUTIVE', '투자운용본부', 'ACTIVE', true),
-  ('40000000-0000-0000-0000-000000000003', 'pm.hq04@costwise.local', '금융공학 PM', 'PM', '금융공학본부', 'ACTIVE', false),
-  ('40000000-0000-0000-0000-000000000004', 'acct.hq03@costwise.local', '재무회계 담당', 'ACCOUNTANT', '재무회계본부', 'ACTIVE', false),
-  ('40000000-0000-0000-0000-000000000005', 'audit@costwise.local', '감사 담당', 'AUDITOR', '전사', 'ACTIVE', false);
+  ('40000000-0000-0000-0000-000000000001', 'admin', 'admin@costwise.local', 'CostWise 관리자', 'ADMIN', '전사', 'ACTIVE', true, crypt('admin123', gen_salt('bf'))),
+  ('40000000-0000-0000-0000-000000000002', 'cfo', 'cfo@costwise.local', '원가·평가 본부장', 'EXECUTIVE', '투자운용본부', 'ACTIVE', true, crypt('user123', gen_salt('bf'))),
+  ('40000000-0000-0000-0000-000000000003', 'analyst', 'analyst@costwise.local', '원가 담당', 'ACCOUNTANT', '재무회계본부', 'ACTIVE', false, crypt('user123', gen_salt('bf'))),
+  ('40000000-0000-0000-0000-000000000004', 'viewer', 'viewer@costwise.local', '감사/열람 담당', 'AUDITOR', '전사', 'ACTIVE', false, crypt('user123', gen_salt('bf')));
 
 insert into workflow_states (project_id, status, last_action, updated_at)
 select

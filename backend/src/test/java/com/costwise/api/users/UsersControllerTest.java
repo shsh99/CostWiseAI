@@ -88,12 +88,14 @@ class UsersControllerTest {
             statement.execute("""
                     create table users (
                       id uuid default random_uuid() primary key,
+                      username varchar(255) not null unique,
                       email varchar(255) not null unique,
                       display_name varchar(255) not null,
                       role varchar(64) not null,
                       division varchar(128) not null,
                       status varchar(64) not null,
                       mfa_enabled boolean not null default false,
+                      password_hash varchar(255) not null,
                       created_at timestamp not null default current_timestamp,
                       updated_at timestamp not null default current_timestamp
                     )
@@ -248,15 +250,17 @@ class UsersControllerTest {
                         "sa",
                         "");
                 PreparedStatement statement = connection.prepareStatement("""
-                        insert into users (email, display_name, role, division, status, mfa_enabled, created_at, updated_at)
-                        values (?, ?, ?, ?, ?, ?, current_timestamp, current_timestamp)
+                        insert into users (username, email, display_name, role, division, status, mfa_enabled, password_hash, created_at, updated_at)
+                        values (?, ?, ?, ?, ?, ?, ?, ?, current_timestamp, current_timestamp)
                         """)) {
-            statement.setString(1, email);
-            statement.setString(2, displayName);
-            statement.setString(3, role);
-            statement.setString(4, division);
-            statement.setString(5, status);
-            statement.setBoolean(6, mfaEnabled);
+            statement.setString(1, email.substring(0, email.indexOf('@')));
+            statement.setString(2, email);
+            statement.setString(3, displayName);
+            statement.setString(4, role);
+            statement.setString(5, division);
+            statement.setString(6, status);
+            statement.setBoolean(7, mfaEnabled);
+            statement.setString(8, "$2a$10$testsaltforh2harnessonlypasswordhash");
             statement.executeUpdate();
         }
     }

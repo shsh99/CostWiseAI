@@ -4,12 +4,15 @@ import {
   detailTabs,
   emptyPortfolioSummary,
   isForbiddenApiError,
+  login,
   loadAuditEvents,
   loadProjectDetail,
   loadPortfolioSummary,
   roleInsights,
+  setApiAccessToken,
   type AuditEvent,
   type DataSource,
+  type LoginResponse,
   type ProjectDetail,
   type PortfolioSummary,
   type Role
@@ -46,39 +49,14 @@ import { WorkspaceView } from './views/workspace/WorkspaceView';
 type WorkspaceTabKey = (typeof detailTabs)[number]['key'];
 
 type AuthSession = {
-  username: string;
+  userId: string;
+  email: string;
   displayName: string;
   role: Role;
+  division: string;
+  accessToken: string;
+  expiresAt: string;
 };
-
-type DemoAccount = AuthSession & { password: string };
-
-const demoAccounts: DemoAccount[] = [
-  {
-    username: 'admin',
-    password: 'admin123',
-    displayName: 'CostWise 관리자',
-    role: 'ADMIN'
-  },
-  {
-    username: 'cfo',
-    password: 'user123',
-    displayName: '원가·평가 본부장',
-    role: 'EXECUTIVE'
-  },
-  {
-    username: 'analyst',
-    password: 'user123',
-    displayName: '원가·평가 담당',
-    role: 'ACCOUNTANT'
-  },
-  {
-    username: 'viewer',
-    password: 'user123',
-    displayName: '감사/열람 담당',
-    role: 'AUDITOR'
-  }
-];
 
 export function App() {
   const initialExplorerState = useMemo(
@@ -97,7 +75,17 @@ export function App() {
         return null;
       }
       const parsed = JSON.parse(raw) as AuthSession;
-      return parsed?.role ? parsed : null;
+      if (!parsed?.role || !parsed.accessToken || !parsed.expiresAt) {
+        return null;
+      }
+      const normalizedRole = normalizeRole(parsed.role);
+      if (new Date(parsed.expiresAt).getTime() <= Date.now()) {
+        return null;
+      }
+      return {
+        ...parsed,
+        role: normalizedRole
+      };
     } catch {
       return null;
     }
@@ -151,6 +139,10 @@ export function App() {
   const [selectedDivision, setSelectedDivision] = useState<string | null>(null);
   const [activeWorkspaceTab, setActiveWorkspaceTab] =
     useState<WorkspaceTabKey>('allocation');
+
+  useEffect(() => {
+    setApiAccessToken(session?.accessToken ?? null);
+  }, [session]);
 
   useEffect(() => {
     document.title = session
@@ -741,32 +733,20 @@ export function App() {
     }
   }
 
-  function handleLogin(username: string, password: string) {
-    const resolved = demoAccounts.find(
-      (account) =>
-        account.username === username && account.password === password
-    );
-
-    if (!resolved) {
-      return false;
-    }
-
-    const nextSession: AuthSession = {
-      username: resolved.username,
-      displayName: resolved.displayName,
-      role: resolved.role
-    };
+  async function handleLogin(username: string, password: string) {
+    const response = await login({ username, password });
+    const nextSession = toAuthSession(response);
     window.localStorage.setItem(
       'costwise_session',
       JSON.stringify(nextSession)
     );
     setSession(nextSession);
     setSelectedRole(nextSession.role);
-    return true;
   }
 
   function handleLogout() {
     window.localStorage.removeItem('costwise_session');
+    setApiAccessToken(null);
     setSession(null);
   }
 
@@ -913,4 +893,33 @@ export function App() {
       </div>
     </div>
   );
+}
+
+function toAuthSession(response: LoginResponse): AuthSession {
+  return {
+    userId: response.user.id,
+    email: response.user.email,
+    displayName: response.user.displayName,
+    role: normalizeRole(response.user.role),
+    division: response.user.division,
+    accessToken: response.accessToken,
+    expiresAt: response.expiresAt
+  };
+}
+
+function normalizeRole(value: string): Role {
+  const normalized = value.trim().toUpperCase();
+  if (normalized === 'ADMIN') {
+    return 'ADMIN';
+  }
+  if (normalized === 'AUDITOR') {
+    return 'AUDITOR';
+  }
+  if (normalized === 'PM') {
+    return 'PM';
+  }
+  if (normalized === 'ACCOUNTANT' || normalized === 'FINANCE_REVIEWER') {
+    return 'ACCOUNTANT';
+  }
+  return 'EXECUTIVE';
 }
