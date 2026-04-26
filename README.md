@@ -1,128 +1,122 @@
 # CostWiseAI
 
-CostWiseAI는 보험/금융 도메인에서 관리회계와 투자평가를 한 화면에서 연결해 의사결정을 지원하는 플랫폼입니다.
-핵심은 `ABC 기반 원가배부`, `프로젝트 단위 가치평가(DCF/VaR)`, `권한 기반 승인/감사 추적`입니다.
+![Status](https://img.shields.io/badge/status-MVP%20Live-22c55e)
+![Frontend](https://img.shields.io/badge/frontend-React%2018.3.1-61dafb)
+![Backend](https://img.shields.io/badge/backend-Spring%20Boot%203.3.4-6db33f)
+![License](https://img.shields.io/badge/license-MIT-blue)
 
-## 프로젝트 개요
+- Frontend: [costwiseai-frontend.pages.dev](https://costwiseai-frontend.pages.dev)
+- Swagger UI: [costwiseai-production.up.railway.app/swagger-ui/index.html](https://costwiseai-production.up.railway.app/swagger-ui/index.html)
+- Health: [costwiseai-production.up.railway.app/api/health](https://costwiseai-production.up.railway.app/api/health)
+- OpenAPI JSON: [costwiseai-production.up.railway.app/v3/api-docs](https://costwiseai-production.up.railway.app/v3/api-docs)
 
-- 문제: 본부별 원가, 프로젝트별 수익성, 승인 이력이 분절되어 의사결정 근거 추적이 어렵습니다.
-- 해결: 5개 본부/약 20개 프로젝트 기준으로 원가-가치-리스크-승인 이력을 통합 조회합니다.
-- 플랫폼 성격: 원가/관리회계와 금융상품·프로젝트 평가를 단일 의사결정 플랫폼으로 통합
+보험·금융사의 투자 의사결정은 원가(ABC), 가치평가(DCF), 리스크(VaR)가 ERP·엑셀·메일에 분산돼 추적이 어렵습니다.  
+CostWiseAI는 이 세 축을 단일 프로젝트 ID로 통합하고, 모든 주요 액션을 감사 로그에 남겨 의사결정의 근거와 책임 소재를 가시화합니다.
 
-| 역할 | 설명 |
-| --- | --- |
-| `ADMIN` | 사용자/권한/운영 정책 관리 |
-| `MANAGER` | 포트폴리오/원가/평가/워크플로우 운영 |
-| `AUDITOR` | 감사 로그 중심 증적 검증 |
+## What Is CostWiseAI
 
-## 선정 주제와 통합 방식
+- 원가관리회계 + 금융평가 통합 의사결정 플랫폼
+- 5개 본부, 20개 프로젝트 운영 시나리오 기반
+- 승인 워크플로우와 감사 추적을 API/DB 수준에서 강제
 
-본 프로젝트는 과제 주제 중 아래 2개를 동시에 선택해 구현했습니다.
+## Screenshots
 
-| 선택 주제 | 플랫폼 내 구현 관점 |
-| --- | --- |
-| 원가/관리회계 | 본부/프로젝트 단위 원가 집계, 배부 근거, 원가 차이 분석 |
-| 금융상품 및 프로젝트 평가 | 프로젝트별 가치평가(DCF), 리스크 지표(VaR/Duration/Convexity), 시나리오 기반 의사결정 |
+아래 경로에 스크린샷을 배치하면 README에서 바로 노출됩니다.
 
-통합 포인트:
+- `docs/screenshots/dashboard.png`
+- `docs/screenshots/valuation-risk.png`
+- `docs/screenshots/workflow.png`
+- `docs/screenshots/workflow-demo.gif` (선택)
 
-- 동일 프로젝트 ID를 기준으로 원가 데이터와 평가 데이터를 연결 조회
-- 대시보드에서 원가 KPI와 평가 KPI를 함께 조회
-- 승인/감사 로그를 통해 회계 근거와 평가 결과의 의사결정 이력 추적
-
-## 핵심 기능
-
-- 포트폴리오 대시보드: 본부/프로젝트 KPI 요약
-- 프로젝트 상세 분석: 원가 배부 근거 및 차이 분석
-- 금융 평가: DCF/VaR 기반 리스크 지표와 시나리오별 가치 변화
-- 승인/감사: 승인 워크플로우 및 감사 로그 추적
-- 사용자/권한: 역할 기반 API 접근 제어
-
-## 기술 스택
-
-- Frontend: React 18, TypeScript, Vite, Tailwind CSS
-- Backend: Java 21, Spring Boot 3.x, Spring Security, Spring JDBC
-- Database/Auth: Supabase PostgreSQL, Supabase Auth (JWT)
-- Deployment: Frontend(Cloudflare Pages), Backend(Railway), DB/Auth(Supabase)
-
-## 리포지토리 구조
-
-```text
-CostWiseAI/
-├─ frontend/                 # React 앱
-├─ backend/                  # Spring Boot API
-├─ supabase/                 # DB migrations, seed
-├─ docs/                     # 설계/운영/개발 로그/협업 문서
-├─ railway.json              # Railway 배포 설정
-├─ .railwayignore            # Railway 업로드 제외
-└─ DEPLOYMENT.md             # 배포 상세 가이드
+```md
+![Dashboard](docs/screenshots/dashboard.png)
+![Valuation & Risk](docs/screenshots/valuation-risk.png)
+![Approval Workflow](docs/screenshots/workflow.png)
+![Workflow Demo](docs/screenshots/workflow-demo.gif)
 ```
 
-## 아키텍처
+## Architecture
 
 ```text
-[Cloudflare Pages: frontend]
-          |
-          v
-[Railway: Spring Boot API]
-          |
-          v
-[Supabase Postgres + Auth]
+[Cloudflare Pages: Frontend]
+            |
+            v
+[Railway: Spring Boot API + JWT Validation]
+            |
+            v
+[Supabase Postgres + Supabase Auth]
 ```
 
-- Frontend: UI 렌더링, API 호출, 사용자 인터랙션 처리
-- Backend: 인증/인가, 도메인 계산, 감사 로그, DB 영속화
-- Supabase: Postgres(운영 데이터 저장), Auth(JWT 발급)
+## Role & Access
 
-## 운영 배포 정보
+### 기획서 기준 역할 정의 (5역할)
 
-- Frontend(접속 주소): `https://costwiseai-frontend.pages.dev`
-- Backend: `https://costwiseai-production.up.railway.app`
-- Health: `https://costwiseai-production.up.railway.app/actuator/health`, `https://costwiseai-production.up.railway.app/api/health`
-- Swagger/OpenAPI(접속 가능): `https://costwiseai-production.up.railway.app/swagger-ui/index.html`, `https://costwiseai-production.up.railway.app/v3/api-docs`
+| Role | 권한 | API 접근 |
+| --- | --- | --- |
+| `PLANNER` | 프로젝트 생성/수정 + 검토 요청 | `GET /api/portfolio`, `POST /api/projects`, `POST /api/projects/{id}/submit-review` |
+| `FINANCE_REVIEWER` | 원가/평가 검증 + 검토 의견 | `GET /api/cost-accounting`, `GET /api/valuation-risk`, `POST /api/review/{id}/approve` |
+| `EXECUTIVE` | 최종 승인/반려 + 감사 로그 등록 | `POST /api/review/{id}/approve`, `POST /api/audit-logs` |
+| `ADMIN` | 모든 권한 + 사용자 관리 | 모든 API |
+| `AUDITOR` | 감사 로그 조회 | `GET /api/audit-logs` |
 
-## 현재 동작 범위 (운영 기준)
+### 현재 SecurityConfig 기준 접근 정책
 
-아래 범위는 현재 배포본에서 동작 확인된 기능입니다.
+- 비즈니스 API: `ADMIN`, `MANAGER`, `PLANNER`, `PM`, `FINANCE_REVIEWER`, `ACCOUNTANT`, `EXECUTIVE`
+- 감사 로그 API: `ADMIN`, `AUDITOR`, `EXECUTIVE`
+- 워크플로우 API: 인증 사용자 접근
 
-| 구분 | 현재 상태 |
-| --- | --- |
-| 대시보드/포트폴리오 요약 (`/api/dashboard`, `/api/portfolio/summary`) | 동작 |
-| 원가 요약 API (`/api/cost-accounting/summary`) | 동작 |
-| 프로젝트별 평가/리스크 API (`/api/valuation-risk/projects/{projectId}`) | 동작 |
-| 계산 API (`/api/compute`) | 동작 |
-| 프로젝트/시나리오 영속화 API (`/api/persistence/**`) | 동작 |
-| 승인 워크플로우 (`/api/projects/{id}/workflow`, `/review`) | 동작 |
-| 감사 로그 조회/등록 (`/api/audit-logs`) | 동작 (권한 제한) |
-| 로그인 (`/api/auth/login`) | 동작 |
-| 사용자 관리 (`/api/users`) | 동작 |
-| 사용자 비밀번호 변경 (`/api/users/{id}/password`) | 동작 (`ADMIN`) |
-| 헬스체크 (`/api/health`, `/actuator/health`) | 동작 |
+## API Implementation Status (2026-04-26)
 
-참고:
+| API | Status | 비고 |
+| --- | --- | --- |
+| `GET /api/health` | ✅ | 공개 헬스체크 |
+| `GET /api/dashboard` | ✅ | 포트폴리오 KPI |
+| `GET /api/portfolio/summary` | ✅ | 요약 데이터 |
+| `GET /api/cost-accounting/summary` | ✅ | 원가 요약 |
+| `GET /api/valuation-risk/projects/{projectId}` | ✅ | 평가/리스크 |
+| `POST /api/compute` | ✅ | 계산 실행 |
+| `GET|POST /api/persistence/**` | ✅ | 프로젝트/시나리오 영속화 |
+| `GET /api/projects/{id}/workflow` | ✅ | 상태 조회 |
+| `POST /api/projects/{id}/review` | ✅ | 리뷰 전이 |
+| `GET|POST /api/audit-logs` | 🟡 | 고급 필터/페이지네이션 보강 예정 |
+| `GET|POST|PUT|DELETE /api/users/**` | ✅ | 사용자 관리 |
 
-- 프론트는 API 실패 시 일부 화면에서 폴백 데이터를 사용할 수 있도록 구성되어 있습니다.
-- Swagger는 `APP_SECURITY_DOCS_PUBLIC` 설정에 따라 접근이 제한될 수 있습니다.
+## Tech Stack (Exact Versions)
 
-## 권한별 사용 가능 기능
+### Frontend
 
-백엔드 정책(`SecurityConfig`) 기준으로 주요 기능 접근은 아래와 같습니다.
+- React `18.3.1`
+- React DOM `18.3.1`
+- TypeScript `5.6.3`
+- Vite `5.4.9`
+- Tailwind CSS `3.4.13`
+- Chart.js `4.5.1`
+- lucide-react `1.11.0`
 
-| 권한 | 사용 가능 기능 |
-| --- | --- |
-| `ADMIN` | 모든 비즈니스 API + 감사 로그 API + 사용자 관리 + 비밀번호 변경 |
-| `MANAGER` | 대시보드/포트폴리오/원가/평가/계산/워크플로우 운영 |
-| `AUDITOR` | 감사 로그 API 중심 접근 + 사용자 조회 |
+### Backend
 
-정책 요약:
+- Java `21`
+- Spring Boot `3.3.4`
+- Spring Security `6.x` (via Boot 3.3.4)
+- Spring JDBC
+- Springdoc OpenAPI Starter `2.6.0`
+- PostgreSQL Driver (runtime)
 
-- 비즈니스 API: `ADMIN`, `MANAGER` (하위 호환: `PLANNER`, `PM`, `FINANCE_REVIEWER`, `ACCOUNTANT`, `EXECUTIVE`)
-- 감사 로그 API: `ADMIN`, `AUDITOR` (하위 호환: `EXECUTIVE`)
-- 워크플로우 리뷰 API: 인증 사용자 접근
+### Infrastructure
 
-## 로컬 실행
+- Frontend Hosting: Cloudflare Pages
+- Backend Hosting: Railway
+- Database/Auth: Supabase PostgreSQL + Supabase Auth
 
-### 0) 다운로드(클론)
+## Quick Start
+
+### Prerequisites
+
+- Node.js `20+`
+- npm `10+`
+- Java `21`
+
+### Clone
 
 ```bash
 git clone https://github.com/shsh99/CostWiseAI.git
@@ -130,21 +124,13 @@ cd CostWiseAI
 git checkout dev
 ```
 
-### 0-1) 사전 준비
-
-- Node.js 20+
-- Java 21
-- npm
-
-### 0-2) 환경변수 준비
-
-Frontend(`frontend/.env.local`) 예시:
+### Frontend Env (`frontend/.env.local`)
 
 ```env
 VITE_API_BASE_URL=http://127.0.0.1:8080
 ```
 
-Backend(실행 셸 환경변수) 예시:
+### Backend Env (shell)
 
 ```bash
 SUPABASE_DATABASE_URL=postgresql://...
@@ -156,125 +142,84 @@ SUPABASE_JWT_AUDIENCE=authenticated
 SUPABASE_JWT_SECRET_BASE64=<base64_secret>
 ```
 
-### 1) Frontend
+### Run
 
 ```bash
-cd frontend
-npm install
-npm run dev
+cd frontend && npm install && npm run dev
 ```
-
-### 2) Backend
-
-```bash
-cd backend
-./gradlew bootRun
-```
-
-### 3) 기본 확인
-
-- Frontend: `http://localhost:5173`
-- Backend health: `http://localhost:8080/api/health`
-
-### 4) 로그인 확인
-
-- 로그인 API: `POST http://localhost:8080/api/auth/login`
-- 기본 시드 계정:
-  - `admin@costwise.local / admin123`
-  - `manager.hq01@costwise.local / user123`
-  - `audit@costwise.local / user123`
-- 스모크 스크립트:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/auth-login-smoke.ps1 -ApiBaseUrl "http://127.0.0.1:8080" -Email "admin@costwise.local" -Password "admin123"
+cd backend
+.\gradlew.bat bootRun
 ```
 
-## 배포 절차 요약
+### Smoke Check
 
-1. Supabase 마이그레이션/시드 적용
-2. Railway에 백엔드 환경변수 설정 후 배포
-3. Cloudflare Pages에 프론트 배포 (백엔드 URL 반영)
+- Frontend: `http://localhost:5173`
+- API Health: `http://127.0.0.1:8080/api/health`
+- Login API: `POST http://127.0.0.1:8080/api/auth/login`
+- Seed users:
+  - `admin / admin123`
+  - `cfo / user123`
+  - `analyst / user123`
+  - `viewer / user123`
 
-상세 절차: [DEPLOYMENT.md](/C:/Users/ggg99/Desktop/CostWiseAI/CostWiseAI/DEPLOYMENT.md)
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/auth-login-smoke.ps1 -ApiBaseUrl "http://127.0.0.1:8080" -Username "admin" -Password "admin123"
+```
 
-## 보안/운영 체크포인트
+## Quality Gates
 
-- JWT issuer/secret은 Supabase 운영값 사용
-- CORS allowlist를 운영 도메인으로 최소화
-- `service_role` 키는 프론트에 노출 금지
-- `APP_SECURITY_DOCS_PUBLIC=false`, `APP_SECURITY_ACTUATOR_ALL_PUBLIC=false` 유지
-- 로컬 비밀파일은 `.gitignore`로 추적 제외
+- Backend tests: JUnit 5 기반 자동 테스트 `18`개 (`backend/src/test/java`)
+- Frontend checks: ESLint + TypeScript build (`npm run lint`, `npm run build`)
+- Pre-commit/CI에서 차단 이슈를 우회하지 않는 정책 운영
 
-## AI 활용 방법
+## AI Collaboration - Harness Engineering
 
-AI는 단순 코드 생성이 아니라, `작업 분해`, `오케스트레이션`, `검증 루프`, `문서화`를 포함한 개발 운영 체계로 사용합니다.
+CostWiseAI의 차별점은 코드 생성 자체가 아니라 `AI 협업 운영 체계`입니다.
 
-핵심 참고 문서:
+- `.codex/` 구조: `agents = who`, `skills = how`
+- 하네스 워크플로우: Audit → Analysis → Team Design → Agent/Skill 설계 → Orchestration → QA → Evolution
+- QA Inspector 원칙: API/타입/라우팅/상태머신의 `boundary-cross validation`
 
-- [AI Collaboration Guide](/C:/Users/ggg99/Desktop/CostWiseAI/CostWiseAI/docs/ai-collaboration.md)
-- [Orchestrator Agent Playbook](/C:/Users/ggg99/Desktop/CostWiseAI/CostWiseAI/docs/ops/orchestrator-agent-playbook.md)
-- [Orchestrator Manager Automation](/C:/Users/ggg99/Desktop/CostWiseAI/CostWiseAI/docs/ops/orchestrator-manager-automation.md)
-- [Worktree Strategy](/C:/Users/ggg99/Desktop/CostWiseAI/CostWiseAI/docs/worktree-strategy.md)
+자세한 내용: `docs/ai-collaboration.md`
 
-### 1) 하네스 사용 방식
+## Repository Structure
 
-- 하네스는 에이전트 역할과 책임을 분리한 실행 프레임워크입니다.
-- 오케스트레이터가 범위를 고정하고, 워커는 단일 슬라이스만 구현합니다.
-- 리뷰어는 차단 이슈(보안/품질/회귀)를 판정하며, 근거 없는 완료 선언을 허용하지 않습니다.
+```text
+CostWiseAI/
+├─ frontend/
+├─ backend/
+├─ supabase/
+├─ docs/
+├─ scripts/
+├─ DEPLOYMENT.md
+└─ README.md
+```
 
-### 2) 오케스트레이션 방식
+## Documentation
 
-프로젝트에서 사용하는 기본 파이프라인:
+- 기획서: `docs/project/planning-document-ko.md`
+- 개발 문서: `docs/project/technical-implementation-guide-ko.md`
+- 제출용 기획서: `docs/project/submission-planning-brief-ko.md`
+- 제출용 개발 문서: `docs/project/submission-development-documentation-ko.md`
+- AI 협업 가이드: `docs/ai-collaboration.md`
+- 오케스트레이터 플레이북: `docs/ops/orchestrator-agent-playbook.md`
+- 워크트리 전략: `docs/worktree-strategy.md`
+- 배포 가이드: `DEPLOYMENT.md`
 
-1. 이슈/요구사항 분석과 우선순위 분류
-2. 슬라이스 단위 작업 계약 확정(범위, 비대상 파일, 검증 명령)
-3. 서브에이전트 할당(병렬/순차 결정)
-4. 구현 결과 수집
-5. QA/리뷰 게이트 통과 여부 판정
-6. 실패 시 동일 슬라이스 재시도, 통과 시 다음 슬라이스 진행
+## Security Notes
 
-실행 자동화는 `scripts/orchestrator-manager.ts`를 통해 dry-run/실행 모드로 운영합니다.
+- JWT issuer/audience/secret은 운영값으로 관리
+- CORS allowlist 최소화
+- Supabase `service_role` 키 프론트 노출 금지
+- Swagger/Actuator 공개 범위는 환경변수 정책으로 제어
 
-### 3) 워크트리 사용 방식
+## License
 
-- `dev`를 기준으로 `feat/*` 브랜치마다 전용 worktree를 생성해 충돌을 줄입니다.
-- 프론트/백엔드/DB/보안/문서 슬라이스를 분리해 병렬 작업 가능성을 높입니다.
-- 비정상 종료/충돌 시 특정 worktree만 정리하면 되므로 복구 비용이 낮습니다.
-- PR 전 `docs/dev-logs/`에 worktree 선택 근거와 검증 결과를 기록합니다.
+MIT License. See `LICENSE`.
 
-### 4) 서브에이전트 팀 구성
+## Contact
 
-현재 저장소의 운영 기준 팀 구성(예시):
-
-- `agents-orchestrator`: 전체 파이프라인 통제, 우선순위/순서/게이트 결정
-- `project-manager-senior`: 스펙을 실행 가능한 태스크로 분해
-- `engineering-frontend-developer`: UI/상호작용 구현
-- `engineering-backend-architect`: API/보안/영속화 구현
-- `engineering-code-reviewer`: 코드 품질/회귀 리스크 리뷰
-- `testing-api-tester`, `testing-test-results-analyzer`: API 검증 및 결과 분석
-- `engineering-minimal-change-engineer`: 범위 최소화 패치와 안정화
-
-### 5) 이 프로젝트에서의 AI 활용 성과
-
-- 원가/관리회계 + 금융상품/프로젝트 평가 도메인을 슬라이스 단위로 병행 구현
-- 배포 파이프라인(Cloudflare/Railway/Supabase) 설정 자동화 및 반복 검증
-- 권한/보안/CORS 이슈를 운영 환경에서 탐지-수정-재배포까지 폐루프 처리
-- 작업 근거를 문서(`docs/*`)와 PR로 남겨 재현 가능한 협업 체계 유지
-
-## 협업 규칙
-
-- 브랜치 전략: `main`(릴리스 안정화), `dev`(통합), `feat/*`/`fix/*`/`chore/*`/`docs/*`(작업 브랜치)
-- PR 원칙:
-- 범위 작은 슬라이스 유지
-- 검증 로그 포함
-- 변경 이유와 리스크 명시
-
-## 이 README가 충족하는 항목
-
-- [x] 프로젝트 소개
-- [x] 프로젝트 구조
-- [x] 아키텍처 설명
-- [x] 배포 구조/실제 URL
-- [x] Swagger/OpenAPI 접근 정보
-- [x] AI 활용 방법
-- [x] 협업 방법
+- Maintainer: [@shsh99](https://github.com/shsh99)
+- Issues: [GitHub Issues](https://github.com/shsh99/CostWiseAI/issues)
