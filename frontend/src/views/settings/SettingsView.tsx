@@ -46,16 +46,10 @@ export function SettingsView({
         '권한/메뉴 정책 확인 후 사용자·감사 로그 이상 여부를 먼저 점검합니다.'
     },
     {
-      roles: ['EXECUTIVE'],
-      role: '임원',
+      roles: ['MANAGER'],
+      role: '매니저',
       guide:
         '프로젝트 목록에서 우선순위 대상을 선택하고 가치평가·리스크 핵심 수치만 빠르게 판단합니다.'
-    },
-    {
-      roles: ['PM', 'ACCOUNTANT'],
-      role: 'PM/원가담당자',
-      guide:
-        '투자액, 예상매출, 근거 데이터를 최신화하고 검토 상태(검토중/조건부/보류)를 명확히 관리합니다.'
     },
     {
       roles: ['AUDITOR'],

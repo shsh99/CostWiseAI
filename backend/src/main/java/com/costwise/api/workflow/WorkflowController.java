@@ -29,13 +29,13 @@ public class WorkflowController {
     }
 
     @GetMapping("/projects/{projectId}/workflow")
-    @PreAuthorize("hasAnyRole('PLANNER', 'PM', 'FINANCE_REVIEWER', 'ACCOUNTANT', 'EXECUTIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'PLANNER', 'PM', 'FINANCE_REVIEWER', 'ACCOUNTANT', 'EXECUTIVE')")
     public ApprovalWorkflowResponse workflow(@PathVariable String projectId) {
         return approvalWorkflowService.loadWorkflow(projectId);
     }
 
     @PostMapping("/projects/{projectId}/review")
-    @PreAuthorize("hasAnyRole('PLANNER', 'PM', 'FINANCE_REVIEWER', 'ACCOUNTANT', 'EXECUTIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'PLANNER', 'PM', 'FINANCE_REVIEWER', 'ACCOUNTANT', 'EXECUTIVE')")
     public ApprovalWorkflowResponse review(
             @PathVariable String projectId,
             Authentication authentication,
@@ -67,6 +67,8 @@ public class WorkflowController {
         return switch (normalized) {
             case "PM" -> "PLANNER";
             case "ACCOUNTANT" -> "FINANCE_REVIEWER";
+            case "MANAGER" -> "FINANCE_REVIEWER";
+            case "ADMIN" -> "EXECUTIVE";
             default -> normalized;
         };
     }

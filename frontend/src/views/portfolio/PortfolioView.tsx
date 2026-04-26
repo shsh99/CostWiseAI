@@ -12,6 +12,7 @@ import { formatKrwCompact } from '../../app/format';
 import {
   apiBaseUrl,
   createProject,
+  getApiAccessToken,
   isForbiddenApiError,
   type AssetCategory,
   type ProjectDetail,
@@ -68,11 +69,6 @@ const assetCategoryOptions: AssetCategory[] = [
   '파생상품',
   '프로젝트'
 ];
-
-const apiLookupAccessToken =
-  import.meta.env.VITE_API_ACCESS_TOKEN ??
-  import.meta.env.VITE_SUPABASE_ACCESS_TOKEN ??
-  '';
 
 type ProjectEditDraft = Pick<
   ProjectSummary,
@@ -1078,8 +1074,9 @@ export function PortfolioView({
 
     try {
       const headers = new Headers({ Accept: 'application/json' });
-      if (apiLookupAccessToken.trim()) {
-        headers.set('Authorization', `Bearer ${apiLookupAccessToken.trim()}`);
+      const accessToken = getApiAccessToken();
+      if (accessToken) {
+        headers.set('Authorization', `Bearer ${accessToken}`);
       }
       const response = await fetch(
         `${apiBaseUrl}/api/projects/import/lookup?symbol=${encodeURIComponent(symbol)}`,

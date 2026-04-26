@@ -2,23 +2,26 @@
 import { useState, type FormEvent } from 'react';
 
 type LoginViewProps = {
-  onLogin(username: string, password: string): boolean;
+  onLogin(email: string, password: string): Promise<void>;
 };
 
 export function LoginView({ onLogin }: LoginViewProps) {
-  const [username, setUsername] = useState('admin');
+  const [email, setEmail] = useState('admin@costwise.local');
   const [password, setPassword] = useState('admin123');
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const succeeded = onLogin(username.trim(), password);
-    if (!succeeded) {
+    setIsSubmitting(true);
+    try {
+      await onLogin(email.trim(), password);
+      setError(null);
+    } catch {
       setError('아이디 또는 비밀번호가 올바르지 않습니다.');
-      return;
+    } finally {
+      setIsSubmitting(false);
     }
-
-    setError(null);
   }
 
   return (
@@ -56,8 +59,8 @@ export function LoginView({ onLogin }: LoginViewProps) {
             <input
               className="w-full rounded-xl border border-[#c8d2e6] px-3 py-[11px]"
               type="text"
-              value={username}
-              onChange={(event) => setUsername(event.target.value)}
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
               autoComplete="username"
               required
             />
@@ -78,8 +81,9 @@ export function LoginView({ onLogin }: LoginViewProps) {
           <button
             className="rounded-xl bg-[#2a4ab8] px-3.5 py-[11px] text-[0.98rem] font-extrabold text-white"
             type="submit"
+            disabled={isSubmitting}
           >
-            로그인
+            {isSubmitting ? '로그인 중...' : '로그인'}
           </button>
           {error ? (
             <p className="m-0 text-[0.88rem] text-[#dc2626]" role="alert">
@@ -89,10 +93,11 @@ export function LoginView({ onLogin }: LoginViewProps) {
 
           <section className="mt-1 rounded-xl border border-[#dae3f1] bg-[#edf2f9] px-3 py-2.5 text-[#4b5a79]">
             <strong>테스트 계정</strong>
-            <p className="mt-1">CostWise 관리자: admin / admin123</p>
-            <p className="mt-1">본부장/임원: cfo / user123</p>
-            <p className="mt-1">원가 담당: analyst / user123</p>
-            <p className="mt-1">감사/열람: viewer / user123</p>
+            <p className="mt-1">관리자: admin@costwise.local / admin123</p>
+            <p className="mt-1">
+              매니저: manager.hq01@costwise.local / user123
+            </p>
+            <p className="mt-1">감사: audit@costwise.local / user123</p>
           </section>
         </form>
       </section>

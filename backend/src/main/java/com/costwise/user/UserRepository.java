@@ -12,9 +12,13 @@ public interface UserRepository {
 
     UserRecord updateUser(UserUpdate user);
 
+    void updatePasswordHash(String userId, String passwordHash);
+
     void deleteUser(String userId);
 
     Optional<UserRecord> findUser(String userId);
+
+    Optional<AuthUserRecord> findAuthUserByEmail(String email);
 
     boolean existsByEmail(String email, String skipUserId);
 
@@ -24,7 +28,8 @@ public interface UserRepository {
             String role,
             String division,
             String status,
-            boolean mfaEnabled) {}
+            boolean mfaEnabled,
+            String passwordHash) {}
 
     record UserUpdate(
             String id,
@@ -45,4 +50,14 @@ public interface UserRepository {
             boolean mfaEnabled,
             LocalDateTime createdAt,
             LocalDateTime updatedAt) {}
+
+    record AuthUserRecord(
+            String id,
+            String email,
+            String displayName,
+            String role,
+            String division,
+            String status,
+            boolean mfaEnabled,
+            String passwordHash) {}
 }

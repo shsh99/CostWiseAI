@@ -16,9 +16,9 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 public final class DivisionScope {
 
     private static final DivisionScope UNRESTRICTED = new DivisionScope(null);
-    private static final Set<String> SCOPED_ROLES = Set.of("PM", "PLANNER", "EXECUTIVE");
+    private static final Set<String> SCOPED_ROLES = Set.of("MANAGER", "PM", "PLANNER", "EXECUTIVE");
     private static final Set<String> UNRESTRICTED_ROLES =
-            Set.of("ADMIN", "ACCOUNTANT", "AUDITOR", "FINANCE_REVIEWER");
+            Set.of("ADMIN", "AUDITOR", "ACCOUNTANT", "FINANCE_REVIEWER");
     private static final List<String> DIVISION_CLAIM_KEYS =
             List.of("division", "division_code", "headquarter");
     private static final Map<String, String> DIVISION_ALIASES = Map.ofEntries(
@@ -140,6 +140,7 @@ public final class DivisionScope {
                 ? ""
                 : authority.replaceFirst("^ROLE_", "").trim().toUpperCase(Locale.ROOT);
         return switch (normalized) {
+            case "MANAGER" -> "MANAGER";
             case "PM" -> "PLANNER";
             case "ACCOUNTANT" -> "FINANCE_REVIEWER";
             default -> normalized;

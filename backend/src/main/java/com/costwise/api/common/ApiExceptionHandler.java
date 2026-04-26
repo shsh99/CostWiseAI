@@ -1,5 +1,6 @@
 package com.costwise.api.common;
 
+import com.costwise.auth.InvalidCredentialsException;
 import java.util.Map;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.http.HttpStatus;
@@ -18,5 +19,10 @@ public class ApiExceptionHandler {
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<Map<String, String>> handleAccessDenied(AccessDeniedException exception) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", exception.getMessage()));
+    }
+
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<Map<String, String>> handleInvalidCredentials(InvalidCredentialsException exception) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", exception.getMessage()));
     }
 }

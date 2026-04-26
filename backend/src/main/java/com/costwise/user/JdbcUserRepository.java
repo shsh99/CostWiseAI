@@ -45,8 +45,8 @@ public class JdbcUserRepository implements UserRepository {
     @Override
     public UserRecord createUser(NewUser user) {
         String sql = """
-                insert into users (email, display_name, role, division, status, mfa_enabled, created_at, updated_at)
-                values (?, ?, ?, ?, ?, ?, current_timestamp, current_timestamp)
+                insert into users (email, display_name, role, division, status, mfa_enabled, password_hash, created_at, updated_at)
+                values (?, ?, ?, ?, ?, ?, ?, current_timestamp, current_timestamp)
                 """;
         try (Connection connection = openConnection();
                 PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -56,6 +56,7 @@ public class JdbcUserRepository implements UserRepository {
             statement.setString(4, user.division());
             statement.setString(5, user.status());
             statement.setBoolean(6, user.mfaEnabled());
+            statement.setString(7, user.passwordHash());
             statement.executeUpdate();
             return findUser(readGeneratedUuid(statement)).orElseThrow(
                     () -> new IllegalStateException("Failed to read created user"));
@@ -128,6 +129,56 @@ public class JdbcUserRepository implements UserRepository {
             }
         } catch (SQLException exception) {
             throw new IllegalStateException("Failed to find user", exception);
+        }
+    }
+
+    @Override
+    public void updatePasswordHash(String userId, String passwordHash) {
+        String sql = """
+                update users
+                   set password_hash = ?,
+                       updated_at = current_timestamp
+                 where id = ?
+                """;
+        try (Connection connection = openConnection();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, passwordHash);
+            statement.setObject(2, uuid(userId));
+            int updated = statement.executeUpdate();
+            if (updated == 0) {
+                throw new IllegalArgumentException("Unknown user id: " + userId);
+            }
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to update user password", exception);
+        }
+    }
+
+    @Override
+    public Optional<AuthUserRecord> findAuthUserByEmail(String email) {
+        String sql = """
+                select id, email, display_name, role, division, status, mfa_enabled, password_hash
+                  from users
+                 where lower(email) = lower(?)
+                """;
+        try (Connection connection = openConnection();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, email);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (!resultSet.next()) {
+                    return Optional.empty();
+                }
+                return Optional.of(new AuthUserRecord(
+                        resultSet.getString("id"),
+                        resultSet.getString("email"),
+                        resultSet.getString("display_name"),
+                        resultSet.getString("role"),
+                        resultSet.getString("division"),
+                        resultSet.getString("status"),
+                        resultSet.getBoolean("mfa_enabled"),
+                        resultSet.getString("password_hash")));
+            }
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to find auth user by email", exception);
         }
     }
 

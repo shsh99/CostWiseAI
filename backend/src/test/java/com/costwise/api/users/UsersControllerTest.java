@@ -94,6 +94,7 @@ class UsersControllerTest {
                       division varchar(128) not null,
                       status varchar(64) not null,
                       mfa_enabled boolean not null default false,
+                      password_hash varchar(255) not null default 'test-hash',
                       created_at timestamp not null default current_timestamp,
                       updated_at timestamp not null default current_timestamp
                     )
@@ -193,7 +194,7 @@ class UsersControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").exists())
                 .andExpect(jsonPath("$.email").value("planner.user@example.com"))
-                .andExpect(jsonPath("$.role").value("PLANNER"))
+                .andExpect(jsonPath("$.role").value("MANAGER"))
                 .andReturn();
 
         String userId = JsonFieldReader.read(createResult.getResponse().getContentAsString(), "id");
@@ -219,7 +220,7 @@ class UsersControllerTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.displayName").value("Planner User Updated"))
-                .andExpect(jsonPath("$.role").value("EXECUTIVE"))
+                .andExpect(jsonPath("$.role").value("MANAGER"))
                 .andExpect(jsonPath("$.division").value("CORP"))
                 .andExpect(jsonPath("$.status").value("SUSPENDED"))
                 .andExpect(jsonPath("$.mfaEnabled").value(true));
@@ -234,6 +235,57 @@ class UsersControllerTest {
                 .andExpect(jsonPath("$.length()").value(0));
 
         assertAuditTrailForUser(userId);
+    }
+
+    @Test
+    void adminCanResetUserPassword() throws Exception {
+        seedUser("password.target@example.com", "Password Target", "MANAGER", "UND", "ACTIVE", false);
+        String userId = findUserIdByEmail("password.target@example.com");
+        Instant now = Instant.now();
+        String adminAuth = bearerToken(token("admin", ISSUER, AUDIENCE, now, now.plusSeconds(3600)));
+
+        mockMvc.perform(put("/api/users/{userId}/password", userId)
+                        .header("Authorization", adminAuth)
+                        .contentType(APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "password": "NewPassw0rd!"
+                                }
+                                """))
+                .andExpect(status().isNoContent());
+
+        try (Connection connection = DriverManager.getConnection(
+                        "jdbc:h2:mem:users-controller;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE",
+                        "sa",
+                        "");
+                PreparedStatement statement = connection.prepareStatement(
+                        "select password_hash from users where id = ?")) {
+            statement.setObject(1, java.util.UUID.fromString(userId));
+            try (ResultSet resultSet = statement.executeQuery()) {
+                assertTrue(resultSet.next());
+                String passwordHash = resultSet.getString(1);
+                assertTrue(passwordHash != null && !passwordHash.isBlank());
+                assertTrue(!passwordHash.equals("NewPassw0rd!"));
+            }
+        }
+    }
+
+    @Test
+    void executiveCannotResetUserPassword() throws Exception {
+        seedUser("password.denied@example.com", "Password Denied", "MANAGER", "UND", "ACTIVE", false);
+        String userId = findUserIdByEmail("password.denied@example.com");
+        Instant now = Instant.now();
+        String executiveAuth = bearerToken(token("executive", ISSUER, AUDIENCE, now, now.plusSeconds(3600)));
+
+        mockMvc.perform(put("/api/users/{userId}/password", userId)
+                        .header("Authorization", executiveAuth)
+                        .contentType(APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "password": "NewPassw0rd!"
+                                }
+                                """))
+                .andExpect(status().isForbidden());
     }
 
     private void seedUser(
@@ -282,6 +334,23 @@ class UsersControllerTest {
                 assertTrue(resultSet.getString("metadata").contains(userId));
             }
             assertEquals(List.of("create", "update", "delete"), actions);
+        }
+    }
+
+    private String findUserIdByEmail(String email) throws Exception {
+        try (Connection connection = DriverManager.getConnection(
+                        "jdbc:h2:mem:users-controller;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE",
+                        "sa",
+                        "");
+                PreparedStatement statement = connection.prepareStatement(
+                        "select id from users where lower(email) = lower(?)")) {
+            statement.setString(1, email);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (!resultSet.next()) {
+                    throw new IllegalStateException("user not found for email " + email);
+                }
+                return resultSet.getObject(1).toString();
+            }
         }
     }
 
