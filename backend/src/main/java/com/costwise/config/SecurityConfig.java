@@ -2,7 +2,6 @@ package com.costwise.config;
 
 import com.costwise.security.JwtSecurityProperties;
 import com.costwise.security.SupabaseJwtAuthenticationConverter;
-import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import javax.crypto.SecretKey;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -20,15 +19,11 @@ import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
-import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.oauth2.server.resource.web.BearerTokenAuthenticationEntryPoint;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -40,8 +35,8 @@ public class SecurityConfig {
 
     private static final String INVALID_AUDIENCE_ERROR = "invalid_token";
     private static final String[] BUSINESS_ROLES =
-            {"ADMIN", "MANAGER", "PLANNER", "PM", "FINANCE_REVIEWER", "ACCOUNTANT", "EXECUTIVE"};
-    private static final String[] AUDIT_ROLES = {"ADMIN", "AUDITOR", "EXECUTIVE"};
+            {"ADMIN", "PLANNER", "PM", "FINANCE_REVIEWER", "ACCOUNTANT", "EXECUTIVE"};
+    private static final String[] AUDIT_ROLES = {"EXECUTIVE", "AUDITOR", "ADMIN"};
 
     private final JwtSecurityProperties jwtSecurityProperties;
     private final SupabaseJwtAuthenticationConverter jwtAuthenticationConverter;
@@ -68,16 +63,6 @@ public class SecurityConfig {
                                 new OAuth2Error(INVALID_AUDIENCE_ERROR, "JWT audience is not allowed", null));
         decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(withIssuer, withAudience));
         return decoder;
-    }
-
-    @Bean
-    JwtEncoder jwtEncoder() {
-        return new NimbusJwtEncoder(new ImmutableSecret<>(jwtSecurityProperties.secretKey()));
-    }
-
-    @Bean
-    PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
     }
 
     @Bean
@@ -120,8 +105,6 @@ public class SecurityConfig {
         http.authorizeHttpRequests(
                 auth -> auth
                         .requestMatchers("/api/health")
-                        .permitAll()
-                        .requestMatchers("/api/auth/login")
                         .permitAll()
                         .requestMatchers("/api/dashboard",
                                 "/api/portfolio/summary",
