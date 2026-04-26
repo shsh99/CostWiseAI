@@ -70,7 +70,19 @@ public class SecurityConfig {
         http.csrf(AbstractHttpConfigurer::disable);
         http.cors(Customizer.withDefaults());
         http.headers(headers -> {
-            headers.contentSecurityPolicy(csp -> csp.policyDirectives(securityPolicyProperties.contentSecurityPolicy()));
+            headers.addHeaderWriter((request, response) -> {
+                String path = request.getRequestURI();
+                String policy = isDocsPath(path)
+                        ? "default-src 'self'; "
+                                + "img-src 'self' data:; "
+                                + "style-src 'self' 'unsafe-inline'; "
+                                + "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+                                + "object-src 'none'; "
+                                + "base-uri 'self'; "
+                                + "frame-ancestors 'none'"
+                        : securityPolicyProperties.contentSecurityPolicy();
+                response.setHeader("Content-Security-Policy", policy);
+            });
             headers.referrerPolicy(referrer -> referrer.policy(
                     ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN));
             headers.frameOptions(frame -> frame.deny());
@@ -135,5 +147,12 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
+    }
+
+    private boolean isDocsPath(String path) {
+        return path != null
+                && (path.startsWith("/swagger-ui")
+                        || path.equals("/swagger-ui.html")
+                        || path.startsWith("/v3/api-docs"));
     }
 }
