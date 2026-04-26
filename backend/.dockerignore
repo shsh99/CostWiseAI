@@ -1,0 +1,7 @@
+.gradle
+build
+*.log
+bootrun.err.log
+bootrun.out.log
+run-backend-local.ps1
+

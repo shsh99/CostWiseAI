@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:cloudflare": "npm run build",
+    "deploy:cloudflare": "npm run build:cloudflare && wrangler pages deploy dist --project-name costwiseai-frontend",
     "preview": "vite preview",
     "lint": "eslint \"src/**/*.{js,jsx,ts,tsx}\" --no-error-on-unmatched-pattern",
     "format": "prettier --write .",
