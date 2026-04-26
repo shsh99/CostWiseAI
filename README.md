@@ -11,9 +11,9 @@ CostWiseAI는 보험/금융 도메인에서 관리회계와 투자평가를 한 
 
 | 역할 | 설명 |
 | --- | --- |
-| `PLANNER` | 사업안 탐색/기획 |
-| `FINANCE_REVIEWER` | 재무 관점 검토 |
-| `EXECUTIVE` | 최종 승인/보류 의사결정 |
+| `ADMIN` | 사용자/권한/운영 정책 관리 |
+| `MANAGER` | 포트폴리오/원가/평가/워크플로우 운영 |
+| `AUDITOR` | 감사 로그 중심 증적 검증 |
 
 ## 선정 주제와 통합 방식
 
@@ -94,7 +94,9 @@ CostWiseAI/
 | 프로젝트/시나리오 영속화 API (`/api/persistence/**`) | 동작 |
 | 승인 워크플로우 (`/api/projects/{id}/workflow`, `/review`) | 동작 |
 | 감사 로그 조회/등록 (`/api/audit-logs`) | 동작 (권한 제한) |
+| 로그인 (`/api/auth/login`) | 동작 |
 | 사용자 관리 (`/api/users`) | 동작 |
+| 사용자 비밀번호 변경 (`/api/users/{id}/password`) | 동작 (`ADMIN`) |
 | 헬스체크 (`/api/health`, `/actuator/health`) | 동작 |
 
 참고:
@@ -108,18 +110,14 @@ CostWiseAI/
 
 | 권한 | 사용 가능 기능 |
 | --- | --- |
-| `ADMIN` | 모든 비즈니스 API + 감사 로그 API + 사용자 관리 |
-| `PLANNER` | 대시보드/포트폴리오/원가/평가/계산/워크플로우 조회 및 리뷰 요청 |
-| `FINANCE_REVIEWER` | 대시보드/원가/평가/계산/워크플로우 검토 |
-| `PM` | 프로젝트 단위 조회/평가/워크플로우 참여 |
-| `ACCOUNTANT` | 원가/관리회계 중심 API + 포트폴리오/평가 조회 |
-| `EXECUTIVE` | 비즈니스 API + 감사 로그 조회/등록 + 승인 의사결정 |
-| `AUDITOR` | 감사 로그 API 중심 접근 |
+| `ADMIN` | 모든 비즈니스 API + 감사 로그 API + 사용자 관리 + 비밀번호 변경 |
+| `MANAGER` | 대시보드/포트폴리오/원가/평가/계산/워크플로우 운영 |
+| `AUDITOR` | 감사 로그 API 중심 접근 + 사용자 조회 |
 
 정책 요약:
 
-- 비즈니스 API: `ADMIN`, `PLANNER`, `PM`, `FINANCE_REVIEWER`, `ACCOUNTANT`, `EXECUTIVE`
-- 감사 로그 API: `ADMIN`, `EXECUTIVE`, `AUDITOR`
+- 비즈니스 API: `ADMIN`, `MANAGER` (하위 호환: `PLANNER`, `PM`, `FINANCE_REVIEWER`, `ACCOUNTANT`, `EXECUTIVE`)
+- 감사 로그 API: `ADMIN`, `AUDITOR` (하위 호환: `EXECUTIVE`)
 - 워크플로우 리뷰 API: 인증 사용자 접근
 
 ## 로컬 실행
@@ -144,7 +142,6 @@ Frontend(`frontend/.env.local`) 예시:
 
 ```env
 VITE_API_BASE_URL=http://127.0.0.1:8080
-VITE_API_ACCESS_TOKEN=<테스트용_토큰>
 ```
 
 Backend(실행 셸 환경변수) 예시:
@@ -178,6 +175,19 @@ cd backend
 
 - Frontend: `http://localhost:5173`
 - Backend health: `http://localhost:8080/api/health`
+
+### 4) 로그인 확인
+
+- 로그인 API: `POST http://localhost:8080/api/auth/login`
+- 기본 시드 계정:
+  - `admin@costwise.local / admin123`
+  - `manager.hq01@costwise.local / user123`
+  - `audit@costwise.local / user123`
+- 스모크 스크립트:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/auth-login-smoke.ps1 -ApiBaseUrl "http://127.0.0.1:8080" -Email "admin@costwise.local" -Password "admin123"
+```
 
 ## 배포 절차 요약
 

@@ -4,17 +4,13 @@ export type MenuAccessKey = (typeof navigationItems)[number]['key'];
 
 export const roleOptions: readonly Role[] = [
   'ADMIN',
-  'EXECUTIVE',
-  'PM',
-  'ACCOUNTANT',
+  'MANAGER',
   'AUDITOR'
 ] as const;
 
 const roleLabels: Record<Role, string> = {
   ADMIN: '관리자',
-  EXECUTIVE: '임원',
-  PM: 'PM',
-  ACCOUNTANT: '원가담당자',
+  MANAGER: '매니저',
   AUDITOR: '감사'
 };
 
@@ -29,16 +25,7 @@ const menuAccessByRole: Record<Role, readonly MenuAccessKey[]> = {
     'audit',
     'settings'
   ],
-  EXECUTIVE: [
-    'dashboard',
-    'portfolio',
-    'accounting',
-    'valuation',
-    'risk',
-    'settings'
-  ],
-  PM: ['dashboard', 'portfolio', 'accounting', 'valuation', 'risk', 'settings'],
-  ACCOUNTANT: [
+  MANAGER: [
     'dashboard',
     'portfolio',
     'accounting',
@@ -58,8 +45,8 @@ const menuAccessByRole: Record<Role, readonly MenuAccessKey[]> = {
   ]
 };
 
-const projectWriteRoles = new Set<Role>(['ADMIN', 'PM', 'ACCOUNTANT']);
-const divisionScopedRoles = new Set<Role>(['PM', 'EXECUTIVE']);
+const projectWriteRoles = new Set<Role>(['ADMIN', 'MANAGER']);
+const divisionScopedRoles = new Set<Role>(['MANAGER']);
 
 export function getRoleLabel(role: Role) {
   return roleLabels[role];

@@ -31,19 +31,13 @@ import {
 const defaultFormState: UpsertUserRequest = {
   email: '',
   displayName: '',
-  role: 'PM',
+  role: 'MANAGER',
   division: '',
   status: 'ACTIVE',
   mfaEnabled: false
 };
 
-const formRoleOptions = [
-  'ADMIN',
-  'EXECUTIVE',
-  'PM',
-  'ACCOUNTANT',
-  'AUDITOR'
-] as const;
+const formRoleOptions = ['ADMIN', 'MANAGER', 'AUDITOR'] as const;
 const formStatusOptions = ['ACTIVE', 'SUSPENDED', 'INVITED'] as const;
 
 type UsersViewProps = {

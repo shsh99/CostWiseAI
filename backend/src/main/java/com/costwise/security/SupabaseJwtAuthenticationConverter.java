@@ -20,10 +20,13 @@ import org.springframework.stereotype.Component;
 public class SupabaseJwtAuthenticationConverter implements Converter<Jwt, AbstractAuthenticationToken> {
 
     private static final Set<String> SUPPORTED_ROLES =
-            Set.of("ADMIN", "EXECUTIVE", "PM", "ACCOUNTANT", "AUDITOR", "PLANNER", "FINANCE_REVIEWER");
+            Set.of("ADMIN", "MANAGER", "AUDITOR", "EXECUTIVE", "PM", "ACCOUNTANT", "PLANNER", "FINANCE_REVIEWER");
     private static final Map<String, List<String>> ROLE_ALIASES = Map.of(
-            "PM", List.of("PM", "PLANNER"),
-            "ACCOUNTANT", List.of("ACCOUNTANT", "FINANCE_REVIEWER"));
+            "EXECUTIVE", List.of("MANAGER"),
+            "PM", List.of("MANAGER"),
+            "ACCOUNTANT", List.of("MANAGER"),
+            "PLANNER", List.of("MANAGER"),
+            "FINANCE_REVIEWER", List.of("MANAGER"));
 
     @Override
     public AbstractAuthenticationToken convert(Jwt jwt) {

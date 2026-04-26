@@ -2,6 +2,7 @@ package com.costwise.config;
 
 import com.costwise.security.JwtSecurityProperties;
 import com.costwise.security.SupabaseJwtAuthenticationConverter;
+import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import javax.crypto.SecretKey;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -19,11 +20,15 @@ import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.oauth2.server.resource.web.BearerTokenAuthenticationEntryPoint;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -35,8 +40,8 @@ public class SecurityConfig {
 
     private static final String INVALID_AUDIENCE_ERROR = "invalid_token";
     private static final String[] BUSINESS_ROLES =
-            {"ADMIN", "PLANNER", "PM", "FINANCE_REVIEWER", "ACCOUNTANT", "EXECUTIVE"};
-    private static final String[] AUDIT_ROLES = {"EXECUTIVE", "AUDITOR", "ADMIN"};
+            {"ADMIN", "MANAGER", "PLANNER", "PM", "FINANCE_REVIEWER", "ACCOUNTANT", "EXECUTIVE"};
+    private static final String[] AUDIT_ROLES = {"ADMIN", "AUDITOR", "EXECUTIVE"};
 
     private final JwtSecurityProperties jwtSecurityProperties;
     private final SupabaseJwtAuthenticationConverter jwtAuthenticationConverter;
@@ -66,11 +71,33 @@ public class SecurityConfig {
     }
 
     @Bean
+    JwtEncoder jwtEncoder() {
+        return new NimbusJwtEncoder(new ImmutableSecret<>(jwtSecurityProperties.secretKey()));
+    }
+
+    @Bean
+    PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http, JwtDecoder jwtDecoder) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable);
         http.cors(Customizer.withDefaults());
         http.headers(headers -> {
-            headers.contentSecurityPolicy(csp -> csp.policyDirectives(securityPolicyProperties.contentSecurityPolicy()));
+            headers.addHeaderWriter((request, response) -> {
+                String path = request.getRequestURI();
+                String policy = isDocsPath(path)
+                        ? "default-src 'self'; "
+                                + "img-src 'self' data:; "
+                                + "style-src 'self' 'unsafe-inline'; "
+                                + "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+                                + "object-src 'none'; "
+                                + "base-uri 'self'; "
+                                + "frame-ancestors 'none'"
+                        : securityPolicyProperties.contentSecurityPolicy();
+                response.setHeader("Content-Security-Policy", policy);
+            });
             headers.referrerPolicy(referrer -> referrer.policy(
                     ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN));
             headers.frameOptions(frame -> frame.deny());
@@ -93,6 +120,8 @@ public class SecurityConfig {
         http.authorizeHttpRequests(
                 auth -> auth
                         .requestMatchers("/api/health")
+                        .permitAll()
+                        .requestMatchers("/api/auth/login")
                         .permitAll()
                         .requestMatchers("/api/dashboard",
                                 "/api/portfolio/summary",
@@ -135,5 +164,12 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
+    }
+
+    private boolean isDocsPath(String path) {
+        return path != null
+                && (path.startsWith("/swagger-ui")
+                        || path.equals("/swagger-ui.html")
+                        || path.startsWith("/v3/api-docs"));
     }
 }

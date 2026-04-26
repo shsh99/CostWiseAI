@@ -1,4 +1,4 @@
-export type Role = 'ADMIN' | 'EXECUTIVE' | 'PM' | 'ACCOUNTANT' | 'AUDITOR';
+export type Role = 'ADMIN' | 'MANAGER' | 'AUDITOR';
 
 export type RiskLevel = '낮음' | '중간' | '높음';
 
@@ -542,30 +542,14 @@ export const roleInsights: Record<Role, RoleInsight> = {
       '역할 경계가 불명확하면 승인 근거와 편집 책임이 섞일 수 있습니다.',
     nextAction: '운영 정책 점검 및 권한 예외 검토'
   },
-  EXECUTIVE: {
-    headline: '전체 포트폴리오를 보고 최종 승인 방향을 정합니다.',
-    summary:
-      '5개 본부 20개 프로젝트를 한눈에 보고 승인, 조건부 진행, 보류를 빠르게 구분합니다.',
-    decisionFocus: '총 투자액, 평균 NPV, 승인 대기 프로젝트',
-    riskWatch: '감사 로그가 부족하면 승인 근거가 남지 않을 수 있습니다.',
-    nextAction: '최종 승인 또는 보류 의사결정'
-  },
-  PM: {
-    headline: '담당 프로젝트와 본부 우선순위를 빠르게 조정합니다.',
-    summary:
-      '본부별 프로젝트 수, 투자 규모, 평균 NPV를 비교하고 어떤 프로젝트를 먼저 추진할지 판단합니다.',
-    decisionFocus: '프로젝트 우선순위, 본부 포트폴리오, 일정 리스크',
-    riskWatch:
-      '본부 단위 맥락 없이 개별 프로젝트만 보면 우선순위가 왜곡될 수 있습니다.',
-    nextAction: '우선순위 코멘트 정리 및 프로젝트 조정'
-  },
-  ACCOUNTANT: {
+  MANAGER: {
     headline: '5개 본부의 원가가 활동 기준에 맞게 배분되는지 확인합니다.',
     summary:
-      '본부별 배부 기준, 비용풀, 활동량이 서로 맞물리는지 보고 원가 왜곡이 없는지 점검합니다.',
-    decisionFocus: '배부 기준, 본부별 원가, 비용풀 누락',
-    riskWatch: '배부 기준이 단순하면 본부별 비교가 왜곡될 수 있습니다.',
-    nextAction: '배부 기준 조정 후 재배분 요청'
+      '본부 포트폴리오와 상세 프로젝트를 함께 검토하며 실행 우선순위와 승인 흐름을 조정합니다.',
+    decisionFocus: '프로젝트 우선순위, 배부 기준, 승인/보류 판단',
+    riskWatch:
+      '핵심 지표를 동시에 보지 않으면 실행 우선순위가 왜곡될 수 있습니다.',
+    nextAction: '검토 의견 정리 후 승인/보류 요청'
   },
   AUDITOR: {
     headline: '가정값과 이력 증적을 읽기 전용으로 점검합니다.',
@@ -582,10 +566,15 @@ export const apiBaseUrl =
   import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ??
   'http://localhost:8080';
 
-const apiAccessToken =
-  import.meta.env.VITE_API_ACCESS_TOKEN ??
-  import.meta.env.VITE_SUPABASE_ACCESS_TOKEN ??
-  '';
+let sessionApiAccessToken = '';
+
+export function setApiAccessToken(accessToken: string | null) {
+  sessionApiAccessToken = accessToken?.trim() ?? '';
+}
+
+export function getApiAccessToken() {
+  return sessionApiAccessToken;
+}
 
 export type CreateProjectRequest = {
   code: string;
@@ -623,6 +612,25 @@ export type UpsertUserRequest = {
   division: string;
   status: string;
   mfaEnabled: boolean;
+};
+
+export type LoginRequest = {
+  email: string;
+  password: string;
+};
+
+export type LoginResponse = {
+  accessToken: string;
+  tokenType: 'Bearer' | string;
+  expiresAt: string;
+  user: {
+    id: string;
+    email: string;
+    displayName: string;
+    role: string;
+    division: string;
+    status: string;
+  };
 };
 
 export type ApiError = Error & {
@@ -755,6 +763,28 @@ export async function loadUsers(): Promise<UserAccount[]> {
     return (await response.json()) as UserAccount[];
   } catch (error) {
     throw toApiError('사용자 목록을 불러오지 못했습니다.', error);
+  }
+}
+
+export async function login(request: LoginRequest): Promise<LoginResponse> {
+  try {
+    const response = await apiFetch('/api/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(request)
+    });
+    if (!response.ok) {
+      const errorMessage = await readApiErrorMessage(response);
+      throw createApiError(
+        errorMessage ?? `Login request failed: ${response.status}`,
+        response.status
+      );
+    }
+    return (await response.json()) as LoginResponse;
+  } catch (error) {
+    throw toApiError('로그인에 실패했습니다.', error);
   }
 }
 
@@ -999,8 +1029,8 @@ function apiFetch(
   if (!headers.has('Accept')) {
     headers.set('Accept', 'application/json');
   }
-  if (apiAccessToken.trim()) {
-    headers.set('Authorization', `Bearer ${apiAccessToken.trim()}`);
+  if (sessionApiAccessToken) {
+    headers.set('Authorization', `Bearer ${sessionApiAccessToken}`);
   }
 
   return fetch(`${apiBaseUrl}${path}`, {
